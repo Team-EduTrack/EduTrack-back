@@ -14,10 +14,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigInteger;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.apache.catalina.User;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Table(name = "lecture")
