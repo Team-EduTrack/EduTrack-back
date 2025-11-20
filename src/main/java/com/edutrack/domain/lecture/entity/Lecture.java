@@ -15,7 +15,6 @@ import jakarta.persistence.Table;
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import org.apache.catalina.User;
 
 @Entity
 @Table(name = "lecture")
