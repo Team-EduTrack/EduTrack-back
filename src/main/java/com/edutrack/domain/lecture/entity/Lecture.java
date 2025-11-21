@@ -56,7 +56,7 @@ public class Lecture {
   private LocalDateTime endDate;
 
   @CreatedDate
-  @Column(name = "created_at", nullable = false)
+  @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
   public Lecture(Academy academy, User teacher, String title, String description, DayOfWeek dayOfWeek,
