@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,8 +27,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(name = "lecture")
 @EntityListeners(AuditingEntityListener.class)
 public class Lecture {
-
-  public enum DayOfWeek {MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY}
 
   @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -46,7 +45,8 @@ public class Lecture {
   @Column(columnDefinition = "TEXT", nullable = false)
   private String description;
 
-  @Enumerated(EnumType.STRING) @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private DayOfWeek dayOfWeek;
 
   @Column(nullable = false)
