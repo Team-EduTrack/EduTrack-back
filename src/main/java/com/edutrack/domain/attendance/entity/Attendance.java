@@ -12,7 +12,6 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.catalina.User;
 
 @Entity
 @Getter
@@ -24,7 +23,7 @@ public class Attendance {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "date", nullable = false)
+  @Column(name = "attendance_date", nullable = false)
   private LocalDate date;
 
   @Column(nullable = false)
@@ -35,7 +34,14 @@ public class Attendance {
   private User student;
 
   // 상태 변경 메서드
-  public void attend(boolean status) {
-    this.status = status;
+  public void attend() {
+    this.status = true;
+  }
+
+  //생성자 (확장은 출석 횟수? 정도 까지만 확장 예정)
+  public Attendance(LocalDate date, User student) {
+    this.date = date;
+    this.student = student;
+    this.status = false; // 기본값은 결석(false)
   }
 }
