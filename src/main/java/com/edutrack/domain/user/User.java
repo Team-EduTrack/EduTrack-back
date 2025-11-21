@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -47,6 +47,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_status", length = 10, nullable = false)
+    @Builder.Default
     private UserStatus userStatus = UserStatus.ACTIVE;
 
     @ManyToMany
