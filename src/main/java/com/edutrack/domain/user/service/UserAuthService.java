@@ -1,0 +1,64 @@
+package com.edutrack.domain.user.service;
+import com.edutrack.domain.user.dto.SignInRequest;
+import com.edutrack.domain.user.dto.SignInResponse;
+import com.edutrack.domain.user.dto.UserInfo;
+import com.edutrack.domain.user.entity.Role;
+import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.security.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.edutrack.domain.user.exception.InvalidLoginException;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UserAuthService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    public SignInResponse signIn(SignInRequest request) {
+        User user = userRepository.findByLoginId(request.loginId())
+                .orElseThrow(InvalidLoginException::new);
+
+        boolean matches = passwordEncoder.matches(request.password(), user.getPassword());
+        if (!matches) {
+            throw new InvalidLoginException();
+        }
+
+        String accessToken = jwtTokenProvider.createAccessToken(user);
+        String refreshToken = jwtTokenProvider.createRefreshToken(user);
+
+        String roleName = extractPrimaryRoleName(user);
+
+        UserInfo userInfo = new UserInfo(
+                user.getId(),
+                user.getName(),
+                roleName
+        );
+
+        return new SignInResponse(accessToken, refreshToken, userInfo);
+    }
+
+    private String extractPrimaryRoleName(User user) {
+        Set<String> roleNames = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet());
+
+        if (roleNames.contains("PRINCIPAL")) {
+            return "PRINCIPAL";
+        }
+        if (roleNames.contains("TEACHER")) {
+            return "TEACHER";
+        }
+        if (roleNames.contains("STUDENT")) {
+            return "STUDENT";
+        }
+        return "STUDENT";
+    }
+}
