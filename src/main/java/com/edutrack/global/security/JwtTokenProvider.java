@@ -92,4 +92,9 @@ public class JwtTokenProvider {
         }
         return role.toString();
     }
+
+    public Long getUserIdFromToken(String token) {
+        Claims claims = parseClaims(token);
+        return Long.parseLong(claims.getSubject());
+    }
 }
