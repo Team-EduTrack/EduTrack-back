@@ -1,4 +1,5 @@
 package com.edutrack.domain.user.service;
+import com.edutrack.domain.user.dto.MyInfoResponse;
 import com.edutrack.domain.user.dto.SignInRequest;
 import com.edutrack.domain.user.dto.SignInResponse;
 import com.edutrack.domain.user.dto.UserInfo;
@@ -60,5 +61,24 @@ public class UserAuthService {
             return "STUDENT";
         }
         return "STUDENT";
+    }
+
+    public MyInfoResponse getMyInfo(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        String roleName = user.getRoles().stream()
+                .findFirst()
+                .map(Role::getName)
+                .orElse(null);
+
+        return new MyInfoResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getPhone(),
+                roleName
+        );
     }
 }
