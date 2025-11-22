@@ -69,6 +69,11 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
+    public boolean hasRole(String roleName) {
+        return roles.stream()
+                .anyMatch(role -> role.getName().equals(roleName));
+    }
+
     public void addRole(Role role) {
         roles.add(role);
         role.getUsers().add(this);
