@@ -19,18 +19,23 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // 원장 등록 API 허용 나중에 컨플릭날때 .requestMatchers("/api/academy/signup").permitAll() 이부분만 추가
+                        // 원장 등록 API
                         .requestMatchers("/api/academy/signup").permitAll()
+
 
                         .requestMatchers("/h2-console/**").permitAll()
 
+
                         .anyRequest().authenticated()
                 )
+
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
         return http.build();
