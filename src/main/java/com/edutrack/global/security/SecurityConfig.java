@@ -1,32 +1,44 @@
 package com.edutrack.global.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .formLogin(form -> form.disable())      //기본 로그인 폼 제거
-                .httpBasic(basic -> basic.disable())    //Basic Auth 비활성화
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/signin").permitAll()   // 로그인 API 허용
-                        .requestMatchers("/h2-console/**").permitAll()       // H2 콘솔 허용
+                        .requestMatchers("/api/users/signin").permitAll()   // 로그인은 누구나
+                        .requestMatchers("/h2-console/**").permitAll()      // H2 콘솔
+                        .requestMatchers("/api/users/me").authenticated()   // 내 정보 조회는 토큰 필수
                         .anyRequest().permitAll()
-                );
-
-        // H2 console 사용 시 frameOptions 비활성화
-        http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
