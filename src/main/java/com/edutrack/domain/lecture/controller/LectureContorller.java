@@ -1,4 +1,4 @@
-package com.edutrack.domain.lecture.lectureStudent.controller;
+package com.edutrack.domain.lecture.controller;
 
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponseDto;
 import com.edutrack.domain.lecture.service.LectureService;

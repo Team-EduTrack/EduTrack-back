@@ -1,5 +1,6 @@
 package com.edutrack.domain.attendance.entity;
 
+import com.edutrack.domain.user.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

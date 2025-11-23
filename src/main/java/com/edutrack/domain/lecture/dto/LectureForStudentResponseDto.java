@@ -14,9 +14,9 @@ public class LectureForStudentResponseDto {
 
   public static LectureForStudentResponseDto of(Lecture lecture) {
     return LectureForStudentResponseDto.builder()
-        .lectureId(lectureId)
-        .title(title)
-        .teacherName(teacherName)
+        .lectureId(lecture.getId())
+        .title(lecture.getTitle())
+        .teacherName(lecture.getTeacher().getName())
         .build();
   }
 }
