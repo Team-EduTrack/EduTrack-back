@@ -12,7 +12,4 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
   //LectureId에 할당된 학생 수 조회
   int countStudentByLectureId(Long lectureId);
-
-  //studentId가 일치하는 LectureStudent 목록 조회
-  List<LectureStudent> findAllByStudentId(Long studentId);
 }

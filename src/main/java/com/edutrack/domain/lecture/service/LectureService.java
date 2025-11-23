@@ -1,6 +1,5 @@
 package com.edutrack.domain.lecture.service;
 
-import com.edutrack.domain.lecture.dto.LectureForStudentResponseDto;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponseDto;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.lectureStudent.entity.LectureStudent;
@@ -19,7 +18,6 @@ public class LectureService {
 
   private final LectureRepository lectureRepository;
   private final LectureStudentRepository lectureStudentRepository;
-
 
   //강사의 ID로 강의 목록과 각 강의의 수강생 수 조회
   @Transactional(readOnly = true)
@@ -46,15 +44,6 @@ public class LectureService {
             lecture,
             studentCountMap.getOrDefault(lecture.getId(), 0L).intValue()
         )).toList();
-  }
-
-  //학생의 ID로 수강 중인 강의 목록 조회
-  @Transactional(readOnly = true)
-  public List<LectureForStudentResponseDto> getLecturesByStudentId(Long studentId) {
-    List<LectureStudent> lectures = lectureStudentRepository.findAllLecturesByStudentId(studentId);
-
-    return lectures.stream()
-        .map(ls -> LectureForStudentResponseDto.of(ls.getLecture())).toList();
   }
 
 }
