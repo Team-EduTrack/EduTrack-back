@@ -85,4 +85,17 @@ class LectureServiceTest {
     assertThat(countByLecture.get(2L)).isEqualTo(1);
   }
 
+  @Test
+  void getLecturesByTeacherId_whenNoLectures_shouldReturnEmptyList() {
+    Long teacherId = 2L;
+
+    // lectureRepository returns empty list
+    given(lectureRepository.findAllByTeacherId(teacherId)).willReturn(List.of());
+
+    // 서비스 호출
+    List<LectureForTeacherResponseDto> result = lectureService.getLecturesByTeacherId(teacherId);
+
+    // 검증: 빈 리스트 반환
+    assertThat(result).isEmpty();
+  }
 }
