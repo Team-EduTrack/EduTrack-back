@@ -21,6 +21,9 @@ public class JwtTokenProvider {
     private final long accessTokenExpire;
     private final long refreshTokenExpire;
 
+    @Value("${jwt.secret}")
+    private String secretKey;
+
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-expire-ms}") long accessTokenExpire,
@@ -91,6 +94,15 @@ public class JwtTokenProvider {
             return null;
         }
         return role.toString();
+    }
+
+    public String getRoleFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(secretKey)
+                .parseClaimsJws(token)
+                .getBody();
+
+        return (String) claims.get("role"); // "STUDENT", "PRINCIPAL" 등
     }
 
     public Long getUserIdFromToken(String token) {

@@ -1,8 +1,5 @@
 package com.edutrack.global.security;
 
-import com.edutrack.domain.user.entity.Role;
-import com.edutrack.domain.user.entity.User;
-import com.edutrack.domain.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,14 +13,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
-
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -33,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
+        System.out.println(">>> JwtFilter Authorization header = " + authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
@@ -40,32 +35,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
+        System.out.println(">>> JwtFilter token = " + token);
 
         Long userId;
         try {
             userId = jwtTokenProvider.getUserIdFromToken(token);
+            System.out.println(">>> JwtFilter userId from token = " + userId);
         } catch (Exception e) {
+            System.out.println(">>> JwtFilter getUserIdFromToken 실패: " + e.getMessage());
             filterChain.doFilter(request, response);
             return;
         }
 
-        Optional<User> optionalUser = userRepository.findById(userId);
-        if (optionalUser.isEmpty()) {
-            filterChain.doFilter(request, response);
-            return;
+        String roleName;
+        try {
+            roleName = jwtTokenProvider.getRoleFromToken(token);
+        } catch (Exception e) {
+            System.out.println(">>> JwtFilter getRoleFromToken 실패: " + e.getMessage());
+            roleName = "STUDENT";
         }
 
-        User user = optionalUser.get();
+        System.out.println(">>> JwtFilter user role(from token) = " + roleName);
 
-        String roleName = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse("STUDENT");
-
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + roleName);
+        SimpleGrantedAuthority authority =
+                new SimpleGrantedAuthority("ROLE_" + roleName);
 
         UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(user.getId(), null, List.of(authority));
+                new UsernamePasswordAuthenticationToken(
+                        userId,
+                        null,
+                        List.of(authority)
+                );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 

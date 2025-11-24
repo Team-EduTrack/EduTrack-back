@@ -68,10 +68,7 @@ public class UserAuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        String roleName = user.getRoles().stream()
-                .findFirst()
-                .map(Role::getName)
-                .orElse(null);
+        String roleName = extractPrimaryRoleName(user);
 
         return new MyInfoResponse(
                 user.getId(),
