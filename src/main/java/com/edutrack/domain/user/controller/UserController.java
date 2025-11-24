@@ -22,6 +22,11 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/me")
     public ResponseEntity<MyInfoResponse> me(
             @RequestHeader("Authorization") String authHeader
