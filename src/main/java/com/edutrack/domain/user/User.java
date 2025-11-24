@@ -2,9 +2,7 @@ package com.edutrack.domain.user;
 
 import com.edutrack.domain.academy.Academy;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -13,9 +11,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 public class User {
 
@@ -47,6 +47,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "user_status", length = 10, nullable = false)
+    @Builder.Default
     private UserStatus userStatus = UserStatus.ACTIVE;
 
     @ManyToMany
