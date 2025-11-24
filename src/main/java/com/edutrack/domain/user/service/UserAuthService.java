@@ -4,6 +4,7 @@ import com.edutrack.domain.user.dto.SignInRequest;
 import com.edutrack.domain.user.dto.SignInResponse;
 import com.edutrack.domain.user.dto.UserInfo;
 import com.edutrack.domain.user.entity.Role;
+import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.security.JwtTokenProvider;
@@ -11,9 +12,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.edutrack.domain.user.exception.InvalidLoginException;
+
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.edutrack.domain.user.util.RoleUtils.extractPrimaryRoleName;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,7 @@ public class UserAuthService {
         String accessToken = jwtTokenProvider.createAccessToken(user);
         String refreshToken = jwtTokenProvider.createRefreshToken(user);
 
+        // 대표 Role 1개만 뽑아서 사용
         String roleName = extractPrimaryRoleName(user);
 
         UserInfo userInfo = new UserInfo(
@@ -44,23 +50,6 @@ public class UserAuthService {
         );
 
         return new SignInResponse(accessToken, refreshToken, userInfo);
-    }
-
-    private String extractPrimaryRoleName(User user) {
-        Set<String> roleNames = user.getRoles().stream()
-                .map(Role::getName)
-                .collect(Collectors.toSet());
-
-        if (roleNames.contains("PRINCIPAL")) {
-            return "PRINCIPAL";
-        }
-        if (roleNames.contains("TEACHER")) {
-            return "TEACHER";
-        }
-        if (roleNames.contains("STUDENT")) {
-            return "STUDENT";
-        }
-        return "STUDENT";
     }
 
     public MyInfoResponse getMyInfo(Long userId) {

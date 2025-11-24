@@ -1,5 +1,6 @@
 package com.edutrack.domain.user.repository;
 
+import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,17 +11,25 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    boolean existsByLoginId(String loginId);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByPhone(String phone);
+
+    Optional<User> findByEmail(String email);
+
     Optional<User> findByLoginId(String loginId);
 
     @Query("""
-                SELECT u
-                FROM User u
-                WHERE u.academyId = :academyId
-                  AND (u.loginId LIKE %:keyword%
-                       OR u.phone LIKE %:keyword%)
-            """)
-    List<User> searchByLoginIdOrPhone(
-            @Param("academyId") Long academyId,
-            @Param("keyword") String keyword
-    );
+        select distinct u
+        from User u
+        join u.roles r
+        where u.academy.id = :academyId
+          and (:roleType is null or r.name = :roleType)
+          and (:keyword is null 
+               or u.loginId like concat('%', :keyword, '%')
+               or u.phone like concat('%', :keyword, '%'))
+        """)
+    List<User> searchByAcademyAndRoleAndKeyword(Long academyId, RoleType roleType, String keyword);
 }

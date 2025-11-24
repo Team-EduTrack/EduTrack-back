@@ -1,5 +1,6 @@
 package com.edutrack.global.security;
 import com.edutrack.domain.user.entity.Role;
+import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -11,8 +12,11 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Optional;
+
+import static com.edutrack.domain.user.util.RoleUtils.extractPrimaryRoleName;
 
 @Component
 public class JwtTokenProvider {
@@ -36,13 +40,14 @@ public class JwtTokenProvider {
         Instant expiry = now.plusMillis(accessTokenExpire);
 
         return Jwts.builder()
-                .setSubject(user.getId().toString())     // 토큰의 subject = userId
-                .claim("role", extractRole(user))        // 커스텀 클레임: role
-                .setIssuedAt(Date.from(now))             // 발급 시간
-                .setExpiration(Date.from(expiry))        // 만료 시간
-                .signWith(key, SignatureAlgorithm.HS256) // 키 + 알고리즘
+                .setSubject(user.getId().toString())
+                .claim("role", extractPrimaryRoleName(user))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(expiry))
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
+
     public String createRefreshToken(User user) {
         Instant now = Instant.now();
         Instant expiry = now.plusMillis(refreshTokenExpire);
@@ -56,19 +61,28 @@ public class JwtTokenProvider {
     }
 
     private String extractRole(User user) {
-        Optional<Role> anyRole = user.getRoles().stream().findFirst();
-        if (anyRole.isEmpty()) {
-            return "STUDENT";
-        }
-        return anyRole.get().getName();
+        return user.getRoles().stream()
+                .map(Role::getName)                               // RoleType
+                .min(Comparator.comparingInt(this::priority))     // 최상위 Role 1개
+                .map(Enum::name)                                  // RoleType -> String
+                .orElse("STUDENT");
+    }
+
+    private int priority(RoleType roleType) {
+        return switch (roleType) {
+            case ADMIN -> 1;
+            case PRINCIPAL -> 2;
+            case TEACHER -> 3;
+            case STUDENT -> 4;
+        };
     }
 
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(key)        // 서명 검증에 사용할 키
+                .setSigningKey(key)
                 .build()
-                .parseClaimsJws(token)     // 서명 검증 + 파싱
-                .getBody();                // Claims 반환
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public Long getUserIdFromToken(String token) {
@@ -78,6 +92,6 @@ public class JwtTokenProvider {
 
     public String getRoleFromToken(String token) {
         Claims claims = parseClaims(token);
-        return claims.get("role", String.class);
+        return claims.get("role", String.class);  // "ADMIN"/"STUDENT" 등
     }
 }

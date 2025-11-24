@@ -1,9 +1,25 @@
 package com.edutrack.domain.user.entity;
 
+import com.edutrack.domain.academy.Academy;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 import jakarta.persistence.Entity;
 
 import java.time.LocalDateTime;
@@ -13,42 +29,45 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    // 학원 ID (FK)
-    @Column(name = "academy_id", nullable = false)
-    private Long academyId;
+  // fk : academy_id
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "academy_id")
+  private Academy academy;
 
-    @Column(name = "login_id", nullable = false, unique = true, length = 50)
-    private String loginId;
+  @Column(name = "login_id", length = 50, nullable = false, unique = true)
+  private String loginId;
 
-    @Column(nullable = false, length = 255)
-    private String password;
+  @Column(name = "password", length = 255, nullable = false)
+  private String password;
 
-    @Column(nullable = false, length = 50)
-    private String name;
+  @Column(name = "name", length = 100, nullable = false, unique = true)
+  private String name;
 
-    @Column(nullable = false, unique = true, length = 11)
-    private String phone;
+  @Column(name = "phone", length = 11, nullable = false, unique = true)
+  private String phone;
 
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
+  @Column(name = "email", length = 100, nullable = false, unique = true)
+  private String email;
 
-    @Column(name = "email_verified", nullable = false)
-    private boolean emailVerified;
+  @Column(name = "email_verified", nullable = false)
+  private boolean emailVerified;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_status", nullable = false, length = 20)
-    private UserStatus userStatus = UserStatus.ACTIVE;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "user_status", nullable = false, length = 20)
+  private UserStatus userStatus;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
-
+  @CreationTimestamp
+  @Column(name = "created_at")
+  private LocalDateTime createdAt;
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_to_role",
@@ -57,26 +76,28 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    public User(String loginId, String password, String name, String phone, String email, Long academyId) {
+    public User(String loginId, String password, String name, String phone, String email, Academy academy) {
         this.loginId = loginId;
         this.password = password;
         this.name = name;
         this.phone = phone;
         this.email = email;
-        this.academyId = academyId;
+        this.academy = academy;
         this.emailVerified = false;
         this.userStatus = UserStatus.ACTIVE;
         this.createdAt = LocalDateTime.now();
     }
 
-    public boolean hasRole(String roleName) {
-        return roles.stream()
-                .anyMatch(role -> role.getName().equals(roleName));
+    public boolean hasRole(RoleType roleType) {
+        return roles.stream().anyMatch(role -> role.getName() == roleType);
     }
 
+    public boolean hasRole(String roleName) {
+        return roles.stream()
+                .anyMatch(role -> role.getName().name().equals(roleName));
+    }
     public void addRole(Role role) {
         roles.add(role);
-        role.getUsers().add(this);
     }
 
 }
