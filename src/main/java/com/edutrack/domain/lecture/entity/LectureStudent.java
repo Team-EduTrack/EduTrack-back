@@ -1,7 +1,8 @@
 package com.edutrack.domain.lecture.entity;
 
-import com.edutrack.domain.user.User;
+import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -32,6 +33,7 @@ public class LectureStudent {
     @Column(name = "lecture_expire_date")
     private LocalDateTime expireDate;
 
+    @Builder
     public LectureStudent(Lecture lecture, User student) {
         this.id = new LectureStudentId(lecture.getId(), student.getId());
         this.lecture = lecture;
