@@ -1,6 +1,7 @@
 package com.edutrack.domain.academy;
 
-import com.edutrack.domain.user.User;
+
+import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

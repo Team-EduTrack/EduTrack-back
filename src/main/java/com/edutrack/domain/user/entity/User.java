@@ -63,6 +63,7 @@ public class User {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "user_status", nullable = false, length = 20)
+
   private UserStatus userStatus;
 
   @CreationTimestamp
@@ -74,6 +75,7 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
     public User(String loginId, String password, String name, String phone, String email, Academy academy) {
@@ -98,6 +100,10 @@ public class User {
     }
     public void addRole(Role role) {
         roles.add(role);
+    }
+
+    public void setAcademy(Academy academy) {
+        this.academy = academy;
     }
 
 }
