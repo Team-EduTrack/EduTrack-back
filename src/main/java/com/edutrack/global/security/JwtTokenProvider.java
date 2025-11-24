@@ -26,7 +26,6 @@ public class JwtTokenProvider {
             @Value("${jwt.access-expire-ms}") long accessTokenExpire,
             @Value("${jwt.refresh-expire-ms}") long refreshTokenExpire
     ) {
-
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpire = accessTokenExpire;
         this.refreshTokenExpire = refreshTokenExpire;
