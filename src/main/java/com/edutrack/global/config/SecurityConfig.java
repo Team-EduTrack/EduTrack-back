@@ -16,12 +16,21 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     http
+        // 🔥 H2 콘솔을 위한 설정
         .csrf(csrf -> csrf.disable())
-        .cors(cors -> cors.disable())
+        .headers(headers -> headers
+            .frameOptions(frame -> frame.sameOrigin()) // iframe 허용
+        )
+
+        // 🔥 H2 콘솔 접근 허용
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/h2-console/**").permitAll()
             .requestMatchers("/api/auth/signup").permitAll()
             .anyRequest().permitAll()
-        );
+        )
+
+        // 개발 환경에서는 굳이 strict 보안 필요 없음
+        .cors(cors -> cors.disable());
 
     return http.build();
   }
