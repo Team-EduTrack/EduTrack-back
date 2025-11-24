@@ -12,7 +12,6 @@ import com.edutrack.global.exception.ConflictException;
 import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,16 +26,21 @@ public class LectureCreationService {
     private final UserRepository userRepository;
     private final AcademyRepository academyRepository;
 
-    public Long createLecture(Long principalAcademyId, LectureCreationRequest request) {
+    public Long createLecture(Long principalUserId, LectureCreationRequest request) {
 
-        //강사 유효성 검증
+        // 강사 유효성 검증 및 정보 조회
+        User principal = userRepository.findById(principalUserId)
+                .orElseThrow(() -> new NotFoundException("강의 생성 권한을 가진 사용자를 찾을 수 없습니다."));
+
+        Long principalAcademyId = principal.getAcademy().getId();
+
         User teacher = validateTeacherAndFetch(principalAcademyId, request.getTeacherId());
 
         // 날짜 유효성 검증
         validateDates(request.getStartDate(), request.getEndDate());
 
-        Academy academy = academyRepository.getReferenceById(principalAcademyId);
 
+        Academy academy = academyRepository.getReferenceById(principalAcademyId);
 
         Lecture lecture = new Lecture(
                 academy,
@@ -64,6 +68,7 @@ public class LectureCreationService {
         if (!teacher.hasRole(RoleType.TEACHER)) {
             throw new ForbiddenException("지정된 사용자는 강사 권한이 없습니다.");
         }
+
 
         if (teacher.getAcademy() == null || !teacher.getAcademy().getId().equals(principalAcademyId)) {
             throw new ForbiddenException("지정된 강사는 이 학원 소속이 아닙니다.");
