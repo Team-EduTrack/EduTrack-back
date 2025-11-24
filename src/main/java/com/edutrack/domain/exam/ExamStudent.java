@@ -2,7 +2,7 @@ package com.edutrack.domain.exam;
 
 import com.edutrack.domain.exam.entity.Exam;
 import com.edutrack.domain.exam.entity.ExamStudentId;
-import com.edutrack.domain.user.User;
+import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

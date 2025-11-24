@@ -4,20 +4,24 @@ import com.edutrack.api.principal.dto.PrincipalRegistrationRequest;
 import com.edutrack.api.principal.dto.PrincipalRegistrationResponse;
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
-import com.edutrack.domain.user.Role;
-import com.edutrack.domain.user.RoleRepository;
-import com.edutrack.domain.user.User;
-import com.edutrack.domain.user.UserRepository;
+import com.edutrack.domain.user.entity.Role;
+import com.edutrack.domain.user.entity.RoleType;
+import com.edutrack.domain.user.repository.RoleRepository;
+import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.entity.UserStatus;
+import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PrincipalService {
 
     private final UserRepository userRepository;
@@ -25,44 +29,46 @@ public class PrincipalService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public PrincipalRegistrationResponse registerAcademy(PrincipalRegistrationRequest principalRegistrationRequest) {
+    public PrincipalRegistrationResponse registerAcademy(PrincipalRegistrationRequest request) {
 
         //비밀번호 일치검사
-        if (!principalRegistrationRequest.getPassword()
-                .equals(principalRegistrationRequest.getPasswordConfirm())) {
+        if (!request.getPassword()
+                .equals(request.getPasswordConfirm())) {
             throw new IllegalArgumentException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
         }
 
         //중복 데이터 검사
-        if (userRepository.existsByLoginId(principalRegistrationRequest.getLoginId())) {
+        if (userRepository.existsByLoginId(request.getLoginId())) {
             throw new ConflictException("이미 존재하는 아이디입니다.");
         }
-        if (userRepository.existsByPhone(principalRegistrationRequest.getPhone())) {
+        if (userRepository.existsByPhone(request.getPhone())) {
             throw new ConflictException("이미 등록된 전화번호입니다.");
         }
-        if (userRepository.existsByEmail(principalRegistrationRequest.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new ConflictException("이미 등록된 이메일입니다.");
         }
 
-        String encodedPassword = passwordEncoder.encode(principalRegistrationRequest.getPassword());
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        Role principalRole = roleRepository.findByName("PRINCIPAL")
+        Role principalRole = roleRepository.findByName(RoleType.PRINCIPAL)
                 .orElseThrow(() -> new IllegalArgumentException("PRINCIPAL 역할 데이터가 없습니다."));
 
         User newPrincipal = User.builder()
-                .loginId(principalRegistrationRequest.getLoginId())
+                .loginId(request.getLoginId())
                 .password(encodedPassword)
-                .name(principalRegistrationRequest.getPrincipalName())
-                .phone(principalRegistrationRequest.getPhone())
-                .email(principalRegistrationRequest.getEmail())
+                .name(request.getPrincipalName())
+                .phone(request.getPhone())
+                .email(request.getEmail())
                 .roles(Set.of(principalRole))
+                .userStatus(UserStatus.ACTIVE)
+                .emailVerified(false)
                 .build();
 
         User savedPrincipal = userRepository.save(newPrincipal);
 
         //학원코드 생성
         String uniqueCode = generateUniqueAcademyCode();
-        Academy newAcademy = new Academy(principalRegistrationRequest
+        Academy newAcademy = new Academy(request
                 .getAcademyName(), uniqueCode, savedPrincipal);
         Academy savedAcademy = academyRepository.save(newAcademy);
 
@@ -81,7 +87,7 @@ public class PrincipalService {
         do {
             int randomNum = ThreadLocalRandom.current().nextInt(0, 10000);
             code = "EDU-" + randomNum;
-        }while(academyRepository.existsByCode(code));
+        }while(academyRepository.findByCode(code).isPresent());
         return code;
     }
 
