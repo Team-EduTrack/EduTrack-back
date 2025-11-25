@@ -1,6 +1,7 @@
 package com.edutrack.api.lecture.service;
 
 import com.edutrack.api.lecture.dto.LectureCreationRequest;
+
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
@@ -28,18 +29,19 @@ public class LectureCreationService {
 
     public Long createLecture(Long principalUserId, LectureCreationRequest request) {
 
-        // 강사 유효성 검증 및 정보 조회
+        // 1. 강의 생성 권한 주체(원장)를 조회하고 검증 (ACADEMY ID 추출)
         User principal = userRepository.findById(principalUserId)
                 .orElseThrow(() -> new NotFoundException("강의 생성 권한을 가진 사용자를 찾을 수 없습니다."));
 
         Long principalAcademyId = principal.getAcademy().getId();
 
+        // 2. 강사 유효성 검증
         User teacher = validateTeacherAndFetch(principalAcademyId, request.getTeacherId());
 
-        // 날짜 유효성 검증
+        // 3. 날짜 유효성 검증
         validateDates(request.getStartDate(), request.getEndDate());
 
-
+        // 4. Lecture 엔티티 생성 및 저장
         Academy academy = academyRepository.getReferenceById(principalAcademyId);
 
         Lecture lecture = new Lecture(
@@ -60,16 +62,16 @@ public class LectureCreationService {
     @Transactional(readOnly = true)
     private User validateTeacherAndFetch(Long principalAcademyId, Long teacherId) {
 
-
+        // 1. 강사 존재 여부 확인 (이 로직은 그대로 유지)
         User teacher = userRepository.findById(teacherId)
                 .orElseThrow(() -> new NotFoundException("지정된 강사 계정을 찾을 수 없습니다."));
 
-
+        // 2. 조건: 강사 역할(TEACHER)을 가지고 있는가?
         if (!teacher.hasRole(RoleType.TEACHER)) {
             throw new ForbiddenException("지정된 사용자는 강사 권한이 없습니다.");
         }
 
-
+        // 3. 조건: 강사가 원장과 동일한 학원 소속인가?
         if (teacher.getAcademy() == null || !teacher.getAcademy().getId().equals(principalAcademyId)) {
             throw new ForbiddenException("지정된 강사는 이 학원 소속이 아닙니다.");
         }
