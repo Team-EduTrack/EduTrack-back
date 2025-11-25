@@ -12,8 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
-
 /**
  * 애플리케이션 시작 시점에 ADMIN 계정을 자동으로 생성하고 권한을 부여하는 초기화 컴포넌트입니다.
  * 이 계정은 Postman 검증 및 시스템 최고 권한 테스트에 사용됩니다.
@@ -27,7 +25,7 @@ public class AdminInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
 
-    private static final String ADMIN_LOGIN_ID = "addmin";
+    private static final String ADMIN_LOGIN_ID = "admin";
     private static final String ADMIN_PASSWORD = "admin@1234";
 
     /**
@@ -55,17 +53,17 @@ public class AdminInitializer implements CommandLineRunner {
                     .email("admin@edutrack.com")
                     .emailVerified(true)
                     .userStatus(UserStatus.ACTIVE)
-//                    .roles(Set.of(adminRole)) // 지금은 roles 필드가 없고 UserToRole 로 관리됨
+//                    .roles(Set.of(adminRole)) -> 지금은 roles 필드가 없고 UserToRole 로 관리됨
                     .build();
 
-            // User 저장 → DB 에서 ID 생성됨
+            // User 저장 -> DB 에서 ID 생성됨
             User savedAdmin = userRepository.save(admin);
 
-            // UserToRole 엔티티 생성을 위한 addRole() 도메인 메서드 사용
-            // → 기존 ManyToMany 방식이 아니라 지금 구조에서는 필수
+            // 추가 -> UserToRole 엔티티 생성을 위한 addRole() 도메인 메서드 사용
+            // 기존 -> ManyToMany 방식이 아니라 지금 구조에서는 필수
             savedAdmin.addRole(adminRole);
 
-            // 변경된 User(user_to_role 추가)를 다시 저장하여 매핑 완료
+            // 변경된 User (user_to_role 추가)를 다시 저장하여 매핑 완료
             userRepository.save(savedAdmin);
             System.out.println(">>> [System Init] ADMIN 계정 자동 생성 완료: ID=" + ADMIN_LOGIN_ID);
         }
