@@ -7,4 +7,6 @@ public interface AcademyRepository extends JpaRepository<Academy, Long> {
 
   Optional<Academy> findByCode(String code);
 
+  boolean existsByCode(String code);
+
 }
