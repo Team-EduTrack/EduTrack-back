@@ -49,7 +49,15 @@ public class UserRoleService {
             return;
         }
 
-        // 7. 역할 추가
+        boolean isStudent = target.hasRole(RoleType.STUDENT);
+        boolean isPrincipalTarget = target.hasRole(RoleType.PRINCIPAL);
+
+        if (isStudent && !isPrincipalTarget) {
+            // 학생만 가진 유저 → STUDENT 제거
+            target.removeRoleByType(RoleType.STUDENT);
+        }
+
+        // 역할 추가
         target.addRole(teacherRole);
     }
 }
