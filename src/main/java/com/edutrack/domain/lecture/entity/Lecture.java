@@ -2,7 +2,6 @@ package com.edutrack.domain.lecture.entity;
 
 
 import com.edutrack.domain.academy.Academy;
-
 import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
