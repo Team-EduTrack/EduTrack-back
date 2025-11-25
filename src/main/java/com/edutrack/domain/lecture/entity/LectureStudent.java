@@ -1,6 +1,6 @@
 package com.edutrack.domain.lecture.entity;
 
-import com.edutrack.domain.user.User;
+import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -68,36 +68,48 @@ public class User {
   @CreationTimestamp
   @Column(name = "created_at")
   private LocalDateTime createdAt;
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_to_role",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
 
-    public User(String loginId, String password, String name, String phone, String email, Academy academy) {
-        this.loginId = loginId;
-        this.password = password;
-        this.name = name;
-        this.phone = phone;
-        this.email = email;
-        this.academy = academy;
-        this.emailVerified = false;
-        this.userStatus = UserStatus.ACTIVE;
-        this.createdAt = LocalDateTime.now();
-    }
+  @Builder.Default
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private Set<UserToRole> userToRoles = new HashSet<>();
 
-    public boolean hasRole(RoleType roleType) {
-        return roles.stream().anyMatch(role -> role.getName() == roleType);
-    }
+  public User(String loginId, String password, String name, String phone, String email,
+      Academy academy) {
+    this.loginId = loginId;
+    this.password = password;
+    this.name = name;
+    this.phone = phone;
+    this.email = email;
+    this.academy = academy;
+    this.emailVerified = false;
+    this.userStatus = UserStatus.ACTIVE;
+    this.createdAt = LocalDateTime.now();
+  }
 
-    public boolean hasRole(String roleName) {
-        return roles.stream()
-                .anyMatch(role -> role.getName().name().equals(roleName));
-    }
-    public void addRole(Role role) {
-        roles.add(role);
-    }
+  // 역할 확인 (RoleType 기반)
+  public boolean hasRole(RoleType roleType) {
+    return userToRoles.stream()
+        .anyMatch(userToRoles -> userToRoles.getRole().getName() == roleType);
+  }
 
+  // 역할 이름 (String) 기반
+  public boolean hasRole(String roleName) {
+    return userToRoles.stream()
+        .anyMatch(userToRoles -> userToRoles.getRole().getName().name().equals(roleName));
+  }
+
+  // 유저에게 역할 추가 (user는 반드시 save 돼서 id가 있는 상태에서 호출하는 게 안전)
+  public void addRole(Role role) {
+    UserToRole userToRole = UserToRole.builder()
+        .id(new UserToRoleId(this.id, role.getId()))
+        .user(this)
+        .role(role)
+        .build();
+
+    this.userToRoles.add(userToRole);
+  }
+
+  public void setAcademy(Academy academy) {
+    this.academy = academy;
+  }
 }

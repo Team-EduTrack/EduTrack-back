@@ -69,13 +69,8 @@ public class UserServiceImpl implements UserService {
     Role studentRole = roleRepository.findByName(RoleType.STUDENT)
         .orElseThrow(() -> new IllegalArgumentException("학생 역할이 사전에 세팅되어 있지 않습니다."));
 
-    UserToRole userToRole = UserToRole.builder()
-        .id(new UserToRoleId(saved.getId(), studentRole.getId()))
-        .user(saved)
-        .role(studentRole)
-        .build();
-
-    userToRoleRepository.save(userToRole);
+    saved.addRole(studentRole); // 역할을 User 에게 부여
+    userRepository.save(saved);
 
     return new SignupResponse(saved.getId(), saved.getLoginId(), saved.getName(), RoleType.STUDENT);
   }
