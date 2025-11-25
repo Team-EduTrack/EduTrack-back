@@ -31,10 +31,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/me").authenticated()   // 내 정보 조회
                         .requestMatchers(HttpMethod.GET,
                                 "/api/academies/{academyId}/users/search")
-                        .hasRole("PRINCIPAL")
+                        .hasAnyRole("ADMIN", "PRINCIPAL")
                         .requestMatchers(HttpMethod.PATCH,
                                 "/api/academies/{academyId}/users/{userId}/role/{roleName}")
-                        .hasRole("PRINCIPAL")
+                        .hasAnyRole("ADMIN", "PRINCIPAL")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
