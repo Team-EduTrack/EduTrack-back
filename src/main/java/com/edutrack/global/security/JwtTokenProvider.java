@@ -2,6 +2,7 @@ package com.edutrack.global.security;
 import com.edutrack.domain.user.entity.Role;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.entity.UserToRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -61,8 +62,8 @@ public class JwtTokenProvider {
     }
 
     private String extractRole(User user) {
-        return user.getRoles().stream()
-                .map(Role::getName)                               // RoleType
+        return user.getUserToRoles().stream()
+                .map(userToRole -> userToRole.getRole().getName())   // RoleType
                 .min(Comparator.comparingInt(this::priority))     // 최상위 Role 1개
                 .map(Enum::name)                                  // RoleType -> String
                 .orElse("STUDENT");

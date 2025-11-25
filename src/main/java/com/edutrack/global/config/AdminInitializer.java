@@ -55,10 +55,18 @@ public class AdminInitializer implements CommandLineRunner {
                     .email("admin@edutrack.com")
                     .emailVerified(true)
                     .userStatus(UserStatus.ACTIVE)
-                    .roles(Set.of(adminRole))
+//                    .roles(Set.of(adminRole)) // 지금은 roles 필드가 없고 UserToRole 로 관리됨
                     .build();
 
-            userRepository.save(admin);
+            // User 저장 → DB 에서 ID 생성됨
+            User savedAdmin = userRepository.save(admin);
+
+            // UserToRole 엔티티 생성을 위한 addRole() 도메인 메서드 사용
+            // → 기존 ManyToMany 방식이 아니라 지금 구조에서는 필수
+            savedAdmin.addRole(adminRole);
+
+            // 변경된 User(user_to_role 추가)를 다시 저장하여 매핑 완료
+            userRepository.save(savedAdmin);
             System.out.println(">>> [System Init] ADMIN 계정 자동 생성 완료: ID=" + ADMIN_LOGIN_ID);
         }
     }

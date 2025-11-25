@@ -11,25 +11,33 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    boolean existsByLoginId(String loginId);
+  boolean existsByLoginId(String loginId);
 
-    boolean existsByEmail(String email);
+  boolean existsByEmail(String email);
 
-    boolean existsByPhone(String phone);
+  boolean existsByPhone(String phone);
 
-    Optional<User> findByEmail(String email);
+  Optional<User> findByEmail(String email);
 
-    Optional<User> findByLoginId(String loginId);
+  Optional<User> findByLoginId(String loginId);
 
-    @Query("""
-        select distinct u
-        from User u
-        join u.roles r
-        where u.academy.id = :academyId
-          and (:roleType is null or r.name = :roleType)
-          and (:keyword is null 
-               or u.loginId like concat('%', :keyword, '%')
-               or u.phone like concat('%', :keyword, '%'))
-        """)
-    List<User> searchByAcademyAndRoleAndKeyword(Long academyId, RoleType roleType, String keyword);
+  @Query("""
+      select distinct u 
+      from User u
+      join u.userToRoles ur
+      join ur.role r
+      where u.academy.id = :academyId
+        and r.name = :roleType
+        and (
+              u.name like %:keyword%
+           or u.loginId like %:keyword%
+           or u.phone like %:keyword%
+           or u.email like %:keyword%
+        )
+      """)
+  List<User> searchByAcademyAndRoleAndKeyword(
+      @Param("academyId") Long academyId,
+      @Param("roleType") RoleType roleType,
+      @Param("keyword") String keyword
+  );
 }
