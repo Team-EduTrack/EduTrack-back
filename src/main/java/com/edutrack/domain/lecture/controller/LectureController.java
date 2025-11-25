@@ -49,7 +49,7 @@ public class LectureController {
   }
 
   //강의 목록 조회 (선생용)
-  @PreAuthorize(("hasRole('TEACHER') or hasRole('PRINCIPAL')"))
+  @PreAuthorize(("hasAnyRole('TEACHER', 'PRINCIPAL')"))
   @GetMapping
   public ResponseEntity<List<LectureForTeacherResponse>> getLecturesByTeacherId(Authentication authentication) {
     Long teacherId = (Long) authentication.getPrincipal();
@@ -58,7 +58,7 @@ public class LectureController {
   }
 
   //강의 상세 조회 (선생용)
-  @PreAuthorize(("hasRole('TEACHER') or hasRole('PRINCIPAL')"))
+  @PreAuthorize(("hasAnyRole('TEACHER', 'PRINCIPAL')"))
   @GetMapping("/{lectureId}")
   public ResponseEntity<LectureDetailForTeacherResponse> getLectureDetailForTeacherId(
       @PathVariable Long lectureId,
