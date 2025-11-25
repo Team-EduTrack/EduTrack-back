@@ -96,6 +96,15 @@ public class User {
         .anyMatch(userToRoles -> userToRoles.getRole().getName().name().equals(roleName));
   }
 
+  public void removeRoleByType(RoleType roleType) {
+    if (roleType == null) {
+      return;
+    }
+    userToRoles.removeIf(userToRole ->
+            userToRole.getRole() != null &&
+                    userToRole.getRole().getName() == roleType  // enum 비교
+    );
+  }
   // 유저에게 역할 추가 (user는 반드시 save 돼서 id가 있는 상태에서 호출하는 게 안전)
   public void addRole(Role role) {
     UserToRole userToRole = UserToRole.builder()
