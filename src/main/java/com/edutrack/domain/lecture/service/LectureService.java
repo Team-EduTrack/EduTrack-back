@@ -7,6 +7,9 @@ import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
+import com.edutrack.domain.user.entity.RoleType;
+import com.edutrack.domain.user.entity.User;
+import com.edutrack.global.exception.LectureAccessDeniedException;
 import com.edutrack.global.exception.LectureNotFoundException;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +61,21 @@ public class LectureService {
 
   //강의 상세 조회 (선생용)
   @Transactional(readOnly = true)
-  public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId) {
+  public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId, User user) {
     //강의 조회
     Lecture lecture = lectureRepository.findById(lectureId)
         .orElseThrow(() -> new LectureNotFoundException(lectureId));
+
+    //권한 검증
+    boolean isTeacherAndOwner = user.hasRole(RoleType.TEACHER)
+        && lecture.getTeacher().getId().equals(user.getId());
+
+    boolean isPrincipalOfAcademy = user.hasRole(RoleType.PRINCIPAL)
+        && lecture.getAcademy().getId().equals(user.getAcademy().getId());
+
+    if(!isTeacherAndOwner && !isPrincipalOfAcademy) {
+      throw new LectureAccessDeniedException(lectureId, user.getId());
+    }
 
     //강의에 배정된 수강생 리스트 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
