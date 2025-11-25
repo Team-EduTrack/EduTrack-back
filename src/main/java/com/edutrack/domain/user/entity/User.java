@@ -17,12 +17,10 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import jakarta.persistence.Entity;
-
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -69,7 +67,7 @@ public class User {
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 
-  @Builder.Default
+  @Default
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<UserToRole> userToRoles = new HashSet<>();
 
@@ -108,6 +106,7 @@ public class User {
 
     this.userToRoles.add(userToRole);
   }
+
 
   public void setAcademy(Academy academy) {
     this.academy = academy;
