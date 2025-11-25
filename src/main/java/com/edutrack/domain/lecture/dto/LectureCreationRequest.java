@@ -1,4 +1,4 @@
-package com.edutrack.api.lecture.dto;
+package com.edutrack.domain.lecture.dto;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;

@@ -1,6 +1,6 @@
-package com.edutrack.api.lecture.service;
+package com.edutrack.domain.lecture.service;
 
-import com.edutrack.api.lecture.dto.LectureCreationRequest;
+import com.edutrack.domain.lecture.dto.LectureCreationRequest;
 
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
