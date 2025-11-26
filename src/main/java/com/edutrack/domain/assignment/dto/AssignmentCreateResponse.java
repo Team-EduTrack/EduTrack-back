@@ -10,6 +10,4 @@ import java.time.LocalDateTime;
 public class AssignmentCreateResponse {
 
     private Long assignmentId;
-    private String title;
-    private LocalDateTime createdAt;
 }

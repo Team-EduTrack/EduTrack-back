@@ -70,9 +70,7 @@ public class AssignmentService {
 
         // 응답 DTO로 변환
         return new AssignmentCreateResponse(
-                saved.getId(),
-                saved.getTitle(),
-                saved.getCreatedAt()
+                saved.getId()
         );
     }
 }
