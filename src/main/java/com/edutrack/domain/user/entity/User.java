@@ -105,17 +105,24 @@ public class User {
                     userToRole.getRole().getName() == roleType  // enum 비교
     );
   }
-  // 유저에게 역할 추가 (user는 반드시 save 돼서 id가 있는 상태에서 호출하는 게 안전)
   public void addRole(Role role) {
+    if (role == null) {
+      return;
+    }
+
+    // 🔥 NPE 방어: userToRoles 가 null 이면 새 Set 로 초기화
+    if (this.userToRoles == null) {
+      this.userToRoles = new HashSet<>();
+    }
+
     UserToRole userToRole = UserToRole.builder()
-        .id(new UserToRoleId(this.id, role.getId()))
-        .user(this)
-        .role(role)
-        .build();
+            .id(new UserToRoleId(this.id, role.getId()))
+            .user(this)
+            .role(role)
+            .build();
 
     this.userToRoles.add(userToRole);
   }
-
 
   public void setAcademy(Academy academy) {
     this.academy = academy;

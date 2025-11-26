@@ -1,9 +1,8 @@
 package com.edutrack.global.config;
 
-import com.edutrack.domain.user.entity.Role;
-import com.edutrack.domain.user.entity.RoleType;
-import com.edutrack.domain.user.entity.User;
-import com.edutrack.domain.user.entity.UserStatus;
+import com.edutrack.domain.academy.Academy;
+import com.edutrack.domain.academy.AcademyRepository;
+import com.edutrack.domain.user.entity.*;
 import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,62 +11,100 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
-
-/**
- * 애플리케이션 시작 시점에 ADMIN 계정을 자동으로 생성하고 권한을 부여하는 초기화 컴포넌트입니다.
- * 이 계정은 Postman 검증 및 시스템 최고 권한 테스트에 사용됩니다.
- */
-@Component // 스프링 빈으로 등록
+@Component
 @RequiredArgsConstructor
 public class AdminInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AcademyRepository academyRepository;
     private final PasswordEncoder passwordEncoder;
-
 
     private static final String ADMIN_LOGIN_ID = "admin";
     private static final String ADMIN_PASSWORD = "admin@1234";
 
-    /**
-     * 서버 시작 후 단 1회 실행되는 메서드입니다.
-     */
     @Override
     @Transactional
     public void run(String... args) throws Exception {
 
+        // --------------------
+        // 1) ADMIN 계정 생성
+        // --------------------
         if (userRepository.findByLoginId(ADMIN_LOGIN_ID).isEmpty()) {
 
-
             Role adminRole = roleRepository.findByName(RoleType.ADMIN)
-                    .orElseThrow(() -> new IllegalStateException("ADMIN 역할이 DB에 존재하지 않습니다. data.sql을 확인하세요."));
+                    .orElseThrow(() -> new IllegalStateException("ADMIN 역할이 DB에 존재하지 않습니다."));
 
-
-            String encodedPassword = passwordEncoder.encode(ADMIN_PASSWORD);
-
-            // 3. ADMIN 사용자 생성
             User admin = User.builder()
                     .loginId(ADMIN_LOGIN_ID)
-                    .password(encodedPassword)
+                    .password(passwordEncoder.encode(ADMIN_PASSWORD))
                     .name("시스템관리자")
                     .phone("01012345678")
                     .email("admin@edutrack.com")
                     .emailVerified(true)
                     .userStatus(UserStatus.ACTIVE)
-//                    .roles(Set.of(adminRole)) -> 지금은 roles 필드가 없고 UserToRole 로 관리됨
                     .build();
 
-            // User 저장 -> DB 에서 ID 생성됨
-            User savedAdmin = userRepository.save(admin);
+            admin = userRepository.save(admin);
+            admin.addRole(adminRole);
+            userRepository.save(admin);
 
-            // 추가 -> UserToRole 엔티티 생성을 위한 addRole() 도메인 메서드 사용
-            // 기존 -> ManyToMany 방식이 아니라 지금 구조에서는 필수
-            savedAdmin.addRole(adminRole);
-
-            // 변경된 User (user_to_role 추가)를 다시 저장하여 매핑 완료
-            userRepository.save(savedAdmin);
-            System.out.println(">>> [System Init] ADMIN 계정 자동 생성 완료: ID=" + ADMIN_LOGIN_ID);
+            System.out.println(">>> ADMIN 계정 생성 완료");
         }
+
+        // --------------------
+        // 2) 테스트용 원장 + 학원 + 학생 생성
+        // --------------------
+
+        if (userRepository.existsByLoginId("teststudent")) {
+            System.out.println(">>> 테스트 계정 이미 존재함. 초기화 스킵.");
+            return;
+        }
+
+        // ROLE 조회
+        Role principalRole = roleRepository.findByName(RoleType.PRINCIPAL)
+                .orElseThrow(() -> new IllegalStateException("PRINCIPAL 역할 없음"));
+        Role studentRole = roleRepository.findByName(RoleType.STUDENT)
+                .orElseThrow(() -> new IllegalStateException("STUDENT 역할 없음"));
+
+        // (1) 원장 생성 — academy는 null로 시작
+        User principal = new User(
+                "principal1",
+                passwordEncoder.encode("1234"),
+                "테스트원장",
+                "01000000001",
+                "principal@test.com",
+                null
+        );
+        principal = userRepository.save(principal);
+
+        // (2) 학원 생성 (원장 FK 필요)
+        Academy academy = new Academy("테스트학원", "EDU-0001", principal);
+        academy = academyRepository.save(academy);
+
+        // (3) 원장에 academy 연결
+        principal.setAcademy(academy);
+        principal.addRole(principalRole);
+        userRepository.save(principal);
+
+        // (4) 학생 생성
+        User student = new User(
+                "teststudent",
+                passwordEncoder.encode("1234"),
+                "테스트학생",
+                "01000000000",
+                "student@test.com",
+                academy
+        );
+        student = userRepository.save(student);
+
+        // (5) 학생에게 STUDENT 역할 부여
+        student.addRole(studentRole);
+        userRepository.save(student);
+
+        System.out.println("🔥 테스트 학원 + 학생 만들기 완료");
+        System.out.println("학원코드 = EDU-0001");
+        System.out.println("원장 = principal1 / 1234");
+        System.out.println("학생 = teststudent / 1234");
     }
 }
