@@ -1,5 +1,10 @@
 package com.edutrack.global.config;
 
+import com.edutrack.domain.lecture.entity.Lecture;
+import com.edutrack.domain.lecture.entity.LectureStudent;
+import com.edutrack.domain.lecture.entity.LectureStudentId;
+import com.edutrack.domain.lecture.repository.LectureRepository;
+import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.user.entity.Role;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
@@ -25,6 +30,9 @@ public class AdminInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final LectureRepository lectureRepository;
+    private final LectureStudentRepository lectureStudentRepository;
 
 
     private static final String ADMIN_LOGIN_ID = "admin";
@@ -68,6 +76,33 @@ public class AdminInitializer implements CommandLineRunner {
             // 변경된 User (user_to_role 추가)를 다시 저장하여 매핑 완료
             userRepository.save(savedAdmin);
             System.out.println(">>> [System Init] ADMIN 계정 자동 생성 완료: ID=" + ADMIN_LOGIN_ID);
+        }
+
+        // ------------------------
+        // 테스트 학생 - 강의 매핑은 항상 실행
+        // 학생( id=1 )과 강의( id=1 ) 수강 매핑 생성
+        // ------------------------
+        try {
+            // 로그인 응답에서 user.id 가 1 이었으니까, 그 학생을 사용
+            User student = userRepository.findById(1L)
+                    .orElseThrow(() -> new IllegalStateException("id=1 학생이 존재하지 않습니다."));
+
+            Lecture lecture = lectureRepository.findById(1L)
+                    .orElseThrow(() -> new IllegalStateException("id=1 강의가 존재하지 않습니다."));
+
+            LectureStudentId id = new LectureStudentId(lecture.getId(), student.getId());
+
+            // 이미 있으면 또 안 넣도록 체크
+            if (!lectureStudentRepository.existsById(id)) {
+                LectureStudent lectureStudent = new LectureStudent(lecture, student);
+                lectureStudentRepository.save(lectureStudent);
+                System.out.println(">>> [System Init] 학생-강의 수강 매핑 생성 완료 (lectureId=1, userId=1)");
+            } else {
+                System.out.println(">>> [System Init] 학생-강의 수강 매핑 이미 존재 (lectureId=1, userId=1)");
+            }
+
+        } catch (Exception e) {
+            System.out.println(">>> [System Init] 수강 매핑 생성 실패/생략: " + e.getMessage());
         }
     }
 }
