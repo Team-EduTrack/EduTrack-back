@@ -5,6 +5,7 @@ import com.edutrack.domain.exam.dto.ExamCreationRequest;
 import com.edutrack.domain.exam.dto.QuestionRegistrationRequest;
 import com.edutrack.domain.exam.entity.Choice;
 import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.exam.entity.Question;
 import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.exam.repository.QuestionRepository;
@@ -60,6 +61,8 @@ public class ExamService {
 
         Exam exam = new Exam(
                 lecture,
+                request.getTitle(),
+                ExamStatus.DRAFT,
                 request.getStartDate(),
                 request.getEndDate(),
                 request.getDurationMinute()
