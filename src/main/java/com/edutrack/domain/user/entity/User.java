@@ -60,11 +60,13 @@ public class User {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "user_status", nullable = false, length = 20)
+
   private UserStatus userStatus;
 
   @CreationTimestamp
   @Column(name = "created_at")
   private LocalDateTime createdAt;
+
 
   @Builder.Default
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -98,7 +100,7 @@ public class User {
   public void removeRoleByType(RoleType roleType) {
     if (roleType == null) {
       return;
-    }
+  }
     userToRoles.removeIf(userToRole ->
             userToRole.getRole() != null &&
                     userToRole.getRole().getName() == roleType  // enum 비교
@@ -115,8 +117,8 @@ public class User {
     this.userToRoles.add(userToRole);
   }
 
-    public void setAcademy(Academy academy) {
-        this.academy = academy;
-    }
 
+  public void setAcademy(Academy academy) {
+    this.academy = academy;
+  }
 }
