@@ -137,9 +137,6 @@ public class ExamService {
         User principal = userRepository.findById(principalUserId)
                 .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
 
-        if (principal.hasRole(RoleType.ADMIN)) {
-            return true;
-        }
 
         if (principal.hasRole(com.edutrack.domain.user.entity.RoleType.PRINCIPAL) &&
                 exam.getLecture().getAcademy().getId().equals(principal.getAcademy().getId())) {

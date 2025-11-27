@@ -1,9 +1,6 @@
 package com.edutrack.domain.exam.controller;
 
-import com.edutrack.domain.exam.dto.ExamCreationRequest;
-import com.edutrack.domain.exam.dto.ExamCreationResponse;
-import com.edutrack.domain.exam.dto.QuestionIdResponse;
-import com.edutrack.domain.exam.dto.QuestionRegistrationRequest;
+import com.edutrack.domain.exam.dto.*;
 import com.edutrack.domain.exam.service.ExamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +55,19 @@ public class ExamController {
 
         return ResponseEntity.status(HttpStatus.OK).body(responses);
     }
+
+    //시험 상세조회
+    @GetMapping("/{examId}")
+    @PreAuthorize("hasRole('PRINCIPAL','TEACHER')")
+    public ResponseEntity<ExamDetailResponse> getExamDetail(
+            @PathVariable Long examId,
+            Authentication authentication){
+        Long principalUserId = (Long) authentication.getPrincipal();
+        ExamDetailResponse response = examService.getExamDetail(examId, principalUserId);
+
+        return ResponseEntity.ok(response);
+    }
+
 
 
 
