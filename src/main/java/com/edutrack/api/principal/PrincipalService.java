@@ -16,7 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -53,23 +52,23 @@ public class PrincipalService {
         Role principalRole = roleRepository.findByName(RoleType.PRINCIPAL)
                 .orElseThrow(() -> new IllegalArgumentException("PRINCIPAL 역할 데이터가 없습니다."));
 
-        User newPrincipal = User.builder()
-                .loginId(request.getLoginId())
-                .password(encodedPassword)
-                .name(request.getPrincipalName())
-                .phone(request.getPhone())
-                .email(request.getEmail())
-                .userStatus(UserStatus.ACTIVE)
-                .emailVerified(false)
-                .build();
+    User newPrincipal = User.builder()
+        .loginId(request.getLoginId())
+        .password(encodedPassword)
+        .name(request.getPrincipalName())
+        .phone(request.getPhone())
+        .email(request.getEmail())
+        .userStatus(UserStatus.ACTIVE)
+        .emailVerified(false)
+        .build();
 
-        User savedPrincipal = userRepository.save(newPrincipal);
+    User savedPrincipal = userRepository.save(newPrincipal);
 
-        //학원코드 생성
-        String uniqueCode = generateUniqueAcademyCode();
-        Academy newAcademy = new Academy(request
-                .getAcademyName(), uniqueCode, savedPrincipal);
-        Academy savedAcademy = academyRepository.save(newAcademy);
+    //학원코드 생성
+    String uniqueCode = generateUniqueAcademyCode();
+    Academy newAcademy = new Academy(request
+        .getAcademyName(), uniqueCode, savedPrincipal);
+    Academy savedAcademy = academyRepository.save(newAcademy);
 
     // 원장 역할 부여 (필요하면 여기서 추가 Role도 더 붙이면 됨)
     savedPrincipal.addRole(principalRole);
@@ -77,22 +76,21 @@ public class PrincipalService {
     savedPrincipal.setAcademy(savedAcademy);  // 원장을 학원에 매핑 (User도 양방향)
     userRepository.save(savedPrincipal);
 
-        return PrincipalRegistrationResponse.builder()
-                .id(savedAcademy.getId())
-                .academyName(savedAcademy.getName())
-                .academyCode(savedAcademy.getCode())
-                .build();
+    return PrincipalRegistrationResponse.builder()
+        .id(savedAcademy.getId())
+        .academyName(savedAcademy.getName())
+        .academyCode(savedAcademy.getCode())
+        .build();
+  }
 
-    }
-
-    private String generateUniqueAcademyCode() {
-        String code;
-        do {
-            int randomNum = ThreadLocalRandom.current().nextInt(0, 10000);
-            code = "EDU-" + randomNum;
-        }while(academyRepository.findByCode(code).isPresent());
-        return code;
-    }
+  private String generateUniqueAcademyCode() {
+    String code;
+    do {
+      int randomNum = ThreadLocalRandom.current().nextInt(0, 10000);
+      code = "EDU-" + randomNum;
+    } while (academyRepository.findByCode(code).isPresent());
+    return code;
+  }
 
 
 }
