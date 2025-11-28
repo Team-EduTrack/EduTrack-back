@@ -61,6 +61,7 @@ public class User {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "user_status", nullable = false, length = 20)
+
   private UserStatus userStatus;
 
   @CreationTimestamp
@@ -105,6 +106,7 @@ public class User {
                     userToRole.getRole().getName() == roleType  // enum 비교
     );
   }
+
   public void addRole(Role role) {
     if (role == null) {
       return;

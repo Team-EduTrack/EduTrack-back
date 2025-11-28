@@ -1,6 +1,5 @@
 package com.edutrack.domain.assignment.entity;
 
-
 import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
