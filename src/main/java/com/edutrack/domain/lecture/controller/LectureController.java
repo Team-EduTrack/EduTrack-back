@@ -4,6 +4,9 @@ import com.edutrack.domain.lecture.dto.LectureCreationRequest;
 import com.edutrack.domain.lecture.dto.LectureCreationResponse;
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureStudentAssignRequest;
+import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
+import com.edutrack.domain.lecture.dto.StudentSearchResponse;
 import com.edutrack.domain.lecture.service.LectureCreationService;
 import com.edutrack.domain.lecture.service.LectureService;
 import com.edutrack.domain.user.entity.User;
@@ -66,5 +69,40 @@ public class LectureController {
     Long teacherId = (Long) authentication.getPrincipal();
     LectureDetailForTeacherResponse lectureDetail = lectureService.getLectureDetailForTeacherId(lectureId, teacherId);
     return ResponseEntity.ok(lectureDetail);
-    }
   }
+
+  //강의를 듣는 학생 목록 조회 API
+  @PreAuthorize("hasRole('TEACHER') or hasRole('PRINCIPAL')")
+  @GetMapping("/{lectureId}/students")
+  public ResponseEntity<List<StudentSearchResponse>> getStudentsByLecture(
+      @PathVariable Long lectureId) {
+
+    List<StudentSearchResponse> students = lectureService.getStudentsByLecture(lectureId);
+    return ResponseEntity.ok(students);
+  }
+
+  //강의에 배정되지 않은 학생 검색 API
+  @PreAuthorize(("hasRole('TEACHER') or hasRole('PRINCIPAL')"))
+  @GetMapping("/{lectureId}/available-students")
+  public ResponseEntity<List<StudentSearchResponse>> getAvailableStudents(
+      @PathVariable Long lectureId,
+      @RequestParam String name) {
+  List<StudentSearchResponse> availableStudents = lectureService.getAvailableStudents(lectureId, name);
+    return ResponseEntity.ok(availableStudents);
+  }
+
+
+  //학생 강의 배정 API
+  @PreAuthorize("hasRole('TEACHER') or hasRole('PRINCIPAL')")
+  @PostMapping("/{lectureId}/students")
+  public ResponseEntity<LectureStudentAssignResponse> assignStudents(
+      @PathVariable Long lectureId,
+      @RequestBody @Valid LectureStudentAssignRequest request) {
+
+    LectureStudentAssignResponse response = lectureService.assignStudents(
+        lectureId, request.getStudentIds()
+    );
+
+    return ResponseEntity.ok(response);
+  }
+}
