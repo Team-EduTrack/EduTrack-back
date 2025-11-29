@@ -107,6 +107,14 @@ public class User {
   }
   // 유저에게 역할 추가 (user는 반드시 save 돼서 id가 있는 상태에서 호출하는 게 안전)
   public void addRole(Role role) {
+    if (role == null){
+      return;
+    }
+    // NPE방지
+    if (this.userToRoles == null){
+      this.userToRoles = new HashSet<>();
+    }
+
     UserToRole userToRole = UserToRole.builder()
         .id(new UserToRoleId(this.id, role.getId()))
         .user(this)
