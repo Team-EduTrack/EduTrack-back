@@ -151,11 +151,7 @@ public class LectureService {
         .orElseThrow(() -> new LectureNotFoundException(lectureId));
 
     //학원 소속의 전체 학생 조회
-    List<User> students = userRepository.findAllById(studentIds).stream()
-        .filter(s -> s.getAcademy().getId().equals(lecture.getAcademy().getId()))
-        .filter(s -> s.getUserToRoles().stream()
-            .anyMatch(ur -> ur.getRole().getName() == RoleType.STUDENT))
-        .toList();
+    List<User> students = getValidStudents(studentIds, lecture);
 
     //이미 배정된 학생 ID 목록 조회
     List<Long> assignedIds = lectureStudentRepository.findAllByLectureId(lectureId).stream()
@@ -173,12 +169,17 @@ public class LectureService {
         .toList();
 
 
-    try {
       lectureStudentRepository.saveAll(lectureStudents);
-    } catch (Exception e) {
-
-    }
 
     return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
+  }
+
+  private List<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
+    List<User> validStudents = userRepository.findAllById(studentIds).stream()
+        .filter(s -> s.getAcademy().getId().equals(lecture.getAcademy().getId()))
+        .filter(s -> s.getUserToRoles().stream()
+            .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT)))
+        .toList();
+    return validStudents;
   }
 }
