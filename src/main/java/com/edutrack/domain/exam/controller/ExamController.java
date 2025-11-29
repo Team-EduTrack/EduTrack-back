@@ -22,7 +22,7 @@ public class ExamController {
 
     //시험생성
     @PostMapping
-    @PreAuthorize("hasRole('PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('PRINCIPAL', 'TEACHER')")
     public ResponseEntity<ExamCreationResponse> createExam(
             @PathVariable Long lectureId,
             @Valid @RequestBody ExamCreationRequest request,
@@ -41,7 +41,7 @@ public class ExamController {
     //문제등록
 
     @PostMapping("/{examId}/mcq")
-    @PreAuthorize("hasRole('PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('PRINCIPAL', 'TEACHER')")
     public ResponseEntity<List<Long>> registerQuestions(
             @PathVariable Long examId,
             @Valid @RequestBody List<QuestionRegistrationRequest> requests){
