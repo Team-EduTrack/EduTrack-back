@@ -1,7 +1,7 @@
-package com.edutrack.api.principal;
+package com.edutrack.domain.principal;
 
-import com.edutrack.api.principal.dto.PrincipalRegistrationRequest;
-import com.edutrack.api.principal.dto.PrincipalRegistrationResponse;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,8 +1,8 @@
 package com.edutrack.api.principal;
 
-import com.edutrack.api.principal.dto.PrincipalRegistrationRequest;
+import com.edutrack.domain.principal.PrincipalService;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
 import com.edutrack.domain.user.entity.Role;
-import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.repository.RoleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,14 +40,14 @@ class PrincipalControllerTest {
 
     @BeforeEach
     void setUp() {
-        if (roleRepository.findByName(RoleType.PRINCIPAL).isEmpty()) {
-            roleRepository.save(new Role(RoleType.PRINCIPAL));
+        if (roleRepository.findByName("PRINCIPAL").isEmpty()) {
+            roleRepository.save(new Role("PRINCIPAL"));
         }
-        if (roleRepository.findByName(RoleType.TEACHER).isEmpty()) {
-            roleRepository.save(new Role(RoleType.TEACHER));
+        if (roleRepository.findByName("TEACHER").isEmpty()) {
+            roleRepository.save(new Role("TEACHER"));
         }
-        if (roleRepository.findByName(RoleType.STUDENT).isEmpty()) {
-            roleRepository.save(new Role(RoleType.STUDENT));
+        if (roleRepository.findByName("STUDENT").isEmpty()) {
+            roleRepository.save(new Role("STUDENT"));
         }
     }
 
