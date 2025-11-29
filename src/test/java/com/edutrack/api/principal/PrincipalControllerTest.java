@@ -1,6 +1,7 @@
 package com.edutrack.api.principal;
 
-import com.edutrack.api.principal.dto.PrincipalRegistrationRequest;
+import com.edutrack.domain.principal.PrincipalService;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
 import com.edutrack.domain.user.Role;
 import com.edutrack.domain.user.RoleRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
