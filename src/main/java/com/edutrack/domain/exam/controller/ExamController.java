@@ -21,7 +21,7 @@ public class ExamController {
 
     //시험생성
     @PostMapping
-    @PreAuthorize("hasRole('PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('PRINCIPAL', 'TEACHER')")
     public ResponseEntity<ExamCreationResponse> createExam(
             @PathVariable Long lectureId,
             @Valid @RequestBody ExamCreationRequest request,
@@ -40,7 +40,7 @@ public class ExamController {
     //문제등록
 
     @PostMapping("/{examId}/mcq")
-    @PreAuthorize("hasRole('PRINCIPAL', 'TEACHER')")
+    @PreAuthorize("hasAnyRole('PRINCIPAL', 'TEACHER')")
     public ResponseEntity<List<QuestionIdResponse>> registerQuestions(
             @PathVariable Long examId,
             @Valid @RequestBody List<QuestionRegistrationRequest> requests){
@@ -58,7 +58,7 @@ public class ExamController {
 
     //시험 상세조회
     @GetMapping("/{examId}")
-    @PreAuthorize("hasRole('PRINCIPAL','TEACHER')")
+    @PreAuthorize("hasAnyRole('PRINCIPAL','TEACHER')")
     public ResponseEntity<ExamDetailResponse> getExamDetail(
             @PathVariable Long examId,
             Authentication authentication){

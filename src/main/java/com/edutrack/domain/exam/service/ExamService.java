@@ -36,7 +36,6 @@ public class ExamService {
     private final LectureRepository lectureRepository;
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
-    private final AcademyRepository academyRepository;
 
     public Long createExam(Long principalUserId, ExamCreationRequest request) {
 
@@ -153,7 +152,6 @@ public class ExamService {
 
 
 
-    @Transactional(readOnly = true)
     private void validateDates(LocalDateTime start, LocalDateTime end) {
         if (start.isAfter(end)) {
             throw new ConflictException("시험 시작일이 종료일보다 늦을 수 없습니다.");
