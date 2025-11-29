@@ -16,8 +16,10 @@ import com.edutrack.global.exception.LectureAccessDeniedException;
 import com.edutrack.global.exception.LectureNotFoundException;
 import com.edutrack.global.exception.NotFoundException;
 import jakarta.validation.constraints.NotEmpty;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -131,7 +133,7 @@ public class LectureService {
   //배정 가능한 학생 조회
   List<User> candidates = userRepository.findAvailableStudents(
         academyId,
-        assignedIds.isEmpty() ? null : assignedIds,
+        assignedIds.isEmpty() ? Collections.emptyList() : assignedIds,
         name
   );
 
@@ -151,22 +153,27 @@ public class LectureService {
         .orElseThrow(() -> new LectureNotFoundException(lectureId));
 
     //학원 소속의 전체 학생 조회
-    List<User> students = getValidStudents(studentIds, lecture);
+    Set<User> students = getValidStudents(studentIds, lecture);
 
     //이미 배정된 학생 ID 목록 조회
-    List<Long> assignedIds = lectureStudentRepository.findAllByLectureId(lectureId).stream()
+    Set<Long> assignedIds = lectureStudentRepository.findAllByLectureId(lectureId).stream()
         .map(ls -> ls.getStudent().getId())
-        .toList();
+        .collect(Collectors.toSet());
 
     //배정 가능한 학생 필터링
-    List<User> newStudents = students.stream()
+    Set<User> newStudents = students.stream()
         .filter(s -> !assignedIds.contains(s.getId()))
-        .toList();
+        .collect(Collectors.toSet());
+
+    //newStudents가 비어있을 경우 saveAll 호출을 피하기 위한 안전장치
+    if(newStudents.isEmpty()) {
+      return new LectureStudentAssignResponse(lectureId, 0);
+    }
 
     //LectureStudent 테이블에 배정 정보 저장
-    List<LectureStudent> lectureStudents = newStudents.stream()
+    Set<LectureStudent> lectureStudents = newStudents.stream()
         .map(s -> new LectureStudent(lecture, s))
-        .toList();
+        .collect(Collectors.toSet());
 
 
       lectureStudentRepository.saveAll(lectureStudents);
@@ -174,12 +181,11 @@ public class LectureService {
     return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
   }
 
-  private List<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
-    List<User> validStudents = userRepository.findAllById(studentIds).stream()
+  private Set<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
+    return userRepository.findAllById(studentIds).stream()
         .filter(s -> s.getAcademy().getId().equals(lecture.getAcademy().getId()))
         .filter(s -> s.getUserToRoles().stream()
             .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT)))
-        .toList();
-    return validStudents;
+        .collect(Collectors.toSet());
   }
 }
