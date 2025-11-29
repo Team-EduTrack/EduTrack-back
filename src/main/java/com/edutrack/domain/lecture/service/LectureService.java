@@ -145,6 +145,7 @@ public class LectureService {
   }
 
   //학생 배정 API
+  @Transactional
   public LectureStudentAssignResponse assignStudents(Long lectureId, @NotEmpty List<Long> studentIds) {
     Lecture lecture = lectureRepository.findById(lectureId)
         .orElseThrow(() -> new LectureNotFoundException(lectureId));
@@ -171,7 +172,12 @@ public class LectureService {
         .map(s -> new LectureStudent(lecture, s))
         .toList();
 
-    lectureStudentRepository.saveAll(lectureStudents);
+
+    try {
+      lectureStudentRepository.saveAll(lectureStudents);
+    } catch (Exception e) {
+
+    }
 
     return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
   }

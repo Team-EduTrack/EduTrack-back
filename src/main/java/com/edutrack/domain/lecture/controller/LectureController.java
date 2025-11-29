@@ -72,7 +72,7 @@ public class LectureController {
   }
 
   //강의를 듣는 학생 목록 조회 API
-  @PreAuthorize("hasRole('TEACHER') or hasRole('PRINCIPAL')")
+  @PreAuthorize("hasAnyRole('TEACHER', 'PRINCIPAL')")
   @GetMapping("/{lectureId}/students")
   public ResponseEntity<List<StudentSearchResponse>> getStudentsByLecture(
       @PathVariable Long lectureId) {
@@ -82,7 +82,7 @@ public class LectureController {
   }
 
   //강의에 배정되지 않은 학생 검색 API
-  @PreAuthorize(("hasRole('TEACHER') or hasRole('PRINCIPAL')"))
+  @PreAuthorize("hasAnyRole('TEACHER', 'PRINCIPAL')")
   @GetMapping("/{lectureId}/available-students")
   public ResponseEntity<List<StudentSearchResponse>> getAvailableStudents(
       @PathVariable Long lectureId,
@@ -93,7 +93,7 @@ public class LectureController {
 
 
   //학생 강의 배정 API
-  @PreAuthorize("hasRole('TEACHER') or hasRole('PRINCIPAL')")
+  @PreAuthorize("hasAnyRole('TEACHER', 'PRINCIPAL')")
   @PostMapping("/{lectureId}/students")
   public ResponseEntity<LectureStudentAssignResponse> assignStudents(
       @PathVariable Long lectureId,
@@ -102,7 +102,6 @@ public class LectureController {
     LectureStudentAssignResponse response = lectureService.assignStudents(
         lectureId, request.getStudentIds()
     );
-
     return ResponseEntity.ok(response);
   }
 }
