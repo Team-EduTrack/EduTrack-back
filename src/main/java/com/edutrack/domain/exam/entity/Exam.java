@@ -22,6 +22,14 @@ public class Exam {
     @JoinColumn(name = "lecture_id", nullable = false)
     private Lecture lecture;
 
+    @Column(length = 100, nullable = false)
+    private String title;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ExamStatus status;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -39,8 +47,10 @@ public class Exam {
     @Column(name = "duration_minute")
     private Integer durationMinute;
 
-    public Exam(Lecture lecture, LocalDateTime startDate, LocalDateTime endDate, Integer durationMinute) {
+    public Exam(Lecture lecture, String title, ExamStatus status, LocalDateTime startDate, LocalDateTime endDate, Integer durationMinute) {
         this.lecture = lecture;
+        this.title = title;
+        this.status = status;
         this.startDate = startDate;
         this.endDate = endDate;
         this.durationMinute = durationMinute;

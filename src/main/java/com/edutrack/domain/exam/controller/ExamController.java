@@ -1,8 +1,6 @@
 package com.edutrack.domain.exam.controller;
 
-import com.edutrack.domain.exam.dto.ExamCreationRequest;
-import com.edutrack.domain.exam.dto.ExamCreationResponse;
-import com.edutrack.domain.exam.dto.QuestionRegistrationRequest;
+import com.edutrack.domain.exam.dto.*;
 import com.edutrack.domain.exam.service.ExamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -42,14 +41,33 @@ public class ExamController {
 
     @PostMapping("/{examId}/mcq")
     @PreAuthorize("hasAnyRole('PRINCIPAL', 'TEACHER')")
-    public ResponseEntity<List<Long>> registerQuestions(
+    public ResponseEntity<List<QuestionIdResponse>> registerQuestions(
             @PathVariable Long examId,
             @Valid @RequestBody List<QuestionRegistrationRequest> requests){
 
         List<Long> questionIds = examService.registerQuestions(examId, requests);
 
-        return ResponseEntity.status(HttpStatus.OK).body(questionIds);
+        List<QuestionIdResponse> responses =questionIds.stream()
+                .map(id -> QuestionIdResponse.builder()
+                        .questionId(id)
+                        .build())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(HttpStatus.OK).body(responses);
     }
+
+    //시험 상세조회
+    @GetMapping("/{examId}")
+    @PreAuthorize("hasAnyRole('PRINCIPAL','TEACHER')")
+    public ResponseEntity<ExamDetailResponse> getExamDetail(
+            @PathVariable Long examId,
+            Authentication authentication){
+        Long principalUserId = (Long) authentication.getPrincipal();
+        ExamDetailResponse response = examService.getExamDetail(examId, principalUserId);
+
+        return ResponseEntity.ok(response);
+    }
+
 
 
 

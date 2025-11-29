@@ -2,9 +2,11 @@ package com.edutrack.domain.exam.service;
 
 import com.edutrack.domain.academy.AcademyRepository;
 import com.edutrack.domain.exam.dto.ExamCreationRequest;
+import com.edutrack.domain.exam.dto.ExamDetailResponse;
 import com.edutrack.domain.exam.dto.QuestionRegistrationRequest;
 import com.edutrack.domain.exam.entity.Choice;
 import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.exam.entity.Question;
 import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.exam.repository.QuestionRepository;
@@ -59,6 +61,8 @@ public class ExamService {
 
         Exam exam = new Exam(
                 lecture,
+                request.getTitle(),
+                ExamStatus.DRAFT,
                 request.getStartDate(),
                 request.getEndDate(),
                 request.getDurationMinute()
@@ -108,6 +112,44 @@ public class ExamService {
 
         return saved.stream().map(Question::getId).collect(Collectors.toList());
     }
+
+    //시험 상세조회로직
+
+    @Transactional(readOnly = true)
+    public ExamDetailResponse getExamDetail(Long examId, Long principalUserId) {
+        //시험 조회
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new RuntimeException("지정된 시험을 찾을 수 없습니다. ID : "+ examId));
+
+        if (!isExamOwner(exam, principalUserId)) {
+            throw new ForbiddenException("해당 시험 상세 정보를 조회할 권한이 없습니다.");
+        }
+
+        // 문제 목록 조회
+        List<Question> questions = questionRepository.findByExamId(examId);
+
+        return ExamDetailResponse.of(exam, questions);
+    }
+
+    @Transactional(readOnly = true)
+    private boolean isExamOwner(Exam exam, Long principalUserId) {
+        User principal = userRepository.findById(principalUserId)
+                .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
+
+
+        if (principal.hasRole(com.edutrack.domain.user.entity.RoleType.PRINCIPAL) &&
+                exam.getLecture().getAcademy().getId().equals(principal.getAcademy().getId())) {
+            return true;
+        }
+
+        if (principal.hasRole(com.edutrack.domain.user.entity.RoleType.TEACHER) &&
+                exam.getLecture().getTeacher().getId().equals(principalUserId)) {
+            return true;
+        }
+
+        return false;
+    }
+
 
 
     private void validateDates(LocalDateTime start, LocalDateTime end) {
