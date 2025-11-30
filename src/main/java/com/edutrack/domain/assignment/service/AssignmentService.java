@@ -2,6 +2,7 @@ package com.edutrack.domain.assignment.service;
 
 import com.edutrack.domain.assignment.dto.AssignmentCreateRequest;
 import com.edutrack.domain.assignment.dto.AssignmentCreateResponse;
+import com.edutrack.domain.assignment.dto.AssignmentListResponse;
 import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
@@ -9,9 +10,14 @@ import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.edutrack.global.exception.NotFoundException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +29,7 @@ public class AssignmentService {
 
     /**
      * 과제 생성
+     *
      * @param academyId 학원 ID (URL path)
      * @param teacherId 로그인한 강사 ID
      */
@@ -72,5 +79,36 @@ public class AssignmentService {
         return new AssignmentCreateResponse(
                 saved.getId()
         );
+    }
+
+    /**
+     * 학생용 – 특정 강의의 과제 리스트 조회
+     * 제목 + 시작/종료 날짜만 반환
+     */
+    @Transactional(readOnly = true)
+    public List<AssignmentListResponse> getAssignmentsForLecture(
+            Long academyId,
+            Long lectureId
+    ) {
+        //강의 존재 & 학원 소속 검증
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new NotFoundException("지정된 강의를 찾을 수 없습니다. ID: " + lectureId));
+
+        if (!lecture.getAcademy().getId().equals(academyId)) {
+            throw new ForbiddenException("해당 학원에 속하지 않은 강의입니다.");
+        }
+
+        //강의에 속한 과제 조회
+        List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
+
+        //제목 + 날짜만 담아서 반환
+        return assignments.stream()
+                .map(a -> AssignmentListResponse.builder()
+                        .assignmentId(a.getId())
+                        .title(a.getTitle())
+                        .startDate(a.getStartDate())
+                        .endDate(a.getEndDate())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
