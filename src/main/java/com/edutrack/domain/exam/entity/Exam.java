@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "exam")
@@ -47,7 +49,11 @@ public class Exam {
     @Column(name = "duration_minute")
     private Integer durationMinute;
 
-    public Exam(Lecture lecture, String title, ExamStatus status, LocalDateTime startDate, LocalDateTime endDate, Integer durationMinute) {
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Question> questions = new ArrayList<>();
+
+    public Exam(Lecture lecture, String title, ExamStatus status, LocalDateTime startDate, LocalDateTime endDate
+                , Integer durationMinute) {
         this.lecture = lecture;
         this.title = title;
         this.status = status;
