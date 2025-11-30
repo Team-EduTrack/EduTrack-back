@@ -34,9 +34,9 @@ public class LectureStudent {
 
     @Builder
     public LectureStudent(Lecture lecture, User student) {
-        this.id = new LectureStudentId(lecture.getId(), student.getId());
-        this.lecture = lecture;
-        this.student = student;
-        this.createdAt = LocalDateTime.now();
+      this.id = new LectureStudentId(lecture.getId(), student.getId());
+      this.lecture = lecture;
+      this.student = student;
+      this.createdAt = LocalDateTime.now();
     }
 }
