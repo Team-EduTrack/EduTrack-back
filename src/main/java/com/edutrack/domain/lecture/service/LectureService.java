@@ -19,6 +19,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -47,13 +48,8 @@ public class LectureService {
     //강사의 강의 목록 조회
     List<Lecture> lectures = lectureRepository.findAllByTeacherId(teacherId);
 
-    //강의 ID 목록 추출
-    List<Long> lectureIds = lectures.stream()
-        .map(Lecture::getId)
-        .toList();
-
     // Batch 조회를 통한 해당 강의들의 모든 수강생 수 조회
-    List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureIdIn(lectureIds);
+    List<LectureStudent> lectureStudents = findLectureStudentByLectureId(lectures);
 
     // 강의별 수강생수 조회
     Map<Long, Long> studentCountMap = lectureStudents.stream()
@@ -108,11 +104,7 @@ public class LectureService {
 
     // StudentSearchResponse로 매핑
     return lectureStudents.stream()
-        .map(ls -> StudentSearchResponse.builder()
-            .studentId(ls.getStudent().getId())
-            .name(ls.getStudent().getName())
-            .phone(ls.getStudent().getPhone())
-            .build())
+        .map(ls -> toDto(ls.getStudent()))
         .toList();
   }
 
@@ -125,24 +117,29 @@ public class LectureService {
 
     Long academyId = lecture.getAcademy().getId();
 
-  //이미 배정된 학생 ID 조회
+    //이미 배정된 학생 ID 조회
     List<Long> assignedIds = lectureStudentRepository.findAllByLectureId((lectureId))
         .stream().map(ls -> ls.getStudent().getId())
         .toList();
 
-  //배정 가능한 학생 조회
-  List<User> candidates = userRepository.findAvailableStudents(
+    //배정 가능한 학생 조회
+    List<User> candidates = userRepository.findAvailableStudents(
         academyId,
         assignedIds.isEmpty() ? Collections.emptyList() : assignedIds,
         name
-  );
+    );
+
+    //문자열 기반 필터링, name이 null 일 경우 모든 배정 가능한 학생 반환
+    if(name != null && !name.isEmpty()) {
+    String lowerName = name.toLowerCase();
+    candidates = candidates.stream()
+        .filter(u -> u.getName() != null && u.getName().toLowerCase().contains(lowerName))
+        .toList();
+    }
 
     return candidates.stream()
-        .map(u -> StudentSearchResponse.builder()
-        .studentId(u.getId())
-          .name(u.getName())
-          .phone(u.getPhone())
-          .build())
+        .filter(this::isStudent)
+        .map(this::toDto)
       .toList();
   }
 
@@ -184,8 +181,28 @@ public class LectureService {
   private Set<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
     return userRepository.findAllById(studentIds).stream()
         .filter(s -> s.getAcademy().getId().equals(lecture.getAcademy().getId()))
-        .filter(s -> s.getUserToRoles().stream()
-            .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT)))
+        .filter(this::isStudent)
         .collect(Collectors.toSet());
+  }
+
+  private boolean isStudent(User user) {
+    return user.getUserToRoles().stream()
+        .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT));
+  }
+
+  private List<LectureStudent> findLectureStudentByLectureId(List<Lecture> lectures) {
+    List<Long> ids = lectures.stream()
+        .map(Lecture::getId)
+        .filter(Objects::nonNull)
+        .toList();
+    return ids.isEmpty() ? Collections.emptyList() : lectureStudentRepository.findAllByLectureIdIn(ids);
+  }
+
+  private StudentSearchResponse toDto(User user) {
+    return StudentSearchResponse.builder()
+        .studentId(user.getId())
+        .name(user.getName())
+        .phone(user.getPhone())
+        .build();
   }
 }
