@@ -10,6 +10,6 @@ public class AssignmentListResponse {
 
     private final Long assignmentId;
     private final String title;
-    private final LocalDateTime startDate;
-    private final LocalDateTime endDate;
+    private final LocalDateTime endDate;              // 마감일
+    private final AssignmentSubmissionStatus status;  // 미제출 / 제출완료
 }

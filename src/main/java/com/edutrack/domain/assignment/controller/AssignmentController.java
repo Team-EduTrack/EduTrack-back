@@ -44,10 +44,11 @@ public class AssignmentController {
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<AssignmentListResponse>> getAssignmentsForLecture(
             @PathVariable Long academyId,
-            @PathVariable Long lectureId
+            @PathVariable Long lectureId,
+            @AuthenticationPrincipal Long studentId
     ) {
         List<AssignmentListResponse> responses =
-                assignmentService.getAssignmentsForLecture(academyId, lectureId);
+                assignmentService.getAssignmentsForLecture(academyId, studentId, lectureId);
 
         return ResponseEntity.ok(responses);
     }

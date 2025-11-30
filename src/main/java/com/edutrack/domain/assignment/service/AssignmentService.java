@@ -1,10 +1,13 @@
 package com.edutrack.domain.assignment.service;
 
+import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.assignment.dto.AssignmentCreateRequest;
 import com.edutrack.domain.assignment.dto.AssignmentCreateResponse;
 import com.edutrack.domain.assignment.dto.AssignmentListResponse;
+import com.edutrack.domain.assignment.dto.AssignmentSubmissionStatus;
 import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.user.entity.RoleType;
@@ -26,7 +29,7 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final LectureRepository lectureRepository;
     private final UserRepository userRepository;
-
+    private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     /**
      * 과제 생성
      *
@@ -88,27 +91,38 @@ public class AssignmentService {
     @Transactional(readOnly = true)
     public List<AssignmentListResponse> getAssignmentsForLecture(
             Long academyId,
+            Long studentId,
             Long lectureId
     ) {
-        //강의 존재 & 학원 소속 검증
+        //강의 존재 확인
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new NotFoundException("지정된 강의를 찾을 수 없습니다. ID: " + lectureId));
 
-        if (!lecture.getAcademy().getId().equals(academyId)) {
+        //학원 검증
+        Academy academy = lecture.getAcademy();
+        if (!academy.getId().equals(academyId)) {
             throw new ForbiddenException("해당 학원에 속하지 않은 강의입니다.");
         }
 
-        //강의에 속한 과제 조회
+        //강의에 속한 과제 목록 조회
         List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
 
-        //제목 + 날짜만 담아서 반환
+        //각 과제마다 제출 여부 조회 → status 세팅
         return assignments.stream()
-                .map(a -> AssignmentListResponse.builder()
-                        .assignmentId(a.getId())
-                        .title(a.getTitle())
-                        .startDate(a.getStartDate())
-                        .endDate(a.getEndDate())
-                        .build())
+                .map(assignment -> {
+                    boolean submitted = assignmentSubmissionRepository
+                            .existsByAssignment_IdAndStudent_Id(assignment.getId(), studentId);
+
+                    AssignmentSubmissionStatus status =
+                            submitted ? AssignmentSubmissionStatus.SUBMITTED : AssignmentSubmissionStatus.NOT_SUBMITTED;
+
+                    return AssignmentListResponse.builder()
+                            .assignmentId(assignment.getId())
+                            .title(assignment.getTitle())
+                            .endDate(assignment.getEndDate())
+                            .status(status)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 }
