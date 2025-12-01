@@ -23,34 +23,34 @@ import java.util.concurrent.ThreadLocalRandom;
 @Transactional
 public class PrincipalService {
 
-  private final UserRepository userRepository;
-  private final AcademyRepository academyRepository;
-  private final RoleRepository roleRepository;
-  private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
+    private final AcademyRepository academyRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-  public PrincipalRegistrationResponse registerAcademy(PrincipalRegistrationRequest request) {
+    public PrincipalRegistrationResponse registerAcademy(PrincipalRegistrationRequest request) {
 
-    //비밀번호 일치검사
-    if (!request.getPassword()
-        .equals(request.getPasswordConfirm())) {
-      throw new IllegalArgumentException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
-    }
+        //비밀번호 일치검사
+        if (!request.getPassword()
+                .equals(request.getPasswordConfirm())) {
+            throw new IllegalArgumentException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+        }
 
-    //중복 데이터 검사
-    if (userRepository.existsByLoginId(request.getLoginId())) {
-      throw new ConflictException("이미 존재하는 아이디입니다.");
-    }
-    if (userRepository.existsByPhone(request.getPhone())) {
-      throw new ConflictException("이미 등록된 전화번호입니다.");
-    }
-    if (userRepository.existsByEmail(request.getEmail())) {
-      throw new ConflictException("이미 등록된 이메일입니다.");
-    }
+        //중복 데이터 검사
+        if (userRepository.existsByLoginId(request.getLoginId())) {
+            throw new ConflictException("이미 존재하는 아이디입니다.");
+        }
+        if (userRepository.existsByPhone(request.getPhone())) {
+            throw new ConflictException("이미 등록된 전화번호입니다.");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ConflictException("이미 등록된 이메일입니다.");
+        }
 
-    String encodedPassword = passwordEncoder.encode(request.getPassword());
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-    Role principalRole = roleRepository.findByName(RoleType.PRINCIPAL)
-        .orElseThrow(() -> new IllegalArgumentException("PRINCIPAL 역할 데이터가 없습니다."));
+        Role principalRole = roleRepository.findByName(RoleType.PRINCIPAL)
+                .orElseThrow(() -> new IllegalArgumentException("PRINCIPAL 역할 데이터가 없습니다."));
 
     User newPrincipal = User.builder()
         .loginId(request.getLoginId())
