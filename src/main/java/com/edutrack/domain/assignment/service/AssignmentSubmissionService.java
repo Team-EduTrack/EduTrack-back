@@ -1,5 +1,9 @@
 package com.edutrack.domain.assignment.service;
 
+import com.edutrack.domain.assignment.dto.AssignmentSubmitRequest;
+import com.edutrack.domain.assignment.dto.AssignmentSubmitResponse;
+import com.edutrack.domain.assignment.dto.PresignedUrlRequest;
+import com.edutrack.domain.assignment.dto.PresignedUrlResponse;
 import com.edutrack.domain.assignment.dto.*;
 import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.entity.AssignmentSubmission;
@@ -20,53 +24,53 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 @RequiredArgsConstructor
 public class AssignmentSubmissionService {
 
-    private final S3PresignedService s3PresignedService;
-    private final AssignmentRepository assignmentRepository;
-    private final AssignmentSubmissionRepository assignmentSubmissionRepository;
-    private final UserRepository userRepository;
+  private final S3PresignedService s3PresignedService;
+  private final AssignmentRepository assignmentRepository;
+  private final AssignmentSubmissionRepository assignmentSubmissionRepository;
+  private final UserRepository userRepository;
 
-    private final String BUCKET_URL = "https://edutrack-bucket.s3.amazonaws.com/";
+  private final String BUCKET_URL = "https://edutrack-bucket.s3.amazonaws.com/";
+
+  // Presigned URL 생성
+  public PresignedUrlResponse createPresignedUrl(Long assignmentId, PresignedUrlRequest request) {
+
+    String dir = "assignments/" + assignmentId;
 
     // Presigned URL 생성
-    public PresignedUrlResponse createPresignedUrl(Long assignmentId, PresignedUrlRequest request) {
+    PresignedPutObjectRequest presigned = s3PresignedService.createPresignedUrl(dir,
+        request.getFileName());
 
-        String dir = "assignments/" + assignmentId;
+    // key 추출
+    String key = presigned.url().getPath().substring(1);
 
-        // Presigned URL 생성
-        PresignedPutObjectRequest presigned = s3PresignedService.createPresignedUrl(dir,
-                request.getFileName());
+    return new PresignedUrlResponse(
+        presigned.url().toString(), key
+    );
 
-        // key 추출
-        String key = presigned.url().getPath().substring(1);
+  }
 
-        return new PresignedUrlResponse(
-                presigned.url().toString(), key
-        );
+  // 과제 제출 저장
+  @Transactional
+  public AssignmentSubmitResponse submit(Long assignmentId, Long studentId, AssignmentSubmitRequest request) {
 
-    }
+    Assignment assignment = assignmentRepository.findById(assignmentId)
+        .orElseThrow(() -> new RuntimeException("과제가 존재하지 않습니다."));
 
-    // 과제 제출 저장
-    @Transactional
-    public AssignmentSubmitResponse submit(Long assignmentId, Long studentId, AssignmentSubmitRequest request) {
-
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("과제가 존재하지 않습니다."));
-
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("학생이 존재하지 않습니다."));
+    User student = userRepository.findById(studentId)
+        .orElseThrow(() -> new RuntimeException("학생이 존재하지 않습니다."));
 
         if (assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(assignmentId, studentId)) {
             throw new RuntimeException("이미 제출한 과제입니다.");
         }
 
-        // S3 접근 가능한 최종 URL
-        String fileUrl = BUCKET_URL + request.getFileKey();
+    // S3 접근 가능한 최종 URL
+    String fileUrl = BUCKET_URL + request.getFileKey();
 
-        AssignmentSubmission submission = new AssignmentSubmission(
-                assignment,
-                student,
-                fileUrl
-        );
+    AssignmentSubmission submission = new AssignmentSubmission(
+        assignment,
+        student,
+        fileUrl
+    );
 
         assignmentSubmissionRepository.save(submission);
         return new AssignmentSubmitResponse(
