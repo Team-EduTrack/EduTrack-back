@@ -1,5 +1,6 @@
 package com.edutrack.domain.assignment.service;
 
+import com.edutrack.domain.assignment.dto.AssignmentSubmissionListResponse;
 import com.edutrack.domain.assignment.dto.AssignmentSubmitRequest;
 import com.edutrack.domain.assignment.dto.AssignmentSubmitResponse;
 import com.edutrack.domain.assignment.dto.PresignedUrlRequest;
@@ -11,6 +12,7 @@ import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.s3.S3PresignedService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +49,8 @@ public class AssignmentSubmissionService {
 
   // 과제 제출 저장
   @Transactional
-  public AssignmentSubmitResponse submit(Long assignmentId, Long studentId, AssignmentSubmitRequest request) {
+  public AssignmentSubmitResponse submit(Long assignmentId, Long studentId,
+      AssignmentSubmitRequest request) {
 
     Assignment assignment = assignmentRepository.findById(assignmentId)
         .orElseThrow(() -> new RuntimeException("과제가 존재하지 않습니다."));
@@ -77,5 +80,35 @@ public class AssignmentSubmissionService {
 
 
   }
+
+  @Transactional(readOnly = true)
+  public List<AssignmentSubmissionListResponse> getSubmissionsForTeacher(
+      Long assignmentId,
+      Long teacherId) {
+
+    // 과제가 존재하는지 확인
+    Assignment assignment = assignmentRepository.findById(assignmentId)
+        .orElseThrow(() -> new RuntimeException("과제가 존재하지 않습니다."));
+
+    // 이 과제를 만든 강사가 맞는지 검증
+    if (!assignment.getTeacher().getId().equals(teacherId)) {
+      throw new RuntimeException("해당 과제의 강사만 제출 리스트를 조회할 수 있습니다.");
+    }
+
+    List<AssignmentSubmission> submissions = assignmentSubmissionRepository.findAllByAssignmentId(
+        assignmentId);
+
+    // dto 변환
+    return submissions.stream()
+        .map(submission -> new AssignmentSubmissionListResponse(
+            submission.getId(),
+            submission.getStudent().getId(),
+            submission.getStudent().getName(),
+            submission.getFilePath(),
+            submission.getCreatedAt()
+        ))
+        .toList();
+  }
+
 
 }
