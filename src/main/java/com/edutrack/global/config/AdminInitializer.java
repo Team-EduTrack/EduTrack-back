@@ -2,6 +2,11 @@ package com.edutrack.global.config;
 
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
+import com.edutrack.domain.lecture.entity.Lecture;
+import com.edutrack.domain.lecture.entity.LectureStudent;
+import com.edutrack.domain.lecture.entity.LectureStudentId;
+import com.edutrack.domain.lecture.repository.LectureRepository;
+import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.user.entity.*;
 import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.UserRepository;
@@ -10,6 +15,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @RequiredArgsConstructor
@@ -19,9 +26,12 @@ public class AdminInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final AcademyRepository academyRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LectureRepository lectureRepository;
+    private final LectureStudentRepository lectureStudentRepository;
 
     private static final String ADMIN_LOGIN_ID = "admin";
     private static final String ADMIN_PASSWORD = "admin@1234";
+    private static final Logger logger = LoggerFactory.getLogger(AdminInitializer.class);
 
     @Override
     @Transactional
@@ -49,15 +59,17 @@ public class AdminInitializer implements CommandLineRunner {
             admin.addRole(adminRole);
             userRepository.save(admin);
 
-            System.out.println(">>> ADMIN 계정 생성 완료");
+            logger.info(">>> ADMIN 계정 생성 완료");
         }
 
         // --------------------
         // 2) 테스트용 원장 + 학원 + 학생 생성
         // --------------------
 
-        if (userRepository.existsByLoginId("teststudent")) {
-            System.out.println(">>> 테스트 계정 이미 존재함. 초기화 스킵.");
+        if (userRepository.existsByLoginId("teststudent")
+            || userRepository.existsByEmail("student@test.com")
+            || userRepository.existsByPhone("01000000000")) {
+            logger.info(">>> 테스트 계정 이미 존재함. 초기화 스킵.");
             return;
         }
 
@@ -102,9 +114,32 @@ public class AdminInitializer implements CommandLineRunner {
         student.addRole(studentRole);
         userRepository.save(student);
 
-        System.out.println("🔥 테스트 학원 + 학생 만들기 완료");
-        System.out.println("학원코드 = EDU-0001");
-        System.out.println("원장 = principal1 / 1234");
-        System.out.println("학생 = teststudent / 1234");
+        createTestLectureMapping(student);
+
+        logger.info("🔥 테스트 학원 + 학생 만들기 완료");
+        logger.info("학원코드 = EDU-0001");
+        logger.info("원장 = principal1 / 1234");
+        logger.info("학생 = teststudent / 1234");
+    }
+
+    /*
+     * 학생 - 강의 자동 매핑
+     */
+    private void createTestLectureMapping(User student) {
+        try {
+            Lecture lecture = lectureRepository.findById(1L).orElseThrow(() -> new IllegalStateException("강의 id =1 없음"));
+
+            LectureStudentId id = new LectureStudentId(lecture.getId(), student.getId());
+
+            if (!lectureStudentRepository.existsById(id)) {
+                LectureStudent lectureStudent = new LectureStudent(lecture, student);
+                lectureStudentRepository.save(lectureStudent);
+                logger.info("학생-강의 매핑 완료 (lectureId={}, studentId={})",
+                        lecture.getId(), student.getId());
+            }
+        } catch (Exception e) {
+            logger.warn("매핑 스킵 : {}",e.getMessage());
+        }
+
     }
 }
