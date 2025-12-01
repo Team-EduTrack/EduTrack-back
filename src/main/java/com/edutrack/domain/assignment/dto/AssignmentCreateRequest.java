@@ -1,12 +1,13 @@
 package com.edutrack.domain.assignment.dto;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class AssignmentCreateRequest {
 
     private Long lectureId;

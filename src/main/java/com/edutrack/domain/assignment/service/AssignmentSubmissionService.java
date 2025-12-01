@@ -55,7 +55,7 @@ public class AssignmentSubmissionService {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("학생이 존재하지 않습니다."));
 
-        if (assignmentSubmissionRepository.existsByAssignmentIdAndStudentId(assignmentId, studentId)) {
+        if (assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(assignmentId, studentId)) {
             throw new RuntimeException("이미 제출한 과제입니다.");
         }
 
@@ -136,10 +136,9 @@ public class AssignmentSubmissionService {
         }
 
 
-        boolean isPrincipal = teacher.hasRole(RoleType.PRINCIPAL);
         boolean isOwnerTeacher = assignment.getTeacher().getId().equals(teacherId);
 
-        if (!isPrincipal && !isOwnerTeacher) {
+        if (!isOwnerTeacher) {
             throw new ForbiddenException("해당 과제에 대한 조회 권한이 없습니다.");
         }
 

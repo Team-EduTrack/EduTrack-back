@@ -79,9 +79,9 @@ public class AssignmentService {
         Assignment saved = assignmentRepository.save(assignment);
 
         // 응답 DTO로 변환
-        return new AssignmentCreateResponse(
-                saved.getId()
-        );
+        return AssignmentCreateResponse.builder()
+                .assignmentId(saved.getId())
+                .build();
     }
 
     /**
