@@ -71,7 +71,7 @@ openApiGenerate {
         interfaceOnly        : "true",
         useSpringBoot3       : "true",
         javaVersion          : "17",
-        dateLibrary          : "java8",      // ← dataLibrary 말고 dateLibrary
+        dateLibrary          : "java8",
         useTags              : "true",
         useBeanValidation    : "true",
         performBeanValidation: "true",
