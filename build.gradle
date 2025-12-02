@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.7'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.17.0'
 }
 
 group = 'com.edutrack'
@@ -55,4 +56,26 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set("$rootDir/src/main/resources/openapi.yaml")
+    outputDir.set("$buildDir/generated")
+
+    apiPackage.set("com.edutrack.generated")
+    modelPackage.set("com.edutrack.generated.model")
+    invokerPackage.set("com.edutrack.generated.invoker")
+
+    configOptions.set([
+        interfaceOnly        : "true",
+        useSpringBoot3       : "true",
+        javaVersion          : "17",
+        dateLibrary          : "java8",      // ← dataLibrary 말고 dateLibrary
+        useTags              : "true",
+        useBeanValidation    : "true",
+        performBeanValidation: "true",
+        serializableModel    : "true",
+        openApiNullable      : "true"
+    ])
 }
