@@ -2,10 +2,10 @@ package com.edutrack.domain.user.service;
 
 import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
 import com.edutrack.domain.user.dto.VerifyEmailRequest;
-import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.entity.TempUser;
 import com.edutrack.domain.user.entity.UserEmailVerification;
+import com.edutrack.domain.user.repository.TempUserRepository;
 import com.edutrack.domain.user.repository.UserEmailVerificationRepository;
-import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.mail.MailSendService;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -18,22 +18,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class EmailVerificationServiceImpl implements EmailVerificationService {
 
-  private final UserRepository userRepository;
   private final UserEmailVerificationRepository userEmailVerificationRepository;
   private final MailSendService mailSendService;
+  private final TempUserRepository tempUserRepository;
 
   private static final int CODE_LENGTH = 6;
   private static final long CODE_EXPIRATION_MINUTES = 5;
 
   @Override
   public void sendVerificationCode(SendEmailVerificationRequest request) {
-    User user = userRepository.findByEmail(request.getEmail())
-        .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
+
+    TempUser tempUser = tempUserRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입 신청이 없습니다."));
 
     String code = generateCode();
 
     UserEmailVerification verification = UserEmailVerification.builder()
-        .user(user)
+        .email(tempUser.getEmail())
         .token(code)
         .verified(false)
         .build();
@@ -43,17 +44,17 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     String subject = "[EduTrack] 이메일 인증 코드 안내";
     String text = "인증 코드:" + code + "\n\n5분 이내에 입력해 주세요.";
 
-    mailSendService.sendMail(user.getEmail(), subject, text);
+    mailSendService.sendMail(tempUser.getEmail(), subject, text);
   }
 
   @Override
   public void verifyEmail(VerifyEmailRequest request) {
 
-    User user = userRepository.findByEmail((request.getEmail()))
-        .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다."));
+    TempUser tempUser = tempUserRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입 신청이 없습니다."));
 
     UserEmailVerification verification = userEmailVerificationRepository
-        .findTopByUserOrderByCreatedAtDesc(user)
+        .findTopByEmailOrderByCreatedAtDesc(request.getEmail())
         .orElseThrow(() -> new IllegalArgumentException("인증 정보가 존재하지 않습니다."));
 
     if (verification.isVerified()) {
@@ -69,7 +70,14 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
       throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
     }
 
+    // 인증 요청 엔티티 상태 업데이트 (verified = true)
     verification.markVerified();
+    // User 이메일 인증 완료 상태 변경
+    tempUser.markVerified();
+
+    // 변경된 TempUser & Verification 저장
+    userEmailVerificationRepository.save(verification);
+    tempUserRepository.save(tempUser);
   }
 
   private String generateCode() {
