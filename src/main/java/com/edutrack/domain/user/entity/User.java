@@ -20,9 +20,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import jakarta.persistence.Entity;
-
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -96,6 +93,7 @@ public class User {
 
   public void activate() {
     this.userStatus = UserStatus.ACTIVE;
+    this.createdAt = LocalDateTime.now();
   }
 
   // 역할 확인 (RoleType 기반)
@@ -115,11 +113,11 @@ public class User {
       return;
     }
     userToRoles.removeIf(userToRole ->
-        userToRole.getRole() != null &&
-            userToRole.getRole().getName() == roleType  // enum 비교
+            userToRole.getRole() != null &&
+                    userToRole.getRole().getName() == roleType  // enum 비교
     );
   }
-
+  // 유저에게 역할 추가 (user는 반드시 save 돼서 id가 있는 상태에서 호출하는 게 안전)
   public void addRole(Role role) {
     if (role == null) {
       return;
@@ -139,8 +137,8 @@ public class User {
     this.userToRoles.add(userToRole);
   }
 
-  public void setAcademy(Academy academy) {
-    this.academy = academy;
-  }
+    public void setAcademy(Academy academy) {
+        this.academy = academy;
+    }
 
 }

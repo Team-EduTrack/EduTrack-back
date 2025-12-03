@@ -39,14 +39,27 @@ public class Assignment {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Assignment(Lecture lecture, User teacher, String title, String description,
-                      LocalDateTime startDate, LocalDateTime endDate) {
-        this.lecture = lecture;
-        this.teacher = teacher;
-        this.title = title;
-        this.description = description;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.createdAt = LocalDateTime.now();
+    // ===== 생성 정적 메서드 =====
+    public static Assignment create(
+            Lecture lecture,
+            User teacher,
+            String title,
+            String description,
+            LocalDateTime startDate,
+            LocalDateTime endDate
+    ) {
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("과제 시작일은 종료일보다 늦을 수 없습니다.");
+        }
+
+        Assignment assignment = new Assignment();
+        assignment.lecture = lecture;
+        assignment.teacher = teacher;
+        assignment.title = title;
+        assignment.description = description;
+        assignment.startDate = startDate;
+        assignment.endDate = endDate;
+        assignment.createdAt = LocalDateTime.now();
+        return assignment;
     }
 }

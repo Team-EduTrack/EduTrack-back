@@ -3,16 +3,24 @@ package com.edutrack.domain.lecture.service;
 
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
+import com.edutrack.domain.lecture.dto.StudentSearchResponse;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.LectureAccessDeniedException;
 import com.edutrack.global.exception.LectureNotFoundException;
+import com.edutrack.global.exception.NotFoundException;
+import jakarta.validation.constraints.NotEmpty;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +32,7 @@ public class LectureService {
 
   private final LectureRepository lectureRepository;
   private final LectureStudentRepository lectureStudentRepository;
+  private final UserRepository userRepository;
 
   //강사의 ID로 강의 목록과 각 강의의 수강생 수 조회
 
@@ -39,13 +48,8 @@ public class LectureService {
     //강사의 강의 목록 조회
     List<Lecture> lectures = lectureRepository.findAllByTeacherId(teacherId);
 
-    //강의 ID 목록 추출
-    List<Long> lectureIds = lectures.stream()
-        .map(Lecture::getId)
-        .toList();
-
     // Batch 조회를 통한 해당 강의들의 모든 수강생 수 조회
-    List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureIdIn(lectureIds);
+    List<LectureStudent> lectureStudents = findLectureStudentByLectureId(lectures);
 
     // 강의별 수강생수 조회
     Map<Long, Long> studentCountMap = lectureStudents.stream()
@@ -61,20 +65,24 @@ public class LectureService {
 
   //강의 상세 조회 (선생용)
   @Transactional(readOnly = true)
-  public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId, User user) {
+  public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId, Long teacherId) {
     //강의 조회
     Lecture lecture = lectureRepository.findById(lectureId)
         .orElseThrow(() -> new LectureNotFoundException(lectureId));
 
-    //권한 검증
-    boolean isTeacherAndOwner = user.hasRole(RoleType.TEACHER)
-        && lecture.getTeacher().getId().equals(user.getId());
+    //강사 조회
+    User teacher = userRepository.findById(teacherId)
+        .orElseThrow(() -> new NotFoundException("선생님을 찾을 수 없습니다. ID=" + teacherId));
 
-    boolean isPrincipalOfAcademy = user.hasRole(RoleType.PRINCIPAL)
-        && lecture.getAcademy().getId().equals(user.getAcademy().getId());
+    //권한 검증
+    boolean isTeacherAndOwner = teacher.hasRole(RoleType.TEACHER)
+        && lecture.getTeacher().getId().equals(teacher.getId());
+
+    boolean isPrincipalOfAcademy = teacher.hasRole(RoleType.PRINCIPAL)
+        && lecture.getAcademy().getId().equals(teacher.getAcademy().getId());
 
     if(!isTeacherAndOwner && !isPrincipalOfAcademy) {
-      throw new LectureAccessDeniedException(lectureId, user.getId());
+      throw new LectureAccessDeniedException(lectureId, teacher.getId());
     }
 
     //강의에 배정된 수강생 리스트 조회
@@ -86,5 +94,115 @@ public class LectureService {
         lecture.getDescription(),
         lectureStudents
     );
+  }
+
+  //학생 목록 조회
+  @Transactional(readOnly = true)
+  public List<StudentSearchResponse> getStudentsByLecture(Long lectureId) {
+    // LectureStudent 테이블에서 lectureId에 배정된 학생 조회
+    List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
+
+    // StudentSearchResponse로 매핑
+    return lectureStudents.stream()
+        .map(ls -> toDto(ls.getStudent()))
+        .toList();
+  }
+
+  //배정 가능한 학생 조회
+  @Transactional(readOnly = true)
+  public List<StudentSearchResponse> getAvailableStudents(Long lectureId, String name) {
+
+    Lecture lecture = lectureRepository.findById(lectureId)
+      .orElseThrow(() -> new LectureNotFoundException(lectureId));
+
+    Long academyId = lecture.getAcademy().getId();
+
+    //이미 배정된 학생 ID 조회
+    List<Long> assignedIds = lectureStudentRepository.findAllByLectureId((lectureId))
+        .stream().map(ls -> ls.getStudent().getId())
+        .toList();
+
+    //배정 가능한 학생 조회
+    List<User> candidates = userRepository.findAvailableStudents(
+        academyId,
+        assignedIds.isEmpty() ? Collections.emptyList() : assignedIds,
+        name
+    );
+
+    //문자열 기반 필터링, name이 null 일 경우 모든 배정 가능한 학생 반환
+    if(name != null && !name.isEmpty()) {
+    String lowerName = name.toLowerCase();
+    candidates = candidates.stream()
+        .filter(u -> u.getName() != null && u.getName().toLowerCase().contains(lowerName))
+        .toList();
+    }
+
+    return candidates.stream()
+        .filter(this::isStudent)
+        .map(this::toDto)
+      .toList();
+  }
+
+  //학생 배정 API
+  @Transactional
+  public LectureStudentAssignResponse assignStudents(Long lectureId, @NotEmpty List<Long> studentIds) {
+    Lecture lecture = lectureRepository.findById(lectureId)
+        .orElseThrow(() -> new LectureNotFoundException(lectureId));
+
+    //학원 소속의 전체 학생 조회
+    Set<User> students = getValidStudents(studentIds, lecture);
+
+    //이미 배정된 학생 ID 목록 조회
+    Set<Long> assignedIds = lectureStudentRepository.findAllByLectureId(lectureId).stream()
+        .map(ls -> ls.getStudent().getId())
+        .collect(Collectors.toSet());
+
+    //배정 가능한 학생 필터링
+    Set<User> newStudents = students.stream()
+        .filter(s -> !assignedIds.contains(s.getId()))
+        .collect(Collectors.toSet());
+
+    //newStudents가 비어있을 경우 saveAll 호출을 피하기 위한 안전장치
+    if(newStudents.isEmpty()) {
+      return new LectureStudentAssignResponse(lectureId, 0);
+    }
+
+    //LectureStudent 테이블에 배정 정보 저장
+    Set<LectureStudent> lectureStudents = newStudents.stream()
+        .map(s -> new LectureStudent(lecture, s))
+        .collect(Collectors.toSet());
+
+
+      lectureStudentRepository.saveAll(lectureStudents);
+
+    return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
+  }
+
+  private Set<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
+    return userRepository.findAllById(studentIds).stream()
+        .filter(s -> s.getAcademy().getId().equals(lecture.getAcademy().getId()))
+        .filter(this::isStudent)
+        .collect(Collectors.toSet());
+  }
+
+  private boolean isStudent(User user) {
+    return user.getUserToRoles().stream()
+        .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT));
+  }
+
+  private List<LectureStudent> findLectureStudentByLectureId(List<Lecture> lectures) {
+    List<Long> ids = lectures.stream()
+        .map(Lecture::getId)
+        .filter(Objects::nonNull)
+        .toList();
+    return ids.isEmpty() ? Collections.emptyList() : lectureStudentRepository.findAllByLectureIdIn(ids);
+  }
+
+  private StudentSearchResponse toDto(User user) {
+    return StudentSearchResponse.builder()
+        .studentId(user.getId())
+        .name(user.getName())
+        .phone(user.getPhone())
+        .build();
   }
 }

@@ -7,8 +7,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.edutrack", "com.edutrack.global.security"})
-@EnableJpaRepositories(basePackages = "com.edutrack")
+@ComponentScan(basePackages = {"com.edutrack"})
+@EnableJpaRepositories(basePackages = {
+		"com.edutrack.domain",
+		"com.edutrack.api"
+})
 @EntityScan(basePackages = "com.edutrack.domain")
 public class EdutrackApplication {
 
