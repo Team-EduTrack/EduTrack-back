@@ -3,6 +3,8 @@ package com.edutrack.api.student.service;
 import com.edutrack.api.student.dto.*;
 import com.edutrack.api.student.repository.*;
 import com.edutrack.domain.attendance.entity.Attendance;
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.NotFoundException;
@@ -52,7 +54,8 @@ public class StudentDashboardService {
     @Transactional(readOnly = true)
     public List<ExamSummaryResponse> getMyExams(Long studentId) {
         validateStudent(studentId);
-        return examQueryRepository.findMyExams(studentId);
+        List<ExamStatus> statues = List.of(ExamStatus.PUBLISHED, ExamStatus.CLOSED);
+        return examQueryRepository.findMyExams(studentId, statues);
     }
 
     /**

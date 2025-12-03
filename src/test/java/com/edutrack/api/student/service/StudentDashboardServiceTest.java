@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.edutrack.api.student.dto.*;
 import com.edutrack.api.student.repository.*;
 import com.edutrack.domain.attendance.entity.Attendance;
+import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.NotFoundException;
@@ -255,7 +256,9 @@ class StudentDashboardServiceTest {
                 .status(null)  // 미응시
                 .build();
 
-        when(examQueryRepository.findMyExams(studentId))
+        List<ExamStatus> statues = List.of(ExamStatus.PUBLISHED, ExamStatus.CLOSED);
+
+        when(examQueryRepository.findMyExams(studentId, statues))
                 .thenReturn(List.of(exam1, exam2));
 
         // when
@@ -268,7 +271,7 @@ class StudentDashboardServiceTest {
         assertNull(result.get(1).getStatus());
 
         verify(userRepository).existsById(studentId);
-        verify(examQueryRepository).findMyExams(studentId);
+        verify(examQueryRepository).findMyExams(studentId, statues);
 
         log.info("=== 내 시험 목록 조회 테스트 결과 ===");
         result.forEach(e -> log.info(
