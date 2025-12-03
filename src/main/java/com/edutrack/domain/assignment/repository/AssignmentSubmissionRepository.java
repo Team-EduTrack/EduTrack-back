@@ -10,5 +10,4 @@ public interface AssignmentSubmissionRepository extends JpaRepository<Assignment
     boolean existsByAssignment_IdAndStudent_Id(Long assignmentId, Long studentId);
     
     Optional<AssignmentSubmission> findByAssignment_IdAndStudent_Id(Long assignmentId, Long studentId);
-
 }
