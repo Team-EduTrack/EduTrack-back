@@ -126,6 +126,7 @@ public class User {
     this.userToRoles.add(userToRole);
   }
 
+
   public void setAcademy(Academy academy) {
     this.academy = academy;
   }

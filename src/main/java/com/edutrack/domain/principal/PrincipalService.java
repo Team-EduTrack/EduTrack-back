@@ -1,7 +1,7 @@
-package com.edutrack.api.principal;
+package com.edutrack.domain.principal;
 
-import com.edutrack.api.principal.dto.PrincipalRegistrationRequest;
-import com.edutrack.api.principal.dto.PrincipalRegistrationResponse;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationResponse;
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
 import com.edutrack.domain.user.entity.Role;
