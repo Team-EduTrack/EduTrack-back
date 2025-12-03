@@ -17,6 +17,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -55,12 +56,14 @@ public class User {
   @Column(name = "email", length = 100, nullable = false, unique = true)
   private String email;
 
+  @Builder.Default
   @Column(name = "email_verified", nullable = false)
-  private boolean emailVerified;
+  private boolean emailVerified = false;
 
+  @Builder.Default
   @Enumerated(EnumType.STRING)
   @Column(name = "user_status", nullable = false, length = 20)
-  private UserStatus userStatus;
+  private UserStatus userStatus = UserStatus.PENDING; // 기본값 넣기
 
   @CreationTimestamp
   @Column(name = "created_at")
@@ -70,17 +73,27 @@ public class User {
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<UserToRole> userToRoles = new HashSet<>();
 
-  public User(String loginId, String password, String name, String phone, String email,
-      Academy academy) {
-    this.loginId = loginId;
-    this.password = password;
-    this.name = name;
-    this.phone = phone;
-    this.email = email;
-    this.academy = academy;
-    this.emailVerified = false;
+  // 빌더로 변경
+//  public User(String loginId, String password, String name, String phone, String email,
+//      Academy academy) {
+//    this.loginId = loginId;
+//    this.password = password;
+//    this.name = name;
+//    this.phone = phone;
+//    this.email = email;
+//    this.academy = academy;
+//    this.emailVerified = false;
+//    this.userStatus = UserStatus.ACTIVE;
+//    this.createdAt = LocalDateTime.now();
+//  }
+
+  // 이메일 인증 완료 표시
+  public void markEmailVerified(){
+    this.emailVerified = true;
+  }
+
+  public void activate(){
     this.userStatus = UserStatus.ACTIVE;
-    this.createdAt = LocalDateTime.now();
   }
 
   // 역할 확인 (RoleType 기반)
@@ -104,19 +117,27 @@ public class User {
                     userToRole.getRole().getName() == roleType  // enum 비교
     );
   }
-  // 유저에게 역할 추가 (user는 반드시 save 돼서 id가 있는 상태에서 호출하는 게 안전)
+
   public void addRole(Role role) {
+    if (role == null) {
+      return;
+    }
+
+    // 🔥 NPE 방어: userToRoles 가 null 이면 새 Set 로 초기화
+    if (this.userToRoles == null) {
+      this.userToRoles = new HashSet<>();
+    }
+
     UserToRole userToRole = UserToRole.builder()
-        .id(new UserToRoleId(this.id, role.getId()))
-        .user(this)
-        .role(role)
-        .build();
+            .id(new UserToRoleId(this.id, role.getId()))
+            .user(this)
+            .role(role)
+            .build();
 
     this.userToRoles.add(userToRole);
   }
 
-    public void setAcademy(Academy academy) {
-        this.academy = academy;
-    }
-
+  public void setAcademy(Academy academy) {
+    this.academy = academy;
+  }
 }
