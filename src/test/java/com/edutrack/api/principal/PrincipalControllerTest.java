@@ -146,3 +146,4 @@ class PrincipalControllerTest {
                 .andExpect(jsonPath("$.errorCode").value("G-001"));
     }
 }
+

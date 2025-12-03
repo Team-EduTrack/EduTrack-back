@@ -3,7 +3,9 @@ package com.edutrack.domain.assignment.controller;
 import com.edutrack.domain.assignment.dto.AssignmentCreateRequest;
 import com.edutrack.domain.assignment.dto.AssignmentCreateResponse;
 import com.edutrack.domain.assignment.dto.AssignmentListResponse;
+import com.edutrack.domain.assignment.dto.AssignmentSubmissionStudentViewResponse;
 import com.edutrack.domain.assignment.service.AssignmentService;
+import com.edutrack.domain.assignment.service.AssignmentSubmissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +21,7 @@ import java.util.List;
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
-
+    private final AssignmentSubmissionService assignmentSubmissionService;
     /**
      * 과제 생성 API
      * POST /api/academies/1/assignments
@@ -51,5 +53,21 @@ public class AssignmentController {
                 assignmentService.getAssignmentsForLecture(academyId, studentId, lectureId);
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * 학생용 – 자신의 과제 제출 상세 조회 (점수/피드백 읽기 전용)
+     */
+    @GetMapping("/{assignmentId}/my-submission")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<AssignmentSubmissionStudentViewResponse> getMySubmission(
+            @PathVariable Long academyId,
+            @PathVariable Long assignmentId,
+            @AuthenticationPrincipal Long studentId
+    ) {
+        var response = assignmentSubmissionService.getMySubmission(
+                academyId, studentId, assignmentId);
+
+        return ResponseEntity.ok(response);
     }
 }
