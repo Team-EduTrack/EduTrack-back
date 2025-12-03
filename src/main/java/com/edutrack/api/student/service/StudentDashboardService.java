@@ -2,14 +2,13 @@ package com.edutrack.api.student.service;
 
 import com.edutrack.api.student.dto.*;
 import com.edutrack.api.student.repository.*;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
-@Transactional
 public class StudentDashboardService {
 
     private final StudentLectureQueryRepository lectureQueryRepository;
@@ -27,21 +26,22 @@ public class StudentDashboardService {
         this.attendanceRepository = attendanceRepository;
     }
 
-    @Transactional(Transactional.TxType.SUPPORTS)
+    @Transactional(readOnly = true)
     public List<MyLectureResponse> getMyLectures(Long studentId) {
         return lectureQueryRepository.findMyLectures(studentId);
     }
 
-    @Transactional(Transactional.TxType.SUPPORTS)
+    @Transactional(readOnly = true)
     public List<AssignmentSummaryResponse> getMyAssignments(Long studentId) {
         return assignmentQueryRepository.findMyAssignments(studentId);
     }
 
-    @Transactional(Transactional.TxType.SUPPORTS)
+    @Transactional(readOnly = true)
     public List<ExamSummaryResponse> getMyExams(Long studentId) {
         return examQueryRepository.findMyExams(studentId);
     }
 
+    @Transactional
     public AttendanceCheckInResponse checkIn(Long studentId) {
         LocalDate today = LocalDate.now();
 

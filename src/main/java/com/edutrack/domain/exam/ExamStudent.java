@@ -2,6 +2,7 @@ package com.edutrack.domain.exam;
 
 import com.edutrack.domain.exam.entity.Exam;
 import com.edutrack.domain.exam.entity.ExamStudentId;
+import com.edutrack.domain.exam.entity.StudentExamStatus;
 import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -31,22 +32,35 @@ public class ExamStudent {
     @Column(name = "earned_score")
     private Integer earnedScore;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private StudentExamStatus status;
 
     @Column(name="exam_started_at")
     private LocalDateTime startedAt;
+
+    @Column(name="submitted_at")
+    private LocalDateTime submittedAt;
 
     public ExamStudent(Exam exam, User student) {
         this.id = new ExamStudentId(exam.getId(), student.getId());
         this.exam = exam;
         this.student = student;
         this.startedAt = LocalDateTime.now();
-        this.status = "IN_PROGRESS";
+        this.status = StudentExamStatus.IN_PROGRESS;
+    }
+
+    public void submit() {
+        this.status = StudentExamStatus.SUBMITTED;
+        this.submittedAt = LocalDateTime.now();
     }
 
     public void complete(int earnedScore) {
         this.earnedScore = earnedScore;
-        this.status = "COMPLETED";
+        this.status = StudentExamStatus.GRADED;
+    }
+
+    public boolean isSubmitted() {
+        return this.status == StudentExamStatus.SUBMITTED || this.status == StudentExamStatus.GRADED;
     }
 }

@@ -68,8 +68,15 @@ public class ExamController {
         return ResponseEntity.ok(response);
     }
 
+    // 시험 제출
+    @PostMapping("/{examId}/submit")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<Void> submitExam(
+            @PathVariable Long examId,
+            Authentication authentication) {
+        Long studentId = (Long) authentication.getPrincipal();
+        examService.submitExam(examId, studentId);
 
-
-
-
+        return ResponseEntity.ok().build();
+    }
 }
