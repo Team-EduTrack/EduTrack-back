@@ -1,4 +1,4 @@
-import static org.junit.jupiter.api.Assertions.*;
-class LectureCreationServiceTest {
-  
-}
+//import static org.junit.jupiter.api.Assertions.*;
+//class LectureCreationServiceTest {
+//
+//}
