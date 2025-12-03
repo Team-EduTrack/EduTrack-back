@@ -12,12 +12,12 @@ import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.ConflictException;
 import com.edutrack.global.exception.NotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
