@@ -352,12 +352,15 @@ public class StudentExamService {
 
         return ExamStartResponse.builder()
                 .examId(exam.getId())
+                .studentId(examStudent.getStudent().getId())
                 .title(exam.getTitle())
                 .startDate(exam.getStartDate())
                 .endDate(exam.getEndDate())
                 .durationMinute(exam.getDurationMinute())
+                .startedAt(examStudent.getStartedAt())
                 .examStartedAt(examStudent.getStartedAt())
                 .personalDeadline(personalDeadline)
+                .status(examStudent.getStatus())
                 .questions(questionDtos)
                 .build();
     }

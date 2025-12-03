@@ -1,5 +1,6 @@
 package com.edutrack.domain.exam.dto;
 
+import com.edutrack.domain.exam.entity.StudentExamStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -14,13 +15,21 @@ import java.util.List;
 @Builder
 public class ExamStartResponse {
     
+    // 기본 정보
     private final Long examId;
+    private final Long studentId;
     private final String title;
     private final LocalDateTime startDate;
     private final LocalDateTime endDate;
     private final Integer durationMinute;
-    private final LocalDateTime examStartedAt;
+    
+    // 응시 상태 정보
+    private final LocalDateTime startedAt;
+    private final LocalDateTime examStartedAt;  // startedAt과 동일 (하위 호환)
     private final LocalDateTime personalDeadline;
+    private final StudentExamStatus status;
+    
+    // 문제 목록 (B파트에서 사용)
     private final List<QuestionForStudent> questions;
 
     /**
