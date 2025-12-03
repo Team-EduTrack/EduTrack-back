@@ -3,6 +3,7 @@ package com.edutrack.domain.lecture.service;
 
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureStatisticsResponse;
 import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
 import com.edutrack.domain.lecture.dto.StudentSearchResponse;
 import com.edutrack.domain.lecture.entity.Lecture;
@@ -14,7 +15,7 @@ import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.LectureAccessDeniedException;
 import com.edutrack.global.exception.LectureNotFoundException;
-import com.edutrack.global.exception.NotFoundException;
+import com.edutrack.global.exception.UserNotFoundException;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.Collections;
 import java.util.List;
@@ -67,23 +68,13 @@ public class LectureService {
   @Transactional(readOnly = true)
   public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId, Long teacherId) {
     //강의 조회
-    Lecture lecture = lectureRepository.findById(lectureId)
-        .orElseThrow(() -> new LectureNotFoundException(lectureId));
+    Lecture lecture = getLecture(lectureId);
 
     //강사 조회
-    User teacher = userRepository.findById(teacherId)
-        .orElseThrow(() -> new NotFoundException("선생님을 찾을 수 없습니다. ID=" + teacherId));
+    User teacher = getTeacher(teacherId);
 
     //권한 검증
-    boolean isTeacherAndOwner = teacher.hasRole(RoleType.TEACHER)
-        && lecture.getTeacher().getId().equals(teacher.getId());
-
-    boolean isPrincipalOfAcademy = teacher.hasRole(RoleType.PRINCIPAL)
-        && lecture.getAcademy().getId().equals(teacher.getAcademy().getId());
-
-    if(!isTeacherAndOwner && !isPrincipalOfAcademy) {
-      throw new LectureAccessDeniedException(lectureId, teacher.getId());
-    }
+    validateLectureAcess(lectureId, teacher, lecture);
 
     //강의에 배정된 수강생 리스트 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
@@ -112,8 +103,7 @@ public class LectureService {
   @Transactional(readOnly = true)
   public List<StudentSearchResponse> getAvailableStudents(Long lectureId, String name) {
 
-    Lecture lecture = lectureRepository.findById(lectureId)
-      .orElseThrow(() -> new LectureNotFoundException(lectureId));
+    Lecture lecture = getLecture(lectureId);
 
     Long academyId = lecture.getAcademy().getId();
 
@@ -146,8 +136,7 @@ public class LectureService {
   //학생 배정 API
   @Transactional
   public LectureStudentAssignResponse assignStudents(Long lectureId, @NotEmpty List<Long> studentIds) {
-    Lecture lecture = lectureRepository.findById(lectureId)
-        .orElseThrow(() -> new LectureNotFoundException(lectureId));
+    Lecture lecture = getLecture(lectureId);
 
     //학원 소속의 전체 학생 조회
     Set<User> students = getValidStudents(studentIds, lecture);
@@ -176,6 +165,67 @@ public class LectureService {
       lectureStudentRepository.saveAll(lectureStudents);
 
     return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
+  }
+
+  @Transactional(readOnly = true)
+  public LectureStatisticsResponse getLecutureStatistics(Long lectureId, Long teacherId) {
+
+    //강의 조회
+    Lecture lecture = getLecture(lectureId);
+
+    //강사 조회
+    User teacher = getTeacher(teacherId);
+
+    //권한 검증
+    validateLectureAcess(lectureId, teacher, lecture);
+
+    //수강생 수 조회
+    int studentCount = lectureStudentRepository.findAllByLectureId(lectureId).size();
+
+    // 4) 통계 값들 (일단 TODO: 실제 쿼리/정책에 맞게 계산 로직 채우기)
+    Double attendanceRate = 0.0;            // TODO: 출석률 계산
+    Double assignmentSubmissionRate = 0.0;  // TODO: 과제 제출률 계산
+    Double examParticipationRate = 0.0;     // TODO: 시험 응시율 계산
+
+    Double averageScore = 0.0;             // TODO: 평균 점수
+    Double top10PercentAverage = 0.0;      // TODO: 상위 10% 평균
+
+    return  new LectureStatisticsResponse(
+        lectureId,
+        studentCount,
+        attendanceRate,
+        assignmentSubmissionRate,
+        examParticipationRate,
+        averageScore,
+        top10PercentAverage
+    );
+
+
+  }
+
+  private User getTeacher(Long teacherId) {
+    User teacher = userRepository.findById(teacherId)
+        .orElseThrow(() -> new UserNotFoundException("선생님을 찾을 수 없습니다. ID=" + teacherId));
+    return teacher;
+  }
+
+  private Lecture getLecture(Long lectureId) {
+    Lecture lecture = lectureRepository.findById(lectureId)
+        .orElseThrow(() -> new LectureNotFoundException(lectureId));
+    return lecture;
+  }
+
+
+  private static void validateLectureAcess(Long lectureId, User teacher, Lecture lecture) {
+    boolean isTeacherAndOwner = teacher.hasRole(RoleType.TEACHER)
+        && lecture.getTeacher().getId().equals(teacher.getId());
+
+    boolean isPrincipalOfAcademy = teacher.hasRole(RoleType.PRINCIPAL)
+        && lecture.getAcademy().getId().equals(teacher.getAcademy().getId());
+
+    if(!isTeacherAndOwner && !isPrincipalOfAcademy) {
+      throw new LectureAccessDeniedException(lectureId, teacher.getId());
+    }
   }
 
   private Set<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
