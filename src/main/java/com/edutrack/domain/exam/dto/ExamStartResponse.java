@@ -47,4 +47,3 @@ public class ExamStartResponse {
         private final Integer choiceNumber;
     }
 }
-
