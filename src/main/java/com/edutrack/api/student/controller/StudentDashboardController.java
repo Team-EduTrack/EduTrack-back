@@ -30,7 +30,7 @@ public class StudentDashboardController {
     /*
      * 출석하기 버튼
      */
-    @PostMapping("/{studentId}/attendance/check_in")
+    @PostMapping("/{studentId}/attendance/check-in") // 가독성으로 수정!!
     public ResponseEntity<AttendanceCheckInResponse> checkIn(
             @PathVariable Long studentId
     ) {
