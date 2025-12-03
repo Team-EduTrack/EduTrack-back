@@ -17,10 +17,12 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import jakarta.persistence.Entity;
+
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -88,11 +90,11 @@ public class User {
 //  }
 
   // 이메일 인증 완료 표시
-  public void markEmailVerified(){
+  public void markEmailVerified() {
     this.emailVerified = true;
   }
 
-  public void activate(){
+  public void activate() {
     this.userStatus = UserStatus.ACTIVE;
   }
 
@@ -113,8 +115,8 @@ public class User {
       return;
     }
     userToRoles.removeIf(userToRole ->
-            userToRole.getRole() != null &&
-                    userToRole.getRole().getName() == roleType  // enum 비교
+        userToRole.getRole() != null &&
+            userToRole.getRole().getName() == roleType  // enum 비교
     );
   }
 
@@ -129,10 +131,10 @@ public class User {
     }
 
     UserToRole userToRole = UserToRole.builder()
-            .id(new UserToRoleId(this.id, role.getId()))
-            .user(this)
-            .role(role)
-            .build();
+        .id(new UserToRoleId(this.id, role.getId()))
+        .user(this)
+        .role(role)
+        .build();
 
     this.userToRoles.add(userToRole);
   }
@@ -140,4 +142,5 @@ public class User {
   public void setAcademy(Academy academy) {
     this.academy = academy;
   }
+
 }

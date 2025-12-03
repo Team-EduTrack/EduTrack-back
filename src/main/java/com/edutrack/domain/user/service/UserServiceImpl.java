@@ -5,12 +5,13 @@ import com.edutrack.domain.academy.AcademyRepository;
 import com.edutrack.domain.user.dto.SignupRequest;
 import com.edutrack.domain.user.dto.SignupResponse;
 import com.edutrack.domain.user.entity.Role;
-import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.TempUser;
 import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.TempUserRepository;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.domain.user.repository.UserToRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class UserServiceImpl implements UserService {
   private final TempUserRepository tempUserRepository;
   private final PasswordEncoder passwordEncoder;
   private final RoleRepository roleRepository;
+  private final UserToRoleRepository userToRoleRepository;
 
   @Override
   public void signup(SignupRequest request) {
