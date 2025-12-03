@@ -125,46 +125,4 @@ public class AssignmentService {
                 })
                 .collect(Collectors.toList());
     }
-
-    /**
-     * 학생용 – 특정 강의의 과제 리스트 조회
-     * 제목 + 시작/종료 날짜만 반환
-     */
-    @Transactional(readOnly = true)
-    public List<AssignmentListResponse> getAssignmentsForLecture(
-            Long academyId,
-            Long studentId,
-            Long lectureId
-    ) {
-        //강의 존재 확인
-        Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new NotFoundException("지정된 강의를 찾을 수 없습니다. ID: " + lectureId));
-
-        //학원 검증
-        Academy academy = lecture.getAcademy();
-        if (!academy.getId().equals(academyId)) {
-            throw new ForbiddenException("해당 학원에 속하지 않은 강의입니다.");
-        }
-
-        //강의에 속한 과제 목록 조회
-        List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
-
-        //각 과제마다 제출 여부 조회 → status 세팅
-        return assignments.stream()
-                .map(assignment -> {
-                    boolean submitted = assignmentSubmissionRepository
-                            .existsByAssignment_IdAndStudent_Id(assignment.getId(), studentId);
-
-                    AssignmentSubmissionStatus status =
-                            submitted ? AssignmentSubmissionStatus.SUBMITTED : AssignmentSubmissionStatus.NOT_SUBMITTED;
-
-                    return AssignmentListResponse.builder()
-                            .assignmentId(assignment.getId())
-                            .title(assignment.getTitle())
-                            .endDate(assignment.getEndDate())
-                            .status(status)
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
 }
