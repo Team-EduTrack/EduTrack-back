@@ -9,6 +9,4 @@ public interface UserEmailVerificationRepository extends JpaRepository<UserEmail
   // 최신 코드 가져오기
   Optional<UserEmailVerification> findTopByEmailOrderByCreatedAtDesc(String email);
 
-  Optional<UserEmailVerification> findTopByEmailOrderByCreatedAtDesc(String email);
-
 }
