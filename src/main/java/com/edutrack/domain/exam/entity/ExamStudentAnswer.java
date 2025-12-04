@@ -1,7 +1,9 @@
 package com.edutrack.domain.exam.entity;
 
-import com.edutrack.domain.exam.ExamStudent;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -9,6 +11,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "exam_student_answer")
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class ExamStudentAnswer {
 
     @Id
@@ -28,6 +32,15 @@ public class ExamStudentAnswer {
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
+    //단원
+    @Column(name = "unit_id", nullable = false)
+    private Long unitId;
+
+    //난이도
+    @Enumerated(EnumType.STRING)
+    @Column(name = "difficulty", nullable = false)
+    private Difficulty difficulty;
+
     // 학생이 선택한 답(answerNumber)
     @Column(name = "submitted_answer_number", nullable = false)
     private Integer submittedAnswerNumber;
@@ -46,11 +59,15 @@ public class ExamStudentAnswer {
             Question question,
             Integer submittedAnswerNumber
     ){
-        ExamStudentAnswer answer = new ExamStudentAnswer();
-        answer.examStudent = examStudent;
-        answer.question = question;
-        answer.submittedAnswerNumber = submittedAnswerNumber;
-        return  answer;
+      return ExamStudentAnswer.builder()
+              .examStudent(examStudent)
+              .question(question)
+              .unitId(question.getUnitId())
+              .difficulty(question.getDifficulty())
+              .submittedAnswerNumber(submittedAnswerNumber)
+              .correct(false) // 초기값 false
+              .earnedScore(0) // 초기값 0
+              .build();
     }
 
     // 채점
@@ -58,5 +75,4 @@ public class ExamStudentAnswer {
         this.correct = correct;
         this.earnedScore = earnedScore;
     }
-
 }

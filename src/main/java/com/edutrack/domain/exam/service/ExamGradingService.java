@@ -1,6 +1,6 @@
 package com.edutrack.domain.exam.service;
 
-import com.edutrack.domain.exam.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.entity.ExamStudentAnswer;
 import com.edutrack.domain.exam.entity.Question;
 import com.edutrack.domain.exam.entity.StudentExamStatus;

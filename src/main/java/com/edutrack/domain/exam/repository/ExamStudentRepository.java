@@ -1,6 +1,6 @@
 package com.edutrack.domain.exam.repository;
 
-import com.edutrack.domain.exam.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.entity.ExamStudentId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
