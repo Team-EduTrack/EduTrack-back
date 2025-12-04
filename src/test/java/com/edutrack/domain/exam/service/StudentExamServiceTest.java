@@ -104,6 +104,8 @@ class StudentExamServiceTest {
         ExamStudent newExamStudent = mock(ExamStudent.class);
         when(newExamStudent.getStartedAt()).thenReturn(LocalDateTime.now());
         when(newExamStudent.isSubmitted()).thenReturn(false);
+        when(newExamStudent.getStudent()).thenReturn(student);
+        when(newExamStudent.getStatus()).thenReturn(StudentExamStatus.IN_PROGRESS);
         when(examStudentRepository.save(any(ExamStudent.class))).thenReturn(newExamStudent);
 
         // Question Mock
@@ -367,25 +369,28 @@ class StudentExamServiceTest {
     private Question createMockQuestion(Long id, String content, int score, Difficulty difficulty) {
         Question question = mock(Question.class);
         when(question.getId()).thenReturn(id);
-        when(question.getContent()).thenReturn(content);
-        when(question.getScore()).thenReturn(score);
-        when(question.getDifficulty()).thenReturn(difficulty);
-        when(question.getAnswerNumber()).thenReturn(2);
-        when(question.getChoices()).thenReturn(List.of(
-                createMockChoice(1L, "보기1", 1),
-                createMockChoice(2L, "보기2", 2),
-                createMockChoice(3L, "보기3", 3),
-                createMockChoice(4L, "보기4", 4)
-        ));
+        lenient().when(question.getContent()).thenReturn(content);
+        lenient().when(question.getScore()).thenReturn(score);
+        lenient().when(question.getDifficulty()).thenReturn(difficulty);
+        lenient().when(question.getAnswerNumber()).thenReturn(2);
+        lenient().when(question.getUnitId()).thenReturn(1L);  // ✨ 추가: unitId 설정
+
+      List<Choice> choices = List.of(
+          createMockChoice(1L, "보기1", 1),
+          createMockChoice(2L, "보기2", 2),
+          createMockChoice(3L, "보기3", 3),
+          createMockChoice(4L, "보기4", 4));
+
+      lenient().when(question.getChoices()).thenReturn(choices);
         return question;
     }
 
     private Choice createMockChoice(Long id, String content, int choiceNumber) {
-        Choice choice = mock(Choice.class);
-        when(choice.getId()).thenReturn(id);
-        when(choice.getContent()).thenReturn(content);
-        when(choice.getChoiceNumber()).thenReturn(choiceNumber);
-        return choice;
+      Choice choice = mock(Choice.class);
+      lenient().when(choice.getId()).thenReturn(id);
+      lenient().when(choice.getContent()).thenReturn(content);
+      lenient().when(choice.getChoiceNumber()).thenReturn(choiceNumber);
+      return choice;
     }
 }
 
