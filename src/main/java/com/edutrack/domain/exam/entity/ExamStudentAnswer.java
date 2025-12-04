@@ -1,6 +1,5 @@
 package com.edutrack.domain.exam.entity;
 
-import com.edutrack.domain.exam.ExamStudent;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
