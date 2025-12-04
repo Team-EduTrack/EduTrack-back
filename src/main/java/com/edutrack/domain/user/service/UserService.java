@@ -5,6 +5,8 @@ import com.edutrack.domain.user.dto.SignupResponse;
 
 public interface UserService {
 
-  SignupResponse signup(SignupRequest request);
+  void signup(SignupRequest request);
+
+  SignupResponse completeSignup(String email);
 
 }
