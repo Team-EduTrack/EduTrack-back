@@ -1,8 +1,15 @@
 package com.edutrack.domain.lecture.entity;
 
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.user.entity.User;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -12,23 +19,19 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.PrePersist;
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Lecture {
 
@@ -62,22 +65,4 @@ public class Lecture {
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
-
-  public Lecture(Academy academy, User teacher, String title, String description, DayOfWeek dayOfWeek,
-      LocalDateTime startDate, LocalDateTime endDate) {
-    this.academy = academy;
-    this.teacher = teacher;
-    this.title = title;
-    this.description = description;
-    this.dayOfWeek = dayOfWeek;
-    this.startDate = startDate;
-    this.endDate = endDate;
-  }
-
-  @PrePersist
-  protected void onCreate() {
-    if (this.createdAt == null) {
-      this.createdAt = LocalDateTime.now();
-    }
-  }
 }
