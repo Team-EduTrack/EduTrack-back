@@ -588,6 +588,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssignmentSubmissionTeacherViewResponse'
 
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/{submissionId}/grade:
     patch:
       tags: [Assignment Submissions]
       summary: 강사용 - 점수 및 피드백 저장
@@ -1241,6 +1242,9 @@ components:
     LectureStudentAssignResponse:
       type: object
       properties:
+        lectureId:
+          type: integer
+          format: int64
         assignedCount:
           type: integer
           format: int32
@@ -1770,17 +1774,28 @@ components:
         lectureId:
           type: integer
           format: int64
-        title:
+        lectureTitle:
           type: string
+        teacherName:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
 
     AttendanceCheckInResponse:
       type: object
       properties:
-        attendanceId:
+        studentId:
           type: integer
           format: int64
-        status:
+        attendanceDate:
           type: string
+          format: date
+        alreadyCheckedIn:
+          type: boolean
 
     AssignmentSummaryResponse:
       type: object
