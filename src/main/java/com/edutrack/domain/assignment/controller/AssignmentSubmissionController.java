@@ -45,8 +45,9 @@ public class AssignmentSubmissionController {
     @PostMapping("/submit")
     public ResponseEntity<AssignmentSubmitResponse> submit(
             @PathVariable Long assignmentId,
-            @RequestParam Long studentId,
+            @AuthenticationPrincipal Long studentId,
             @RequestBody AssignmentSubmitRequest request) {
+
 
         return ResponseEntity.ok(assignmentSubmissionService.submit(assignmentId, studentId, request));
     }
