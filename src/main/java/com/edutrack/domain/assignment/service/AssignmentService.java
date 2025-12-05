@@ -9,7 +9,9 @@ import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
+import com.edutrack.domain.lecture.entity.LectureStudentId;
 import com.edutrack.domain.lecture.repository.LectureRepository;
+import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
@@ -30,6 +32,7 @@ public class AssignmentService {
     private final LectureRepository lectureRepository;
     private final UserRepository userRepository;
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
+    private final LectureStudentRepository lectureStudentRepository;
     /**
      * 과제 생성
      *
@@ -39,6 +42,7 @@ public class AssignmentService {
     @Transactional
     public AssignmentCreateResponse createAssignment(
             Long academyId,
+            Long lectureId,
             Long teacherId,
             AssignmentCreateRequest req
     ) {
@@ -57,8 +61,8 @@ public class AssignmentService {
         }
 
         // 강의 조회
-        Lecture lecture = lectureRepository.findById(req.getLectureId())
-                .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다. id=" + req.getLectureId()));
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다. id=" + lectureId));
 
         // 강의가 이 강사의 강의인지 확인
         if (!lecture.getTeacher().getId().equals(teacherId)) {
@@ -102,6 +106,14 @@ public class AssignmentService {
         Academy academy = lecture.getAcademy();
         if (!academy.getId().equals(academyId)) {
             throw new ForbiddenException("해당 학원에 속하지 않은 강의입니다.");
+        }
+
+        //수강 중인 학생인지 검증 (LectureStudent 매핑 확인)
+        LectureStudentId mappingId = new LectureStudentId(lectureId, studentId);
+        boolean enrolled = lectureStudentRepository.existsById(mappingId);
+
+        if (!enrolled) {
+            throw new ForbiddenException("해당 강의를 수강 중인 학생만 과제 목록을 조회할 수 있습니다.");
         }
 
         //강의에 속한 과제 목록 조회

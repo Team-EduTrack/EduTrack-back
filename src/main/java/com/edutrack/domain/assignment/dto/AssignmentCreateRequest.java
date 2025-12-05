@@ -10,8 +10,6 @@ import java.time.LocalDateTime;
 @Builder
 public class AssignmentCreateRequest {
 
-    private Long lectureId;
-
     private String title;
 
     private String description;

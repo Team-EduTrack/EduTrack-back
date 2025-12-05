@@ -1,13 +1,6 @@
 package com.edutrack.domain.assignment.controller;
 
-import com.edutrack.domain.assignment.dto.AssignmentGradeRequest;
-import com.edutrack.domain.assignment.dto.AssignmentGradeResponse;
-import com.edutrack.domain.assignment.dto.AssignmentSubmissionListResponse;
-import com.edutrack.domain.assignment.dto.AssignmentSubmissionTeacherViewResponse;
-import com.edutrack.domain.assignment.dto.AssignmentSubmitRequest;
-import com.edutrack.domain.assignment.dto.AssignmentSubmitResponse;
-import com.edutrack.domain.assignment.dto.PresignedUrlRequest;
-import com.edutrack.domain.assignment.dto.PresignedUrlResponse;
+import com.edutrack.domain.assignment.dto.*;
 import com.edutrack.domain.assignment.service.AssignmentSubmissionService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -97,6 +90,22 @@ public class AssignmentSubmissionController {
     ) {
         var response = assignmentSubmissionService.gradeSubmission(
                 academyId, teacherId, assignmentId, submissionId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 학생용 – 자신의 과제 제출 상세 조회 (점수/피드백 읽기 전용)
+     */
+    @GetMapping("/{assignmentId}/my-submission")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<AssignmentSubmissionStudentViewResponse> getMySubmission(
+            @PathVariable Long academyId,
+            @PathVariable Long assignmentId,
+            @AuthenticationPrincipal Long studentId
+    ) {
+        var response = assignmentSubmissionService.getMySubmission(
+                academyId, studentId, assignmentId);
 
         return ResponseEntity.ok(response);
     }

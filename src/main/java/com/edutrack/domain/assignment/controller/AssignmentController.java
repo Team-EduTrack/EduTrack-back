@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/academies/{academyId}/assignments")
+@RequestMapping("/api/academies/{academyId}/lectures/{lectureId}/assignments")
 @RequiredArgsConstructor
 public class AssignmentController {
 
@@ -24,25 +24,26 @@ public class AssignmentController {
     private final AssignmentSubmissionService assignmentSubmissionService;
     /**
      * 과제 생성 API
-     * POST /api/academies/1/assignments
+     * POST /api/academies/{academyId}/lectures/{lectureId}/assignments
      */
     @PostMapping
     public ResponseEntity<AssignmentCreateResponse> createAssignment(
             @PathVariable Long academyId,
+            @PathVariable Long lectureId,
             @AuthenticationPrincipal Long teacherId,
             @RequestBody AssignmentCreateRequest request
     ) {
         AssignmentCreateResponse response =
-                assignmentService.createAssignment(academyId, teacherId, request);
+                assignmentService.createAssignment(academyId, lectureId, teacherId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * 학생용 – 특정 강의의 과제 리스트 조회
-     * GET /api/academies/{academyId}/assignments/lectures/{lectureId}
+     * GET /api/academies/{academyId}/lectures/{lectureId}/assignments/list
      */
-    @GetMapping("/lectures/{lectureId}")
+    @GetMapping("list")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<AssignmentListResponse>> getAssignmentsForLecture(
             @PathVariable Long academyId,
@@ -55,19 +56,4 @@ public class AssignmentController {
         return ResponseEntity.ok(responses);
     }
 
-    /**
-     * 학생용 – 자신의 과제 제출 상세 조회 (점수/피드백 읽기 전용)
-     */
-    @GetMapping("/{assignmentId}/my-submission")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<AssignmentSubmissionStudentViewResponse> getMySubmission(
-            @PathVariable Long academyId,
-            @PathVariable Long assignmentId,
-            @AuthenticationPrincipal Long studentId
-    ) {
-        var response = assignmentSubmissionService.getMySubmission(
-                academyId, studentId, assignmentId);
-
-        return ResponseEntity.ok(response);
-    }
 }
