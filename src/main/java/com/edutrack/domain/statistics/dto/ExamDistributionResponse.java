@@ -1,4 +1,4 @@
-package com.edutrack.domain.statistics;
+package com.edutrack.domain.statistics.dto;
 
 import lombok.Builder;
 import lombok.Getter;
