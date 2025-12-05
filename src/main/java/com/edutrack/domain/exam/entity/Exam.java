@@ -56,4 +56,44 @@ public class Exam {
         this.durationMinute = durationMinute;
         this.createdAt = LocalDateTime.now();
     }
+
+    // === 상태 전환 메서드 ===
+
+    /**
+     * 시험을 공개 상태로 전환 (DRAFT → PUBLISHED)
+     * 학생들이 응시 가능한 상태가 됨
+     */
+    public void publish() {
+        if (this.status != ExamStatus.DRAFT) {
+            throw new IllegalStateException("DRAFT 상태의 시험만 공개할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = ExamStatus.PUBLISHED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 시험을 종료 상태로 전환 (PUBLISHED → CLOSED)
+     * 더 이상 학생들이 응시/제출할 수 없음
+     */
+    public void close() {
+        if (this.status != ExamStatus.PUBLISHED) {
+            throw new IllegalStateException("PUBLISHED 상태의 시험만 종료할 수 있습니다. 현재 상태: " + this.status);
+        }
+        this.status = ExamStatus.CLOSED;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 시험이 응시 가능한 상태인지 확인
+     */
+    public boolean isAvailableForSubmission() {
+        return this.status == ExamStatus.PUBLISHED;
+    }
+
+    /**
+     * 시험이 종료되었는지 확인
+     */
+    public boolean isClosed() {
+        return this.status == ExamStatus.CLOSED;
+    }
 }
