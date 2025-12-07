@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Table(name = "temp_user")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -46,7 +46,7 @@ public class User {
   @Column(name = "password", length = 255, nullable = false)
   private String password;
 
-  @Column(name = "name", length = 100, nullable = false, unique = true)
+  @Column(name = "name", length = 100, nullable = false)
   private String name;
 
   @Column(name = "phone", length = 11, nullable = false, unique = true)
@@ -69,22 +69,8 @@ public class User {
   private LocalDateTime createdAt;
 
   @Builder.Default
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
   private Set<UserToRole> userToRoles = new HashSet<>();
-
-  // 빌더로 변경
-//  public User(String loginId, String password, String name, String phone, String email,
-//      Academy academy) {
-//    this.loginId = loginId;
-//    this.password = password;
-//    this.name = name;
-//    this.phone = phone;
-//    this.email = email;
-//    this.academy = academy;
-//    this.emailVerified = false;
-//    this.userStatus = UserStatus.ACTIVE;
-//    this.createdAt = LocalDateTime.now();
-//  }
 
   // 이메일 인증 완료 표시
   public void markEmailVerified() {
