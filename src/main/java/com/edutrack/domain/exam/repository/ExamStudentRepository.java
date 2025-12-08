@@ -38,4 +38,6 @@ public interface ExamStudentRepository extends JpaRepository<ExamStudent, ExamSt
     @Query("SELECT CASE WHEN COUNT(es) > 0 THEN true ELSE false END " +
            "FROM ExamStudent es WHERE es.exam.id = :examId AND es.student.id = :studentId")
     boolean existsByExamIdAndStudentId(@Param("examId") Long examId, @Param("studentId") Long studentId);
+
+    List<ExamStudent> findByExamId(Long examId);
 }
