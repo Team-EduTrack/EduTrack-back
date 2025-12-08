@@ -1,0 +1,29 @@
+[33m334c6a8[m[33m ([m[1;31morigin/develop[m[33m)[m Merge pull request #41 from Team-EduTrack/feat/assignment-submission-list
+[33me8ec09d[m[33m ([m[1;31morigin/feat/assignment-submission-list[m[33m)[m Merge branch 'develop' of https://github.com/Team-EduTrack/EduTrack-back into feat/assignment-submission-list
+[33m4b0a0be[m Merge pull request #44 from Team-EduTrack/feature/lecture/statistics
+[33mc68a12b[m Merge pull request #45 from Team-EduTrack/fix/principal-auth-restriction
+[33m73b272e[m[33m ([m[1;31morigin/fix/principal-auth-restriction[m[33m)[m Merge branch 'develop' into fix/principal-auth-restriction
+[33mbe34ed3[m Merge pull request #47 from Team-EduTrack/feat/assignment-grading
+[33m0256d8b[m[33m ([m[1;31morigin/feat/assignment-grading[m[33m)[m fix: 중복 코드 수정
+[33m8ac9a15[m Merge pull request #37 from Team-EduTrack/feature/student-exam-flow-v3
+[33m39c52ae[m[33m ([m[1;31morigin/feature/student-exam-flow-v3[m[33m)[m [feature/student-exam-flow-v3] Transactional Import 수정
+[33m389e557[m Merge pull request #40 from Team-EduTrack/feat/assignment-grading
+[33m2563feb[m Merge branch 'develop' into feat/assignment-grading
+[33m48a0375[m Merge pull request #39 from Team-EduTrack/feat/assignment-list
+[33mf3ed27a[m[33m ([m[1;31morigin/feat/assignment-list[m[33m)[m Merge branch 'develop' into feat/assignment-list
+[33m224ff94[m[33m ([m[1;31morigin/feature/lecture/statistics[m[33m)[m [feature/openapi-generator] 강의 상세 조회 API에 통계 관련 메소드 통합 및 통계와 상세 조회를 합치는 조합DTO 인 LectureDetailWithStatisticsResponse 작성
+[33m8fc4d85[m feat : 원장계정생성 테스트코드작성
+[33m7ec2dca[m [feature/openapi-generator] LectureStatisticsResponse DTO 생성 및 LectureService에 통계를 위한 getLectureStatistics 메소드 생성 과 중복되는 로직 extract 후 모든 메소드에 적용
+[33m0fcef23[m 병합 충돌 해결
+[33m722fab9[m refactor: 과제 생성/제출 서비스 및 DTO 빌더 패턴으로 리팩터링
+[33m1118ef6[m feat : 과제 체점 + 피드백 api 구현
+[33m17f6439[m feat: 과제 제출 리스트 조회 API 및 강사 권한 검증 추가  - @PreAuthorize 적용하여 강사만 접근 가능  - JWT Authentication 에서 teacherId 추출하도록 개선
+[33m0a319b0[m feat: 강사용 과제 제출 리스트 조회 서비스 로직 구현  - 과제 존재 여부 검증 추가  - 과제 작성자(강사) 본인 확인 로직 추가  - 제출물 정보를 DTO 리스트로 변환하여 반환하는 기능 구현
+[33mfe8bf84[m feat: 과제 제출 리스트 응답 DTO 및 Repository 메서드 추가  - AssignmentSubmissionListResponse DTO 생성  - 특정 과제의 제출물을 조회하기 위한 findAllByAssignmentId() 메서드 추가
+[33mea8b9de[m feat: 학생용 과제 제출 상세 오타 수정
+[33m55144ad[m feat: 학생용 과제 제출 상세 조회 API 추가
+[33mf873063[m 과제 코드 병합
+[33m4cf4fac[m Merge branch 'develop' of https://github.com/Team-EduTrack/EduTrack-back into feat/assignment-list
+[33mb4ed879[m feat: 학생용 과제 리스트에 제출 상태 표시 기능 추가
+[33m414db95[m feat: 학생 시험 응시 시작 API 구현
+[33m88301c3[m feat: 학생용 강의별 과제 리스트 조회 기능 추가

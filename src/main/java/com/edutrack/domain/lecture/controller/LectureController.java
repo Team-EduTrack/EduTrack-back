@@ -3,7 +3,9 @@ package com.edutrack.domain.lecture.controller;
 import com.edutrack.domain.lecture.dto.LectureCreationRequest;
 import com.edutrack.domain.lecture.dto.LectureCreationResponse;
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureDetailWithStatisticsResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureStatisticsResponse;
 import com.edutrack.domain.lecture.dto.LectureStudentAssignRequest;
 import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
 import com.edutrack.domain.lecture.dto.StudentSearchResponse;
@@ -63,12 +65,17 @@ public class LectureController {
   //강의 상세 조회 (선생용)
   @PreAuthorize(("hasAnyRole('TEACHER', 'PRINCIPAL')"))
   @GetMapping("/{lectureId}")
-  public ResponseEntity<LectureDetailForTeacherResponse> getLectureDetailForTeacherId(
+  public ResponseEntity<LectureDetailWithStatisticsResponse> getLectureDetailWithStatisticsForTeacherId(
       @PathVariable Long lectureId,
       Authentication authentication) {
     Long teacherId = (Long) authentication.getPrincipal();
-    LectureDetailForTeacherResponse lectureDetail = lectureService.getLectureDetailForTeacherId(lectureId, teacherId);
-    return ResponseEntity.ok(lectureDetail);
+
+    //상세 정보
+    LectureDetailForTeacherResponse detail = lectureService.getLectureDetailForTeacherId(lectureId, teacherId);
+    LectureStatisticsResponse statistics = lectureService.getLecutureStatistics(lectureId, teacherId);
+
+    LectureDetailWithStatisticsResponse response = new LectureDetailWithStatisticsResponse(detail, statistics);
+    return ResponseEntity.ok(response);
   }
 
   //강의를 듣는 학생 목록 조회 API

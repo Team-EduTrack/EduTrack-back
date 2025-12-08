@@ -1,9 +1,13 @@
 package com.edutrack.domain.lecture.service;
 
-import com.edutrack.domain.lecture.dto.LectureCreationRequest;
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
+import com.edutrack.domain.lecture.dto.LectureCreationRequest;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.user.entity.RoleType;
@@ -12,11 +16,8 @@ import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.ConflictException;
 import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -44,15 +45,15 @@ public class LectureCreationService {
         // 4. Lecture 엔티티 생성 및 저장
         Academy academy = academyRepository.getReferenceById(principalAcademyId);
 
-        Lecture lecture = new Lecture(
-                academy,
-                teacher,
-                request.getTitle(),
-                request.getDescription(),
-                request.getDate(),
-                request.getStartDate(),
-                request.getEndDate()
-        );
+        Lecture lecture = Lecture.builder()
+                .academy(academy)
+                .teacher(teacher)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .dayOfWeek(request.getDate())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .build();
 
         Lecture savedLecture = lectureRepository.save(lecture);
         return savedLecture.getId();

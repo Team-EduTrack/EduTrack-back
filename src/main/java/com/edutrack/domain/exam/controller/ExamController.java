@@ -68,4 +68,5 @@ public class ExamController {
         return ResponseEntity.ok(response);
     }
 
+    // 시험 제출 - StudentExamController로 이동됨 (/api/student/exams/{examId}/submit)
 }

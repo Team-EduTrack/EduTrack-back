@@ -1,6 +1,6 @@
 package com.edutrack.domain.exam.service;
 
-import com.edutrack.domain.exam.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.dto.ExamStartResponse;
 import com.edutrack.domain.exam.entity.Exam;
 import com.edutrack.domain.exam.entity.ExamStatus;
@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
