@@ -18,12 +18,4 @@ public class StudentExamSummaryResponse {
     private final Integer earnedScore;
     private final LocalDateTime submittedAt;
 
-    public StudentExamSummaryResponse(Long examId, String examTitle, String lectureName, Integer totalScore, Integer earnedScore) {
-        this.examId = examId;
-        this.examTitle = examTitle;
-        this.lectureName = lectureName;
-        this.totalScore = totalScore;
-        this.earnedScore = earnedScore;
-        this.submittedAt = LocalDateTime.now();
-    }
 }
