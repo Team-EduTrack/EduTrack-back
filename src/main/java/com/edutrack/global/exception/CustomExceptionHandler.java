@@ -15,6 +15,21 @@ public class CustomExceptionHandler {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
   }
 
+  @ExceptionHandler(AlreadySubmittedException.class)
+  public ResponseEntity<String> handleAlreadySubmittedException(AlreadySubmittedException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(ExamDeadlineExceededException.class)
+  public ResponseEntity<String> handleExamDeadlineExceededException(ExamDeadlineExceededException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(ExamClosedException.class)
+  public ResponseEntity<String> handleExamClosedException(ExamClosedException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
     String message = ex.getBindingResult().getFieldErrors().stream()

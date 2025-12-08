@@ -12,6 +12,7 @@ import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 
 @Component
+@Profile("!test")
 @RequiredArgsConstructor
 public class AdminInitializer implements CommandLineRunner {
 
@@ -94,7 +96,6 @@ public class AdminInitializer implements CommandLineRunner {
             .emailVerified(true)
             .userStatus(UserStatus.ACTIVE)
             .build();
-
         principal = userRepository.save(principal);
 
         // (2) 학원 생성
@@ -113,10 +114,10 @@ public class AdminInitializer implements CommandLineRunner {
             .name("테스트학생")
             .phone("01000000000")
             .email("student@test.com")
+            .academy(academy)
             .emailVerified(true)
             .userStatus(UserStatus.ACTIVE)
             .build();
-
         student = userRepository.save(student);
         student.addRole(studentRole);
         userRepository.save(student);
@@ -128,10 +129,10 @@ public class AdminInitializer implements CommandLineRunner {
             .name("테스트강사")
             .phone("01000000002")
             .email("teacher@test.com")
+            .academy(academy)
             .emailVerified(true)
             .userStatus(UserStatus.ACTIVE)
             .build();
-
         teacher = userRepository.save(teacher);
         teacher.addRole(teacherRole);
         userRepository.save(teacher);

@@ -41,15 +41,16 @@ public class AssignmentSubmissionController {
     return ResponseEntity.ok(assignmentSubmissionService.createPresignedUrl(assignmentId, request));
   }
 
-  // 과제 제출 (fileKey 저장)
-  @PostMapping("/submit")
-  public ResponseEntity<AssignmentSubmitResponse> submit(
-      @PathVariable Long assignmentId,
-      @RequestParam Long studentId,
-      @RequestBody AssignmentSubmitRequest request) {
+    // 과제 제출 (fileKey 저장)
+    @PostMapping("/submit")
+    public ResponseEntity<AssignmentSubmitResponse> submit(
+            @PathVariable Long assignmentId,
+            @AuthenticationPrincipal Long studentId,
+            @RequestBody AssignmentSubmitRequest request) {
 
-    return ResponseEntity.ok(assignmentSubmissionService.submit(assignmentId, studentId, request));
-  }
+
+        return ResponseEntity.ok(assignmentSubmissionService.submit(assignmentId, studentId, request));
+    }
 
   // 강사 기준 -> 특정 과제 제출 리스트 조회
   @PreAuthorize("hasRole('TEACHER')")

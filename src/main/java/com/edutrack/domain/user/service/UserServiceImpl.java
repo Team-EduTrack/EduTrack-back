@@ -9,9 +9,9 @@ import com.edutrack.domain.user.entity.TempUser;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.repository.RoleRepository;
-import com.edutrack.domain.user.repository.TempUserRepository;
+import com.edutrack.domain.user.repository.SignupLockRepository;
+import com.edutrack.domain.user.repository.TempUserRedisRepository;
 import com.edutrack.domain.user.repository.UserRepository;
-import com.edutrack.domain.user.repository.UserToRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,10 +22,10 @@ public class UserServiceImpl implements UserService {
 
   private final UserRepository userRepository;
   private final AcademyRepository academyRepository;
-  private final TempUserRepository tempUserRepository;
+  private final TempUserRedisRepository tempUserRedisRepository;
   private final PasswordEncoder passwordEncoder;
   private final RoleRepository roleRepository;
-  private final UserToRoleRepository userToRoleRepository;
+  private final SignupLockRepository signupLockRepository;
 
   @Override
   public void signup(SignupRequest request) {
@@ -43,14 +43,14 @@ public class UserServiceImpl implements UserService {
       throw new IllegalArgumentException("이미 등록된 전화번호입니다.");
     }
 
-    // 이미 가입 신청(TempUser) 되어 있는지 체크
-    if (tempUserRepository.existsByLoginId(request.getLoginId())) {
+    // Redis 중복 체크
+    if (signupLockRepository.existsByLoginId(request.getLoginId())) {
       throw new IllegalArgumentException("이미 가입 신청된 아이디입니다.");
     }
-    if (tempUserRepository.existsByEmail(request.getEmail())) {
+    if (signupLockRepository.existsByEmail(request.getEmail())) {
       throw new IllegalArgumentException("이미 가입 신청된 이메일입니다.");
     }
-    if (tempUserRepository.existsByPhone(request.getPhone())) {
+    if (signupLockRepository.existsByPhone(request.getPhone())) {
       throw new IllegalArgumentException("이미 가입 신청된 전화번호입니다.");
     }
 
@@ -58,24 +58,36 @@ public class UserServiceImpl implements UserService {
     academyRepository.findByCode(request.getAcademyCode())
         .orElseThrow(() -> new IllegalArgumentException("학원 코드가 올바르지 않습니다."));
 
+    // 임시 등록 TempUser 생성 (비밀번호 암호화)
     TempUser tempUser = TempUser.builder()
         .loginId(request.getLoginId())
-        .password(request.getPassword())
+        .password(passwordEncoder.encode(request.getPassword()))
         .name(request.getName())
         .phone(request.getPhone())
         .email(request.getEmail())
         .academyCode(request.getAcademyCode())
+        .verified(false)
         .build();
 
-    tempUserRepository.save(tempUser);
+    // Redis 저장 + TTL 30분
+    tempUserRedisRepository.save(tempUser, 5 * 60);
+
+    // Lock 저장 (중복 방지)
+    signupLockRepository.lockAll(
+        tempUser.getLoginId(),
+        tempUser.getEmail(),
+        tempUser.getPhone());
   }
 
-  public SignupResponse completeSignup(String email){
+  public SignupResponse completeSignup(String email) {
 
-    TempUser tempUser = tempUserRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("가입 신청 정보가 없습니다."));
+    TempUser tempUser = tempUserRedisRepository.findByEmail(email);
 
-    if(!tempUser.isVerified()){
+    if (tempUser == null) {
+      throw new IllegalArgumentException("가입 신청 정보가 없습니다.");
+    }
+
+    if (!tempUser.isVerified()) {
       throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
     }
 
@@ -86,7 +98,7 @@ public class UserServiceImpl implements UserService {
     // 정식 User 생성 (여기서 비밀번호 암호화)
     User user = User.builder()
         .loginId(tempUser.getLoginId())
-        .password(passwordEncoder.encode(tempUser.getPassword()))
+        .password(tempUser.getPassword())
         .name(tempUser.getName())
         .phone(tempUser.getPhone())
         .email(tempUser.getEmail())
@@ -108,7 +120,7 @@ public class UserServiceImpl implements UserService {
     userRepository.save(user);
 
     // TempUser 정리
-    tempUserRepository.delete(tempUser);
+    tempUserRedisRepository.deleteByEmail(email);
 
     return new SignupResponse(
         user.getId(),

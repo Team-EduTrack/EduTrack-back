@@ -4,45 +4,52 @@ import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
 import com.edutrack.domain.user.dto.VerifyEmailRequest;
 import com.edutrack.domain.user.entity.TempUser;
 import com.edutrack.domain.user.entity.UserEmailVerification;
-import com.edutrack.domain.user.repository.TempUserRepository;
-import com.edutrack.domain.user.repository.UserEmailVerificationRepository;
+import com.edutrack.domain.user.repository.SignupLockRepository;
+import com.edutrack.domain.user.repository.TempUserRedisRepository;
+import com.edutrack.domain.user.repository.UserEmailVerificationRedisRepository;
 import com.edutrack.global.mail.MailSendService;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class EmailVerificationServiceImpl implements EmailVerificationService {
 
-  private final UserEmailVerificationRepository userEmailVerificationRepository;
+  private final UserEmailVerificationRedisRepository userEmailVerificationRedisRepository;
   private final MailSendService mailSendService;
-  private final TempUserRepository tempUserRepository;
+  private final TempUserRedisRepository tempUserRedisRepository;
+  private final SignupLockRepository signupLockRepository;
 
-  private static final int CODE_LENGTH = 6;
-  private static final long CODE_EXPIRATION_MINUTES = 5;
+  private static final long CODE_TTL = 5 * 60; // 5분
 
   @Override
   public void sendVerificationCode(SendEmailVerificationRequest request) {
 
-    TempUser tempUser = tempUserRepository.findByEmail(request.getEmail())
-        .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입 신청이 없습니다."));
+    TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
+    if (tempUser == null) {
+      throw new IllegalArgumentException("가입 신청이 없습니다.");
+    }
+
+    // 이미 인증된 사용자 재요청 차단
+    if (tempUser.isVerified()) {
+      throw new IllegalArgumentException("이미 이메일 인증이 완료되었습니다.");
+    }
+
+    // 재발급 제한 (이미 코드가 존재하면 차단)
+    String alreadySentCode = userEmailVerificationRedisRepository.getCode(request.getEmail());
+    if (alreadySentCode != null) {
+      throw new IllegalArgumentException("이미 인증 코드가 발송 되었습니다. 잠시 후 다시 시도하세요.");
+    }
 
     String code = generateCode();
 
-    UserEmailVerification verification = UserEmailVerification.builder()
-        .email(tempUser.getEmail())
-        .token(code)
-        .verified(false)
-        .build();
-
-    userEmailVerificationRepository.save(verification);
+    // Redis 에 인증코드 저장 (TTL = 5분)
+    userEmailVerificationRedisRepository.saveCode(request.getEmail(), code, CODE_TTL);
 
     String subject = "[EduTrack] 이메일 인증 코드 안내";
-    String text = "인증 코드:" + code + "\n\n5분 이내에 입력해 주세요.";
+    String text = "인증 코드:" + code + "\n5분 이내에 입력해 주세요.";
 
     mailSendService.sendMail(tempUser.getEmail(), subject, text);
   }
@@ -50,44 +57,46 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
   @Override
   public void verifyEmail(VerifyEmailRequest request) {
 
-    TempUser tempUser = tempUserRepository.findByEmail(request.getEmail())
-        .orElseThrow(() -> new IllegalArgumentException("해당 이메일로 가입 신청이 없습니다."));
-
-    UserEmailVerification verification = userEmailVerificationRepository
-        .findTopByEmailOrderByCreatedAtDesc(request.getEmail())
-        .orElseThrow(() -> new IllegalArgumentException("인증 정보가 존재하지 않습니다."));
-
-    if (verification.isVerified()) {
-      throw new IllegalArgumentException("이미 사용된 인증 코드입니다.");
+    TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
+    if (tempUser == null) {
+      throw new IllegalArgumentException("가입 신청이 없습니다.");
     }
 
-    LocalDateTime now = LocalDateTime.now();
-    if (verification.getCreatedAt().isBefore(now.minusMinutes(CODE_EXPIRATION_MINUTES))) {
-      throw new IllegalArgumentException("인증 코드가 만료되었습니다. 다시 요청해 주세요.");
+    if (tempUser.isVerified()) {
+      throw new IllegalArgumentException("이미 이메일 인증이 완료되었습니다.");
     }
 
-    if (!verification.getToken().equals(request.getToken())) {
+    // Redis에 저장된 코드 가져오기
+    String savedCode = userEmailVerificationRedisRepository.getCode(request.getEmail());
+    if (savedCode == null) {
+      throw new IllegalArgumentException("인증 코드가 만료되었거나 존재하지 않습니다.");
+    }
+
+    // 코드 비교
+    if (!savedCode.equals(request.getToken())) {
       throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
     }
 
-    // 인증 요청 엔티티 상태 업데이트 (verified = true)
-    verification.markVerified();
-    // User 이메일 인증 완료 상태 변경
+    // 이메일 인증 성공
     tempUser.markVerified();
 
-    // 변경된 TempUser & Verification 저장
-    userEmailVerificationRepository.save(verification);
-    tempUserRepository.save(tempUser);
+    // TempUser 다시 저장 (TTL 15분)
+    tempUserRedisRepository.save(tempUser, 15 * 60);
+
+    // 인증 코드 삭제
+    userEmailVerificationRedisRepository.deleteCode(request.getEmail());
+    // signupLock 즉시 해제
+    signupLockRepository.unLockAll(
+        tempUser.getLoginId(),
+        tempUser.getEmail(),
+        tempUser.getPhone());
+
   }
 
   private String generateCode() {
     SecureRandom random = new SecureRandom();
-    StringBuilder sb = new StringBuilder();
-
-    for (int i = 0; i < CODE_LENGTH; i++) {
-      sb.append(random.nextInt(10));
-    }
-    return sb.toString();
+    int code = random.nextInt(900_000) + 100_000; // 100000 ~ 999999
+    return String.valueOf(code);
   }
 
 }
