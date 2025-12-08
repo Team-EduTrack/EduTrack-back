@@ -97,15 +97,15 @@ public class AssignmentSubmissionController {
     /**
      * 학생용 – 자신의 과제 제출 상세 조회 (점수/피드백 읽기 전용)
      */
-    @GetMapping("/{assignmentId}/my-submission")
+    @GetMapping("/my-submission")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<AssignmentSubmissionStudentViewResponse> getMySubmission(
             @PathVariable Long academyId,
             @PathVariable Long assignmentId,
             @AuthenticationPrincipal Long studentId
-    ) {
-        var response = assignmentSubmissionService.getMySubmission(
-                academyId, studentId, assignmentId);
+        ) {
+            var response = assignmentSubmissionService.getMySubmission(
+                    academyId, studentId, assignmentId);
 
         return ResponseEntity.ok(response);
     }
