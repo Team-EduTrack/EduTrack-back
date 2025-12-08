@@ -1007,11 +1007,11 @@ components:
     SignInRequest:
       type: object
       properties:
-        email:
+        loginId:
           type: string
         password:
           type: string
-      required: [email, password]
+      required: [loginId, password]
 
     SignInResponse:
       type: object
