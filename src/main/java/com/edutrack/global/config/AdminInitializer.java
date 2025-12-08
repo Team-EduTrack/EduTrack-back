@@ -12,6 +12,7 @@ import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 
 @Component
+@Profile("!test")
 @RequiredArgsConstructor
 public class AdminInitializer implements CommandLineRunner {
 
@@ -85,14 +87,15 @@ public class AdminInitializer implements CommandLineRunner {
                 .orElseThrow(() -> new IllegalStateException("TEACHER 역할 없음"));
 
         // (1) 원장 생성
-        User principal = new User(
-                "principal1",
-                passwordEncoder.encode("1234"),
-                "테스트원장",
-                "01000000001",
-                "principal@test.com",
-                null
-        );
+        User principal = User.builder()
+            .loginId("principal1")
+            .password(passwordEncoder.encode("1234"))
+            .name("테스트원장")
+            .phone("01000000001")
+            .email("principal@test.com")
+            .emailVerified(true)
+            .userStatus(UserStatus.ACTIVE)
+            .build();
         principal = userRepository.save(principal);
 
         // (2) 학원 생성
@@ -105,27 +108,31 @@ public class AdminInitializer implements CommandLineRunner {
         userRepository.save(principal);
 
         // (4) 학생 생성
-        User student = new User(
-                "teststudent",
-                passwordEncoder.encode("1234"),
-                "테스트학생",
-                "01000000000",
-                "student@test.com",
-                academy
-        );
+        User student = User.builder()
+            .loginId("teststudent")
+            .password(passwordEncoder.encode("1234"))
+            .name("테스트학생")
+            .phone("01000000000")
+            .email("student@test.com")
+            .academy(academy)
+            .emailVerified(true)
+            .userStatus(UserStatus.ACTIVE)
+            .build();
         student = userRepository.save(student);
         student.addRole(studentRole);
         userRepository.save(student);
 
         // 강사 계정 생성
-        User teacher = new User(
-                "testteacher",
-                passwordEncoder.encode("1234"),
-                "테스트강사",
-                "01000000002",
-                "teacher@test.com",
-                academy // 같은 학원 소속으로 설정 (선택)
-        );
+        User teacher = User.builder()
+            .loginId("testteacher")
+            .password(passwordEncoder.encode("1234"))
+            .name("테스트강사")
+            .phone("01000000002")
+            .email("teacher@test.com")
+            .academy(academy)
+            .emailVerified(true)
+            .userStatus(UserStatus.ACTIVE)
+            .build();
         teacher = userRepository.save(teacher);
         teacher.addRole(teacherRole);
         userRepository.save(teacher);

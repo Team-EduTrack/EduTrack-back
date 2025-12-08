@@ -23,30 +23,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AssignmentSubmissionController {
 
-    private final AssignmentSubmissionService assignmentSubmissionService;
+  private final AssignmentSubmissionService assignmentSubmissionService;
 
-    // Presigned URL 요청
-    @PostMapping("/presigned-url")
-    public ResponseEntity<PresignedUrlResponse> getPresignedUrl(
-            @PathVariable Long assignmentId,
-            @RequestBody PresignedUrlRequest request) {
+  // Presigned URL 요청
+  @PostMapping("/presigned-url")
+  public ResponseEntity<PresignedUrlResponse> getPresignedUrl(
+      @PathVariable Long assignmentId,
+      @RequestBody PresignedUrlRequest request) {
 
-        return ResponseEntity.ok(assignmentSubmissionService.createPresignedUrl(assignmentId, request));
-    }
+    return ResponseEntity.ok(assignmentSubmissionService.createPresignedUrl(assignmentId, request));
+  }
 
     // 과제 제출 (fileKey 저장)
     @PostMapping("/submit")
     public ResponseEntity<AssignmentSubmitResponse> submit(
             @PathVariable Long assignmentId,
-            @RequestParam Long studentId,
+            @AuthenticationPrincipal Long studentId,
             @RequestBody AssignmentSubmitRequest request) {
+
 
         return ResponseEntity.ok(assignmentSubmissionService.submit(assignmentId, studentId, request));
     }
 
   // 강사 기준 -> 특정 과제 제출 리스트 조회
   @PreAuthorize("hasRole('TEACHER')")
-  @GetMapping("")
+  @GetMapping("/list")
   public ResponseEntity<List<AssignmentSubmissionListResponse>> getSubmissions(
       @PathVariable Long assignmentId,
       Authentication authentication
@@ -55,41 +56,42 @@ public class AssignmentSubmissionController {
     // JWT subject (userId)
     Long teacherId = Long.parseLong(authentication.getName());
 
-    return ResponseEntity.ok(assignmentSubmissionService.getSubmissionsForTeacher(assignmentId, teacherId));
+    return ResponseEntity.ok(
+        assignmentSubmissionService.getSubmissionsForTeacher(assignmentId, teacherId));
   }
 
-    /**
-     * 강사용 – 과제 제출 상세 조회
-     * GET /api/academies/{academyId}/assignments/{assignmentId}/submissions/{submissionId}
-     */
-    @GetMapping("/{submissionId}")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<AssignmentSubmissionTeacherViewResponse> getSubmissionForTeacher(
-            @PathVariable Long academyId,
-            @PathVariable Long assignmentId,
-            @PathVariable Long submissionId,
-            @AuthenticationPrincipal Long teacherId
-    ) {
-        var response = assignmentSubmissionService.getSubmissionForTeacher(
-                academyId, teacherId, assignmentId, submissionId);
+  /**
+   * 강사용 – 과제 제출 상세 조회 GET
+   * /api/academies/{academyId}/assignments/{assignmentId}/submissions/{submissionId}
+   */
+  @GetMapping("/{submissionId}")
+  @PreAuthorize("hasRole('TEACHER')")
+  public ResponseEntity<AssignmentSubmissionTeacherViewResponse> getSubmissionForTeacher(
+      @PathVariable Long academyId,
+      @PathVariable Long assignmentId,
+      @PathVariable Long submissionId,
+      @AuthenticationPrincipal Long teacherId
+  ) {
+    var response = assignmentSubmissionService.getSubmissionForTeacher(
+        academyId, teacherId, assignmentId, submissionId);
 
-        return ResponseEntity.ok(response);
-    }
+    return ResponseEntity.ok(response);
+  }
 
-    /**
-     * 강사용 – 점수 + 피드백 저장
-     */
-    @PatchMapping("/{submissionId}/grade")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<AssignmentGradeResponse> gradeSubmission(
-            @PathVariable Long academyId,
-            @PathVariable Long assignmentId,
-            @PathVariable Long submissionId,
-            @AuthenticationPrincipal Long teacherId,
-            @Valid @RequestBody AssignmentGradeRequest request
-    ) {
-        var response = assignmentSubmissionService.gradeSubmission(
-                academyId, teacherId, assignmentId, submissionId, request);
+  /**
+   * 강사용 – 점수 + 피드백 저장
+   */
+  @PatchMapping("/{submissionId}/grade")
+  @PreAuthorize("hasRole('TEACHER')")
+  public ResponseEntity<AssignmentGradeResponse> gradeSubmission(
+      @PathVariable Long academyId,
+      @PathVariable Long assignmentId,
+      @PathVariable Long submissionId,
+      @AuthenticationPrincipal Long teacherId,
+      @Valid @RequestBody AssignmentGradeRequest request
+  ) {
+    var response = assignmentSubmissionService.gradeSubmission(
+        academyId, teacherId, assignmentId, submissionId, request);
 
         return ResponseEntity.ok(response);
     }
