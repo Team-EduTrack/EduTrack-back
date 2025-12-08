@@ -67,6 +67,7 @@ public class ExamService {
         Exam exam = new Exam(
                 lecture,
                 request.getTitle(),
+                null,
                 ExamStatus.DRAFT,
                 request.getStartDate(),
                 request.getEndDate(),
