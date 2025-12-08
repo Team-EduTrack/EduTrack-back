@@ -19,15 +19,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.edutrack.domain.exam.entity.Difficulty;
+import com.edutrack.domain.statistics.dto.DifficultyStatisticsResponse;
 import com.edutrack.domain.statistics.repository.ExamStatisticsRepository;
 
 @ExtendWith(MockitoExtension.class)
-class ExamStatisticsServiceTest {
+class ExamDifficultyStatisticsServiceTest {
 
-    private static final Logger log = LoggerFactory.getLogger(ExamStatisticsServiceTest.class);
+    private static final Logger log = LoggerFactory.getLogger(ExamDifficultyStatisticsServiceTest.class);
 
     @InjectMocks
-    private ExamStatisticsService examStatisticsService;
+    private ExamDifficultyStatisticsService examStatisticsService;
 
     @Mock
     private ExamStatisticsRepository examStatisticsRepository;
@@ -56,18 +57,18 @@ class ExamStatisticsServiceTest {
         log.info("집계 결과: EASY 15개 중 12개 정답(0.8), MEDIUM 15개 중 10개 정답(0.67), HARD 6개 중 2개 정답(0.33)");
         
         // Repository 쿼리가 여러 학생의 답안을 집계한 결과
-        List<Object[]> results = List.of(
-            new Object[] {Difficulty.EASY, 15L, 12L},      // 학생 A+B+C의 EASY 문제 집계: 15개 중 12개 정답
-            new Object[] {Difficulty.MEDIUM, 15L, 10L},   // 학생 A+B+C의 MEDIUM 문제 집계: 15개 중 10개 정답
-            new Object[] {Difficulty.HARD, 6L, 2L}        // 학생 A+B+C의 HARD 문제 집계: 6개 중 2개 정답
+        List<DifficultyStatisticsResponse> results = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 15L, 12L),      // 학생 A+B+C의 EASY 문제 집계: 15개 중 12개 정답
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 15L, 10L),   // 학생 A+B+C의 MEDIUM 문제 집계: 15개 중 10개 정답
+            new DifficultyStatisticsResponse(Difficulty.HARD, 6L, 2L)        // 학생 A+B+C의 HARD 문제 집계: 6개 중 2개 정답
         );
         log.info("Mock 데이터: EASY(15/12), MEDIUM(15/10), HARD(6/2)");
 
         when(examStatisticsRepository.findDifficultyStatisticsByExamId(examId)).thenReturn(results);
 
         //when
-        log.info("서비스 메서드 호출 - calculateDifficultyCorrectRateByExamId");
-        Map<Difficulty, Double> result = examStatisticsService.calculateDifficultyCorrectRateByExamId(examId);
+        log.info("서비스 메서드 호출 - getDifficultyCorrectRateMapForExam");
+        Map<Difficulty, Double> result = examStatisticsService.getDifficultyCorrectRateMapForExam(examId);
 
          // then
         log.info("=== 계산 결과 검증 ===");
@@ -98,7 +99,7 @@ class ExamStatisticsServiceTest {
         // when
         log.info("서비스 메서드 호출");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByExamId(examId);
+            examStatisticsService.getDifficultyCorrectRateMapForExam(examId);
 
         // then
         log.info("=== 계산 결과 검증 ===");
@@ -122,8 +123,8 @@ class ExamStatisticsServiceTest {
         log.info("=== 일부 난이도만 있는 경우 테스트 시작 ===");
         log.info("시험 ID: {}", examId);
         
-        List<Object[]> results = new ArrayList<>();
-        results.add(new Object[] {Difficulty.EASY, 10L, 8L});
+        List<DifficultyStatisticsResponse> results = new ArrayList<>();
+        results.add(new DifficultyStatisticsResponse(Difficulty.EASY, 10L, 8L));
         // MEDIUM, HARD는 없음
         log.info("Mock 데이터: EASY만 존재 (10문제 중 8문제 정답)");
 
@@ -133,7 +134,7 @@ class ExamStatisticsServiceTest {
         // when
         log.info("서비스 메서드 호출");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByExamId(examId);
+            examStatisticsService.getDifficultyCorrectRateMapForExam(examId);
 
         // then
         log.info("=== 계산 결과 검증 ===");
@@ -157,10 +158,10 @@ class ExamStatisticsServiceTest {
         log.info("=== 정답률 100% 테스트 시작 ===");
         log.info("시험 ID: {}", examId);
         
-        List<Object[]> results = List.of(
-            new Object[] {Difficulty.EASY, 10L, 10L},    // 10문제 모두 정답
-            new Object[] {Difficulty.MEDIUM, 5L, 5L},     // 5문제 모두 정답
-            new Object[] {Difficulty.HARD, 3L, 3L}       // 3문제 모두 정답
+        List<DifficultyStatisticsResponse> results = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 10L, 10L),    // 10문제 모두 정답
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 5L, 5L),     // 5문제 모두 정답
+            new DifficultyStatisticsResponse(Difficulty.HARD, 3L, 3L)       // 3문제 모두 정답
         );
         log.info("Mock 데이터: 모든 난이도 100% 정답률");
 
@@ -170,7 +171,7 @@ class ExamStatisticsServiceTest {
         // when
         log.info("서비스 메서드 호출");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByExamId(examId);
+            examStatisticsService.getDifficultyCorrectRateMapForExam(examId);
 
         // then
         log.info("=== 계산 결과 검증 ===");
@@ -194,10 +195,10 @@ class ExamStatisticsServiceTest {
         log.info("=== 정답률 0% 테스트 시작 ===");
         log.info("시험 ID: {}", examId);
         
-        List<Object[]> results = List.of(
-            new Object[] {Difficulty.EASY, 10L, 0L},      // 10문제 모두 오답
-            new Object[] {Difficulty.MEDIUM, 5L, 0L},    // 5문제 모두 오답
-            new Object[] {Difficulty.HARD, 3L, 0L}       // 3문제 모두 오답
+        List<DifficultyStatisticsResponse> results = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 10L, 0L),      // 10문제 모두 오답
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 5L, 0L),    // 5문제 모두 오답
+            new DifficultyStatisticsResponse(Difficulty.HARD, 3L, 0L)       // 3문제 모두 오답
         );
         log.info("Mock 데이터: 모든 난이도 0% 정답률");
 
@@ -207,7 +208,7 @@ class ExamStatisticsServiceTest {
         // when
         log.info("서비스 메서드 호출");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByExamId(examId);
+            examStatisticsService.getDifficultyCorrectRateMapForExam(examId);
 
         // then
         log.info("=== 계산 결과 검증 ===");
@@ -231,8 +232,8 @@ class ExamStatisticsServiceTest {
         log.info("=== 0으로 나누기 방지 테스트 시작 ===");
         log.info("시험 ID: {}", examId);
         
-        List<Object[]> results = new ArrayList<>();
-        results.add(new Object[] {Difficulty.EASY, 0L, 0L});    // 전체 문제 수가 0
+        List<DifficultyStatisticsResponse> results = new ArrayList<>();
+        results.add(new DifficultyStatisticsResponse(Difficulty.EASY, 0L, 0L));    // 전체 문제 수가 0
         log.info("Mock 데이터: totalQuestions = 0 (0으로 나누기 방지 확인)");
 
         when(examStatisticsRepository.findDifficultyStatisticsByExamId(examId))
@@ -241,7 +242,7 @@ class ExamStatisticsServiceTest {
         // when
         log.info("서비스 메서드 호출");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByExamId(examId);
+            examStatisticsService.getDifficultyCorrectRateMapForExam(examId);
 
         // then
         log.info("=== 계산 결과 검증 ===");
@@ -268,10 +269,10 @@ class ExamStatisticsServiceTest {
         log.info("참고: 난이도는 문제마다 설정되어 있으며, 같은 난이도의 문제들을 그룹화하여 집계");
         
         // 한 학생의 답안을 난이도별로 집계한 결과
-        List<Object[]> results = List.of(
-            new Object[] {Difficulty.EASY, 5L, 4L},      // 학생이 푼 EASY 문제 5개 중 4개 정답
-            new Object[] {Difficulty.MEDIUM, 8L, 6L},   // 학생이 푼 MEDIUM 문제 8개 중 6개 정답
-            new Object[] {Difficulty.HARD, 2L, 1L}      // 학생이 푼 HARD 문제 2개 중 1개 정답
+        List<DifficultyStatisticsResponse> results = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 5L, 4L),      // 학생이 푼 EASY 문제 5개 중 4개 정답
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 8L, 6L),   // 학생이 푼 MEDIUM 문제 8개 중 6개 정답
+            new DifficultyStatisticsResponse(Difficulty.HARD, 2L, 1L)      // 학생이 푼 HARD 문제 2개 중 1개 정답
         );
         log.info("Mock 데이터: EASY(5/4), MEDIUM(8/6), HARD(2/1)");
 
@@ -279,9 +280,9 @@ class ExamStatisticsServiceTest {
             .thenReturn(results);
 
         // when
-        log.info("서비스 메서드 호출 - calculateDifficultyCorrectRateByExamIdAndStudentId");
+        log.info("서비스 메서드 호출 - getDifficultyCorrectRateMapForStudentExam");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByExamIdAndStudentId(examId, studentId);
+            examStatisticsService.getDifficultyCorrectRateMapForStudentExam(examId, studentId);
 
         // then
         log.info("=== 계산 결과 검증 ===");
@@ -305,10 +306,10 @@ class ExamStatisticsServiceTest {
         log.info("=== 강의 전체 통계 테스트 시작 ===");
         log.info("강의 ID: {}", lectureId);
         
-        List<Object[]> results = List.of(
-            new Object[] {Difficulty.EASY, 50L, 40L},
-            new Object[] {Difficulty.MEDIUM, 30L, 20L},
-            new Object[] {Difficulty.HARD, 20L, 8L}
+        List<DifficultyStatisticsResponse> results = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 50L, 40L),
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 30L, 20L),
+            new DifficultyStatisticsResponse(Difficulty.HARD, 20L, 8L)
         );
         log.info("Mock 데이터: EASY(50/40), MEDIUM(30/20), HARD(20/8)");
 
@@ -316,9 +317,9 @@ class ExamStatisticsServiceTest {
             .thenReturn(results);
 
         // when
-        log.info("서비스 메서드 호출 - calculateDifficultyCorrectRateByLectureId");
+        log.info("서비스 메서드 호출 - getDifficultyCorrectRateMapForLecture");
         Map<Difficulty, Double> result = 
-            examStatisticsService.calculateDifficultyCorrectRateByLectureId(lectureId);
+            examStatisticsService.getDifficultyCorrectRateMapForLecture(lectureId);
 
         // then
         log.info("=== 계산 결과 검증 ===");

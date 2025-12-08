@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.edutrack.domain.exam.entity.Difficulty;
+import com.edutrack.domain.statistics.dto.DifficultyStatisticsResponse;
 import com.edutrack.domain.statistics.repository.ExamStatisticsRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -20,26 +21,26 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ExamStatisticsService {
+public class ExamDifficultyStatisticsService {
 
     private final ExamStatisticsRepository examStatisticsRepository;
 
     /**
      * 특정 시험의 난이도별 정답률 통계 계산
      */
-    public Map<Difficulty, Double> calculateDifficultyCorrectRateByExamId(Long examId) {
-        List<Object[]> results = examStatisticsRepository.findDifficultyStatisticsByExamId(examId);
+    public Map<Difficulty, Double> getDifficultyCorrectRateMapForExam(Long examId) {
+        List<DifficultyStatisticsResponse> results = examStatisticsRepository.findDifficultyStatisticsByExamId(examId);
         return convertToDifficultyRateMap(results);
     }
 
     /**
      * 특정 학생의 특정 시험에 대한 난이도별 정답률 통계 계산
      */
-    public Map<Difficulty, Double> calculateDifficultyCorrectRateByExamIdAndStudentId(
+    public Map<Difficulty, Double> getDifficultyCorrectRateMapForStudentExam(
             Long examId, 
             Long studentId
     ) {
-        List<Object[]> results = examStatisticsRepository
+        List<DifficultyStatisticsResponse> results = examStatisticsRepository
                 .findDifficultyStatisticsByExamIdAndStudentId(examId, studentId);
         return convertToDifficultyRateMap(results);
     }
@@ -50,21 +51,21 @@ public class ExamStatisticsService {
      * @param lectureId 강의 ID
      * @return 난이도별 정답률 Map
      */
-    public Map<Difficulty, Double> calculateDifficultyCorrectRateByLectureId(Long lectureId) {
-        List<Object[]> results = examStatisticsRepository.findDifficultyStatisticsByLectureId(lectureId);
+    public Map<Difficulty, Double> getDifficultyCorrectRateMapForLecture(Long lectureId) {
+        List<DifficultyStatisticsResponse> results = examStatisticsRepository.findDifficultyStatisticsByLectureId(lectureId);
         return convertToDifficultyRateMap(results);
     }
 
     /**
      * 쿼리 결과를 난이도별 정답률 Map으로 변환
      */
-    private Map<Difficulty, Double> convertToDifficultyRateMap(List<Object[]> results) {
+    private Map<Difficulty, Double> convertToDifficultyRateMap(List<DifficultyStatisticsResponse> results) {
         Map<Difficulty, Double> difficultyRateMap = new HashMap<>();
         
-        for (Object[] result : results) {
-            Difficulty difficulty = (Difficulty) result[0];
-            Long totalQuestions = ((Number) result[1]).longValue();
-            Long correctQuestions = ((Number) result[2]).longValue();
+        for (DifficultyStatisticsResponse result : results) {
+            Difficulty difficulty = result.getDifficulty();
+            Long totalQuestions = result.getTotalQuestions();
+            Long correctQuestions = result.getCorrectQuestions();
             
             // 정답률 계산 (전체 문제가 0개면 0.0)
             double correctRate = totalQuestions > 0 
