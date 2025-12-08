@@ -54,7 +54,7 @@ class ExamStatisticsServiceTest {
                     createExamStudentWithScore(95),  // 90-100 구간
                     createExamStudentWithScore(100)  // 90-100 구간
             );
-            given(examStudentRepository.findByExam_Id(examId)).willReturn(submissions);
+            given(examStudentRepository.findByExamId(examId)).willReturn(submissions);
 
             // when
             ExamDistributionResponse response = examStatisticsService.getScoreDistribution(examId);
@@ -79,7 +79,7 @@ class ExamStatisticsServiceTest {
             // given
             Long examId = 1L;
             given(examRepository.existsById(examId)).willReturn(true);
-            given(examStudentRepository.findByExam_Id(examId)).willReturn(Collections.emptyList());
+            given(examStudentRepository.findByExamId(examId)).willReturn(Collections.emptyList());
 
             // when
             ExamDistributionResponse response = examStatisticsService.getScoreDistribution(examId);
@@ -102,7 +102,7 @@ class ExamStatisticsServiceTest {
                     createExamStudentWithScore(null), // null 점수
                     createExamStudentWithScore(70)
             );
-            given(examStudentRepository.findByExam_Id(examId)).willReturn(submissions);
+            given(examStudentRepository.findByExamId(examId)).willReturn(submissions);
 
             // when
             ExamDistributionResponse response = examStatisticsService.getScoreDistribution(examId);
@@ -126,7 +126,7 @@ class ExamStatisticsServiceTest {
                     createExamStudentWithScore(90),  // 90-100 구간
                     createExamStudentWithScore(100)  // 90-100 구간 (Math.min으로 9로 제한)
             );
-            given(examStudentRepository.findByExam_Id(examId)).willReturn(submissions);
+            given(examStudentRepository.findByExamId(examId)).willReturn(submissions);
 
             // when
             ExamDistributionResponse response = examStatisticsService.getScoreDistribution(examId);
@@ -143,7 +143,7 @@ class ExamStatisticsServiceTest {
             // given
             Long examId = 1L;
             given(examRepository.existsById(examId)).willReturn(true);
-            given(examStudentRepository.findByExam_Id(examId)).willReturn(Collections.emptyList());
+            given(examStudentRepository.findByExamId(examId)).willReturn(Collections.emptyList());
 
             // when
             ExamDistributionResponse response = examStatisticsService.getScoreDistribution(examId);
@@ -182,7 +182,7 @@ class ExamStatisticsServiceTest {
                     createExamStudentWithScore(84),
                     createExamStudentWithScore(85)
             );
-            given(examStudentRepository.findByExam_Id(examId)).willReturn(submissions);
+            given(examStudentRepository.findByExamId(examId)).willReturn(submissions);
 
             // when
             ExamDistributionResponse response = examStatisticsService.getScoreDistribution(examId);

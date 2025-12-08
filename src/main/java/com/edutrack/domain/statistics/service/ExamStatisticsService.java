@@ -22,6 +22,11 @@ public class ExamStatisticsService {
     private final ExamStudentRepository examStudentRepository;
 
     private static final int SCORE_INTERVAL = 10;
+    private static final List<String> DEFINED_RANGES = Arrays.asList(
+            "0-10", "10-20", "20-30", "30-40", "40-50",
+            "50-60", "60-70", "70-80", "80-90", "90-100"
+    );
+
 
     @Transactional(readOnly = true)
     public ExamDistributionResponse getScoreDistribution(Long examId) {
@@ -44,13 +49,9 @@ public class ExamStatisticsService {
             counts[index]++;
         }
 
-        List<String> definedRanges = Arrays.asList(
-                "0-10", "10-20", "20-30", "30-40", "40-50",
-                "50-60", "60-70", "70-80", "80-90", "90-100"
-        );
 
         return ExamDistributionResponse.builder()
-                .ranges(definedRanges)
+                .ranges(DEFINED_RANGES)
                 .counts(Arrays.stream(counts).boxed().collect(Collectors.toList()))
                 .totalSubmissions(scores.size())
                 .build();
