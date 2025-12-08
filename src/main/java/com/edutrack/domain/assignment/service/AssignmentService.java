@@ -34,10 +34,7 @@ public class AssignmentService {
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     private final LectureStudentRepository lectureStudentRepository;
     /**
-     * 과제 생성
-     *
-     * @param academyId 학원 ID (URL path)
-     * @param teacherId 로그인한 강사 ID
+     * 강사가 특정 강의에 과제를 생성
      */
     @Transactional
     public AssignmentCreateResponse createAssignment(
@@ -48,28 +45,28 @@ public class AssignmentService {
     ) {
         // 강사 조회
         User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new IllegalArgumentException("강사를 찾을 수 없습니다. id=" + teacherId));
+                .orElseThrow(() -> new NotFoundException("강사를 찾을 수 없습니다. ID: " + teacherId));
 
         // 강사 권한 확인
         if (!teacher.hasRole(RoleType.TEACHER)) {
-            throw new IllegalStateException("강사만 과제를 생성할 수 있습니다.");
+            throw new ForbiddenException("강사만 과제를 생성할 수 있습니다.");
         }
 
-        // 같은 학원인지 확인
+        // 학원 소속 확인
         if (!teacher.getAcademy().getId().equals(academyId)) {
-            throw new IllegalStateException("다른 학원 소속 강사는 과제를 생성할 수 없습니다.");
+            throw new ForbiddenException("해당 학원 소속 강사만 과제를 생성할 수 있습니다.");
         }
 
         // 강의 조회
         Lecture lecture = lectureRepository.findById(lectureId)
-                .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다. id=" + lectureId));
+                .orElseThrow(() -> new NotFoundException("강의를 찾을 수 없습니다. ID: " + lectureId));
 
-        // 강의가 이 강사의 강의인지 확인
+        // 담당 강사 검증
         if (!lecture.getTeacher().getId().equals(teacherId)) {
-            throw new IllegalStateException("해당 강의의 담당 강사만 과제를 생성할 수 있습니다.");
+            throw new ForbiddenException("해당 강의의 담당 강사만 과제를 생성할 수 있습니다.");
         }
 
-        // 도메인 생성
+        // 과제 생성
         Assignment assignment = Assignment.create(
                 lecture,
                 teacher,
@@ -79,18 +76,15 @@ public class AssignmentService {
                 req.getEndDate()
         );
 
-        // 저장
         Assignment saved = assignmentRepository.save(assignment);
 
-        // 응답 DTO로 변환
         return AssignmentCreateResponse.builder()
                 .assignmentId(saved.getId())
                 .build();
     }
 
     /**
-     * 학생용 – 특정 강의의 과제 리스트 조회
-     * 제목 + 시작/종료 날짜만 반환
+     * 학생용 – 특정 강의의 과제 리스트 조회 (제목 + 마감일 + 제출 여부)
      */
     @Transactional(readOnly = true)
     public List<AssignmentListResponse> getAssignmentsForLecture(
@@ -98,28 +92,27 @@ public class AssignmentService {
             Long studentId,
             Long lectureId
     ) {
-        //강의 존재 확인
+        // 강의 확인
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new NotFoundException("지정된 강의를 찾을 수 없습니다. ID: " + lectureId));
 
-        //학원 검증
+        // 학원 검증
         Academy academy = lecture.getAcademy();
         if (!academy.getId().equals(academyId)) {
             throw new ForbiddenException("해당 학원에 속하지 않은 강의입니다.");
         }
 
-        //수강 중인 학생인지 검증 (LectureStudent 매핑 확인)
-        LectureStudentId mappingId = new LectureStudentId(lectureId, studentId);
-        boolean enrolled = lectureStudentRepository.existsById(mappingId);
+        // 수강 여부 검증
+        boolean enrolled = lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId);
 
         if (!enrolled) {
             throw new ForbiddenException("해당 강의를 수강 중인 학생만 과제 목록을 조회할 수 있습니다.");
         }
 
-        //강의에 속한 과제 목록 조회
+        // 과제 조회
         List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
 
-        //각 과제마다 제출 여부 조회 → status 세팅
+        // 제출 여부 포함하여 DTO 변환
         return assignments.stream()
                 .map(assignment -> {
                     boolean submitted = assignmentSubmissionRepository
