@@ -15,35 +15,40 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
-@Table(name = "user_email_verification")
-@Builder
 @Getter
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserEmailVerification {
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class TempUser {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-//  // fk : user_id
-//  @ManyToOne(fetch = FetchType.LAZY)
-//  @JoinColumn(name = "user_id")
-//  private User user;
+  @Column(name = "login_id" , nullable = false, unique = true, length = 50)
+  private String loginId;
 
-  // 이메일 직접 저장 (TempUser, User 둘 다 가능)
-  @Column(name = "email", length = 100, nullable = false)
+  @Column(name = "password", nullable = false, length = 255)
+  private String password;
+
+  @Column(name = "name", nullable = false, length = 100)
+  private String name;
+
+  @Column(name = "phone", nullable = false, unique = true, length = 11)
+  private String phone;
+
+  @Column(name = "email", nullable = false, unique = true, length = 100)
   private String email;
 
-  @Column(name = "token", length = 255, nullable = false)
-  private String token;
+  @Column(name = "academy_code", nullable = false, length = 50)
+  private String academyCode;
 
   @Builder.Default
-  @Column(name = "is_verified", nullable = false)
+  @Column(name = "verified", nullable = false)
   private boolean verified = false;
 
   @CreationTimestamp
-  @Column(name = "created_at")
+  @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
   public void markVerified(){
