@@ -59,12 +59,6 @@ public class UserAuthService {
 
         String roleName = extractPrimaryRoleName(user);
 
-        return new MyInfoResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getPhone(),
-                roleName
-        );
+        return MyInfoResponse.from(user, roleName);
     }
 }
