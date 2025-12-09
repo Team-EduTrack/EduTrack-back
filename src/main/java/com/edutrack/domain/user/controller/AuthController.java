@@ -1,5 +1,7 @@
 package com.edutrack.domain.user.controller;
 
+import com.edutrack.domain.user.dto.AcademyVerifyRequest;
+import com.edutrack.domain.user.dto.CompleteSignupRequest;
 import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
 import com.edutrack.domain.user.dto.SignupRequest;
 import com.edutrack.domain.user.dto.SignupResponse;
@@ -22,9 +24,9 @@ public class AuthController {
   private final EmailVerificationService emailVerificationService;
 
   // 회원가입
-  @PostMapping("/signup")
+  @PostMapping("/signup/request")
   public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
-    userService.signup(request);
+    userService.signupRequest(request);
     return ResponseEntity.ok("가입 신청이 완료되었습니다. 이메일 인증을 해주세요.");
   }
 
@@ -40,12 +42,19 @@ public class AuthController {
   @PostMapping("/verify-email")
   public ResponseEntity<String> verifyEmail(@RequestBody VerifyEmailRequest request) {
     emailVerificationService.verifyEmail(request);
-    return ResponseEntity.ok("이메일 인증이 완료되었습니다. 진행중이던 회원가입을 완료하세요.");
+    return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
+  }
+
+  // 학원 코드 인증
+  @PostMapping("/academy-verify")
+  public ResponseEntity<String> verifyAcademy(@RequestBody AcademyVerifyRequest request){
+    userService.verifyAcademyCode(request);
+    return ResponseEntity.ok("학원 코드 인증이 완료되었습니다.");
   }
 
   // 최종 회원가입 완료
   @PostMapping("/signup/complete")
-  public ResponseEntity<SignupResponse> completeSignup(@RequestBody VerifyEmailRequest request){
+  public ResponseEntity<SignupResponse> completeSignup(@RequestBody CompleteSignupRequest request){
     SignupResponse response = userService.completeSignup(request.getEmail());
     return ResponseEntity.ok(response);
 

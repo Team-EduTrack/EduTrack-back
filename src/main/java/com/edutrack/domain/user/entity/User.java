@@ -79,7 +79,7 @@ public class User {
 
   public void activate() {
     this.userStatus = UserStatus.ACTIVE;
-    this.createdAt = LocalDateTime.now();
+//    this.createdAt = LocalDateTime.now(); @CreationTimestamp 랑 의미 충돌
   }
 
   // 역할 확인 (RoleType 기반)
