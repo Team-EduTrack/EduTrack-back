@@ -33,6 +33,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class LectureStatisticsService {
 
+  private static final double PERCENTAGE_MULTIPLIER = 100.0;
+  private static final double TOP_PERCENTAGE_RATIO = 0.1;
+  private static final int MIN_TOP_STUDENT_COUNT = 1;
+
   private final LectureStudentRepository lectureStudentRepository;
   private final StudentAttendanceRepository studentAttendanceRepository;
   private final AssignmentRepository assignmentRepository;
@@ -108,7 +112,7 @@ public class LectureStatisticsService {
           .filter(date -> attendanceKeys.contains(studentId + "_" + date))
           .count();
   
-      double studentAttendanceRate = (double) actualAttendanceCount / possibleAttendanceCount * 100.0;
+      double studentAttendanceRate = (double) actualAttendanceCount / possibleAttendanceCount * PERCENTAGE_MULTIPLIER;
       totalAttendanceRate += studentAttendanceRate;
     }
   
@@ -173,7 +177,7 @@ public class LectureStatisticsService {
         .filter(submissionKeys::contains)
         .count();
 
-    return (double) totalActualSubmissions / totalPossibleSubmissions * 100.0;
+    return (double) totalActualSubmissions / totalPossibleSubmissions * PERCENTAGE_MULTIPLIER;
   }
 
   /**
@@ -217,7 +221,7 @@ public class LectureStatisticsService {
       return 0.0;
     }
 
-    return (double) totalActualParticipations / totalPossibleParticipations * 100.0;
+    return (double) totalActualParticipations / totalPossibleParticipations * PERCENTAGE_MULTIPLIER;
   }
 
   /**
@@ -307,7 +311,7 @@ public class LectureStatisticsService {
         .sorted((a, b) -> Double.compare(b, a))
         .toList();
 
-    int top10PercentCount = Math.max(1, (int) Math.ceil(sortedAverages.size() * 0.1));
+    int top10PercentCount = Math.max(MIN_TOP_STUDENT_COUNT, (int) Math.ceil(sortedAverages.size() * TOP_PERCENTAGE_RATIO));
 
     double top10PercentSum = sortedAverages.stream()
         .limit(top10PercentCount)
