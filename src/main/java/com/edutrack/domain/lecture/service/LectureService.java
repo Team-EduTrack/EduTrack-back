@@ -1,6 +1,16 @@
 package com.edutrack.domain.lecture.service;
 
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
@@ -11,16 +21,9 @@ import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+
 import jakarta.validation.constraints.NotEmpty;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -64,14 +67,9 @@ public class LectureService {
   //강의 상세 조회 (선생용)
   @Transactional(readOnly = true)
   public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId, Long teacherId) {
-    //강의 조회
-    Lecture lecture = lectureHelper.getLectureOrThrow(lectureId);
 
-    //강사 조회
-    User teacher = lectureHelper.getTeacherOrThrow(teacherId);
-
-    //권한 검증
-    lectureHelper.validateLectureAcess(lectureId, teacher, lecture);
+    //강의 조회 및 권한 검증
+    Lecture lecture = lectureHelper.getLectureWithValidation(lectureId, teacherId);
 
     //강의에 배정된 수강생 리스트 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
