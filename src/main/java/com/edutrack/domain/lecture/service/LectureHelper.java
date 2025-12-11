@@ -68,7 +68,7 @@ public class LectureHelper {
         .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT));
   }
 
-  public static void validateLectureAcess(Long lectureId, User teacher, Lecture lecture) {
+  public void validateLectureAcess(Long lectureId, User teacher, Lecture lecture) {
     boolean isTeacherAndOwner = teacher.hasRole(RoleType.TEACHER)
         && lecture.getTeacher().getId().equals(teacher.getId());
 

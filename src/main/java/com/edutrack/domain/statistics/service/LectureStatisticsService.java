@@ -4,13 +4,16 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.edutrack.api.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.attendance.entity.Attendance;
@@ -23,7 +26,6 @@ import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.lecture.service.LectureHelper;
-import com.edutrack.domain.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,11 +45,7 @@ public class LectureStatisticsService {
   @Transactional(readOnly = true)
   public LectureStatisticsResponse getLecutureStatistics(Long lectureId, Long teacherId) {
 
-    Lecture lecture = lectureHelper.getLectureOrThrow(lectureId);
-
-    User teacher = lectureHelper.getTeacherOrThrow(teacherId);
-
-    lectureHelper.validateLectureAcess(lectureId, teacher, lecture);
+    Lecture lecture = lectureHelper.getLectureWithValidation(lectureId, teacherId);
 
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
     List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
@@ -61,7 +59,7 @@ public class LectureStatisticsService {
     Double averageScore = calculateAverageScore(exams);
     Double top10PercentAverage = calculateTop10PercentAverage(lectureStudents, exams);
 
-    return  new LectureStatisticsResponse(
+    return new LectureStatisticsResponse(
         lectureId,
         studentCount,
         attendanceRate,
@@ -79,30 +77,41 @@ public class LectureStatisticsService {
     if (lectureStudents.isEmpty()) {
       return 0.0;
     }
-
+  
     List<LocalDate> attendancePossibleDates = calculateAttendancePossibleDates(lecture);
-    
     if (attendancePossibleDates.isEmpty()) {
       return 0.0;
     }
-
+  
     int possibleAttendanceCount = attendancePossibleDates.size();
-
+  
+    // 1. 학생 ID 목록 수집
+    List<Long> studentIds = lectureStudents.stream()
+        .map(ls -> ls.getStudent().getId())
+        .toList();
+  
+    // 2. 한 번의 쿼리로 모든 출석 데이터 조회
+    List<Attendance> allAttendances = studentAttendanceRepository
+        .findAllByStudentIdsAndDates(studentIds, attendancePossibleDates);
+  
+    // 3. (studentId, date) 조합을 키로 하는 Set 생성
+    Set<String> attendanceKeys = allAttendances.stream()
+        .map(a -> a.getStudent().getId() + "_" + a.getDate())
+        .collect(Collectors.toSet());
+  
+    // 4. 각 학생의 출석률 계산
     double totalAttendanceRate = 0.0;
     for (LectureStudent lectureStudent : lectureStudents) {
       Long studentId = lectureStudent.getStudent().getId();
       
       long actualAttendanceCount = attendancePossibleDates.stream()
-          .filter(date -> {
-            Optional<Attendance> attendance = studentAttendanceRepository.findByStudentIdAndDate(studentId, date);
-            return attendance.isPresent() && attendance.get().isStatus();
-          })
+          .filter(date -> attendanceKeys.contains(studentId + "_" + date))
           .count();
-
+  
       double studentAttendanceRate = (double) actualAttendanceCount / possibleAttendanceCount * 100.0;
       totalAttendanceRate += studentAttendanceRate;
     }
-
+  
     return totalAttendanceRate / lectureStudents.size();
   }
 
@@ -139,19 +148,30 @@ public class LectureStatisticsService {
 
     long totalPossibleSubmissions = (long) lectureStudents.size() * assignments.size();
 
-    long totalActualSubmissions = 0;
-    for (LectureStudent lectureStudent : lectureStudents) {
-      Long studentId = lectureStudent.getStudent().getId();
-      for (Assignment assignment : assignments) {
-        if (assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(assignment.getId(), studentId)) {
-          totalActualSubmissions++;
-        }
-      }
-    }
+    // 1. ID 목록 수집
+    List<Long> assignmentIds = assignments.stream()
+        .map(Assignment::getId)
+        .toList();
 
-    if (totalPossibleSubmissions == 0) {
-      return 0.0;
-    }
+    List<Long> studentIds = lectureStudents.stream()
+        .map(ls -> ls.getStudent().getId())
+        .toList();
+
+    // 2. 한 번의 쿼리로 모든 제출 데이터 조회
+    List<AssignmentSubmission> submissions = assignmentSubmissionRepository
+        .findAllByAssignmentIdsAndStudentIds(assignmentIds, studentIds);
+
+    // 3. Set으로 변환
+    Set<String> submissionKeys = submissions.stream()
+        .map(s -> s.getAssignment().getId() + "_" + s.getStudent().getId())
+        .collect(Collectors.toSet());
+
+    // 4. Stream으로 제출 개수 계산
+    long totalActualSubmissions = lectureStudents.stream()
+        .flatMap(ls -> assignments.stream()
+            .map(a -> a.getId() + "_" + ls.getStudent().getId()))
+        .filter(submissionKeys::contains)
+        .count();
 
     return (double) totalActualSubmissions / totalPossibleSubmissions * 100.0;
   }
@@ -168,15 +188,30 @@ public class LectureStatisticsService {
 
     long totalPossibleParticipations = (long) lectureStudents.size() * exams.size();
 
-    long totalActualParticipations = 0;
-    for (LectureStudent lectureStudent : lectureStudents) {
-      Long studentId = lectureStudent.getStudent().getId();
-      for (Exam exam : exams) {
-        if (examStudentRepository.existsByExamIdAndStudentId(exam.getId(), studentId)) {
-          totalActualParticipations++;
-        }
-      }
-    }
+    // 1. ID 목록 수집
+    List<Long> examIds = exams.stream()
+        .map(Exam::getId)
+        .toList();
+
+    List<Long> studentIds = lectureStudents.stream()
+        .map(ls -> ls.getStudent().getId())
+        .toList();
+
+    // 2. 한 번의 쿼리로 모든 응시 데이터 조회
+    List<ExamStudent> examStudents = examStudentRepository
+        .findAllByExamIdsAndStudentIds(examIds, studentIds);
+
+    // 3. Set으로 변환
+    Set<String> participationKeys = examStudents.stream()
+        .map(es -> es.getExam().getId() + "_" + es.getStudent().getId())
+        .collect(Collectors.toSet());
+
+    // 4. Stream으로 응시 개수 계산
+    long totalActualParticipations = lectureStudents.stream()
+        .flatMap(ls -> exams.stream()
+            .map(e -> e.getId() + "_" + ls.getStudent().getId()))
+        .filter(participationKeys::contains)
+        .count();
 
     if (totalPossibleParticipations == 0) {
       return 0.0;
@@ -194,26 +229,20 @@ public class LectureStatisticsService {
       return 0.0;
     }
 
-    List<Integer> allScores = new ArrayList<>();
-    for (Exam exam : exams) {
-      List<ExamStudent> examStudents = examStudentRepository.findByExamId(exam.getId());
-      
-      for (ExamStudent examStudent : examStudents) {
-        if (examStudent.getEarnedScore() != null) {
-          allScores.add(examStudent.getEarnedScore());
-        }
-      }
-    }
+    // 1. 시험 ID 목록 수집
+    List<Long> examIds = exams.stream()
+        .map(Exam::getId)
+        .toList();
 
-    if (allScores.isEmpty()) {
-      return 0.0;
-    }
+    // 2. 한 번의 쿼리로 모든 시험의 응시 기록 조회
+    List<ExamStudent> allExamStudents = examStudentRepository.findAllByExamIds(examIds);
 
-    double sum = allScores.stream()
-        .mapToInt(Integer::intValue)
-        .sum();
-
-    return sum / allScores.size();
+    // 3. 채점 완료된 점수의 평균 계산 (Stream 1번만 사용)
+    return allExamStudents.stream()
+        .filter(es -> es.getEarnedScore() != null)
+        .mapToInt(ExamStudent::getEarnedScore)
+        .average()
+        .orElse(0.0);
   }
 
   /**
@@ -225,33 +254,55 @@ public class LectureStatisticsService {
       return 0.0;
     }
 
-    List<Double> studentAverages = new ArrayList<>();
-    for (LectureStudent lectureStudent : lectureStudents) {
-      Long studentId = lectureStudent.getStudent().getId();
-      
-      List<Integer> studentScores = new ArrayList<>();
-      for (Exam exam : exams) {
-        examStudentRepository.findByExamIdAndStudentId(exam.getId(), studentId)
-            .ifPresent(examStudent -> {
-              if (examStudent.getEarnedScore() != null) {
-                studentScores.add(examStudent.getEarnedScore());
-              }
-            });
-      }
+    // 1. ID 목록 수집
+    List<Long> examIds = exams.stream().map(Exam::getId).toList();
+    List<Long> studentIds = lectureStudents.stream()
+        .map(ls -> ls.getStudent().getId())
+        .toList();
 
-      if (!studentScores.isEmpty()) {
-        double studentAverage = studentScores.stream()
-            .mapToInt(Integer::intValue)
-            .average()
-            .orElse(0.0);
-        studentAverages.add(studentAverage);
-      }
-    }
+    // 2. 한 번의 쿼리로 모든 응시 기록 조회
+    List<ExamStudent> allExamStudents = examStudentRepository
+        .findAllByExamIdsAndStudentIds(examIds, studentIds);
+
+    // 3. (examId, studentId) 조합을 키로 하는 Map 생성
+    Map<String, ExamStudent> examStudentMap = allExamStudents.stream()
+        .collect(Collectors.toMap(
+            es -> es.getExam().getId() + "_" + es.getStudent().getId(),
+            es -> es
+        ));
+
+    // 4. 각 학생의 평균 점수 계산
+    List<Double> studentAverages = lectureStudents.stream()
+        .map(ls -> {
+          Long studentId = ls.getStudent().getId();
+          List<Integer> studentScores = exams.stream()
+              .map(exam -> {
+                String key = exam.getId() + "_" + studentId;
+                ExamStudent examStudent = examStudentMap.get(key);
+                return (examStudent != null && examStudent.getEarnedScore() != null)
+                    ? examStudent.getEarnedScore()
+                    : null;
+              })
+              .filter(score -> score != null)
+              .toList();
+
+          if (studentScores.isEmpty()) {
+            return null;
+          }
+
+          return studentScores.stream()
+              .mapToInt(Integer::intValue)
+              .average()
+              .orElse(0.0);
+        })
+        .filter(avg -> avg != null)
+        .toList();
 
     if (studentAverages.isEmpty()) {
       return 0.0;
     }
 
+    // 5. 상위 10% 계산
     List<Double> sortedAverages = studentAverages.stream()
         .sorted((a, b) -> Double.compare(b, a))
         .toList();
