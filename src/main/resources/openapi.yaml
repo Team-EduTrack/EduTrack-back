@@ -1,0 +1,1842 @@
+openapi: 3.0.1
+info:
+  title: EduTrack API
+  version: 1.0.0
+  description: EduTrack 백엔드(Spring Boot 3, Java 17)용 OpenAPI 스펙
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+tags:
+  - name: Users
+  - name: Auth
+  - name: Principal
+  - name: Lectures
+  - name: Assignments
+  - name: Assignment Submissions
+  - name: Exams
+  - name: Student Exams
+  - name: Student Dashboard
+
+paths:
+  ########################
+  # UserController (/api/users)
+  ########################
+  /api/users/signin:
+    post:
+      tags: [Users]
+      summary: 사용자 로그인
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+
+  /api/users/logout:
+    post:
+      tags: [Users]
+      summary: 사용자 로그아웃
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: 로그아웃 성공 (내용 없음)
+
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: 내 정보 조회
+      operationId: getMyInfo
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 내 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyInfoResponse'
+
+  ########################
+  # AuthController (/api/auth)
+  ########################
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: 회원가입
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '200':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+
+  /api/auth/send-email-verification:
+    post:
+      tags: [Auth]
+      summary: 이메일 인증 코드 발송
+      operationId: sendEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailVerificationRequest'
+      responses:
+        '200':
+          description: 인증 코드 발송 성공
+          content:
+            application/json:
+              schema:
+                type: string
+
+  /api/auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: 이메일 인증 확인
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: 이메일 인증 완료
+          content:
+            application/json:
+              schema:
+                type: string
+
+  ########################
+  # UserSearchController (/api/academies/{academyId}/users)
+  ########################
+  /api/academies/{academyId}/users/search:
+    get:
+      tags: [Users]
+      summary: 사용자 검색
+      operationId: searchUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [STUDENT, TEACHER, PRINCIPAL, ADMIN]
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 사용자 검색 결과
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSearchResultResponse'
+
+  /api/academies/{academyId}/users/{userId}/role/teacher:
+    patch:
+      tags: [Users]
+      summary: 학생을 강사로 역할 변경
+      operationId: changeStudentToTeacher
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 역할 변경 완료
+          content:
+            application/json:
+              schema:
+                type: string
+
+  ########################
+  # PrincipalController (/api/academy/signup)
+  ########################
+  /api/academy/signup:
+    post:
+      tags: [Principal]
+      summary: 원장(학원) 회원가입
+      operationId: principalSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrincipalRegistrationRequest'
+      responses:
+        '201':
+          description: 학원/원장 등록 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalRegistrationResponse'
+
+  ########################
+  # LectureController (/api/lectures)
+  ########################
+  /api/lectures:
+    post:
+      tags: [Lectures]
+      summary: 강의 생성
+      operationId: createLecture
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LectureCreationRequest'
+      responses:
+        '201':
+          description: 강의 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LectureCreationResponse'
+
+    get:
+      tags: [Lectures]
+      summary: 강의 목록 조회 (선생/원장)
+      operationId: getLecturesByTeacher
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 강의 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LectureForTeacherResponse'
+
+  /api/lectures/{lectureId}:
+    get:
+      tags: [Lectures]
+      summary: 강의 상세 조회 (선생/원장) - 통계 포함
+      operationId: getLectureDetailForTeacher
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 강의 상세 정보 (통계 포함)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LectureDetailWithStatisticsResponse'
+
+  /api/lectures/{lectureId}/students:
+    get:
+      tags: [Lectures]
+      summary: 강의를 듣는 학생 목록 조회
+      operationId: getStudentsByLecture
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentSearchResponse'
+
+    post:
+      tags: [Lectures]
+      summary: 강의에 학생 배정
+      operationId: assignStudentsToLecture
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LectureStudentAssignRequest'
+      responses:
+        '200':
+          description: 강의에 학생 배정 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LectureStudentAssignResponse'
+
+  /api/lectures/{lectureId}/available-students:
+    get:
+      tags: [Lectures]
+      summary: 강의에 배정되지 않은 학생 검색
+      operationId: getAvailableStudentsForLecture
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 배정 가능 학생 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentSearchResponse'
+
+  ########################
+  # AssignmentController (/api/academies/{academyId}/assignments)
+  ########################
+  /api/academies/{academyId}/assignments:
+    post:
+      tags: [Assignments]
+      summary: 과제 생성
+      operationId: createAssignment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreateRequest'
+      responses:
+        '201':
+          description: 과제 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentCreateResponse'
+
+  /api/academies/{academyId}/assignments/lectures/{lectureId}:
+    get:
+      tags: [Assignments]
+      summary: 학생용 - 특정 강의의 과제 리스트 조회
+      operationId: getAssignmentsForLecture
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 과제 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentListResponse'
+
+  /api/academies/{academyId}/assignments/{assignmentId}/my-submission:
+    get:
+      tags: [Assignments]
+      summary: 학생용 - 자신의 과제 제출 상세 조회
+      operationId: getMySubmission
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 과제 제출 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmissionStudentViewResponse'
+
+  ########################
+  # AssignmentSubmissionController (/api/academies/{academyId}/assignments/{assignmentId}/submissions)
+  ########################
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/presigned-url:
+    post:
+      tags: [Assignment Submissions]
+      summary: 과제 제출용 Presigned URL 발급
+      operationId: getAssignmentPresignedUrl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignedUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL 응답
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUrlResponse'
+
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/submit:
+    post:
+      tags: [Assignment Submissions]
+      summary: 과제 제출
+      operationId: submitAssignment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: studentId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentSubmitRequest'
+      responses:
+        '200':
+          description: 과제 제출 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmitResponse'
+
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions:
+    get:
+      tags: [Assignment Submissions]
+      summary: 강사용 - 특정 과제 제출 리스트 조회
+      operationId: getSubmissions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 과제 제출 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentSubmissionListResponse'
+
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/{submissionId}:
+    get:
+      tags: [Assignment Submissions]
+      summary: 강사용 - 과제 제출 상세 조회
+      operationId: getSubmissionForTeacher
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 과제 제출 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmissionTeacherViewResponse'
+
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/{submissionId}/grade:
+    patch:
+      tags: [Assignment Submissions]
+      summary: 강사용 - 점수 및 피드백 저장
+      operationId: gradeSubmission
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentGradeRequest'
+      responses:
+        '200':
+          description: 채점 완료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentGradeResponse'
+
+  ########################
+  # AssignmentSubmissionController (기존 경로 - 하위 호환성 유지)
+  ########################
+  /api/assignments/{assignmentId}/presigned-url:
+    post:
+      tags: [Assignment Submissions]
+      summary: 과제 제출용 Presigned URL 발급
+      operationId: getAssignmentPresignedUrl
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresignedUrlRequest'
+      responses:
+        '200':
+          description: Presigned URL 응답
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PresignedUrlResponse'
+
+  /api/assignments/{assignmentId}/submit:
+    post:
+      tags: [Assignment Submissions]
+      summary: 과제 제출
+      operationId: submitAssignment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: studentId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentSubmitRequest'
+      responses:
+        '200':
+          description: 과제 제출 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentSubmitResponse'
+
+  ########################
+  # ExamController (/api/lectures/{lectureId}/exams)
+  ########################
+  /api/lectures/{lectureId}/exams:
+    post:
+      tags: [Exams]
+      summary: 시험 생성
+      operationId: createExam
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamCreationRequest'
+      responses:
+        '201':
+          description: 시험 생성 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamCreationResponse'
+
+  /api/lectures/{lectureId}/exams/{examId}/mcq:
+    post:
+      tags: [Exams]
+      summary: 시험 문제 등록
+      operationId: registerExamQuestions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/QuestionRegistrationRequest'
+      responses:
+        '200':
+          description: 등록된 문제 ID 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionIdResponse'
+
+  /api/lectures/{lectureId}/exams/{examId}:
+    get:
+      tags: [Exams]
+      summary: 시험 상세 조회
+      operationId: getExamDetail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamDetailResponse'
+
+  ########################
+  # StudentExamController (/api/student/exams)
+  ########################
+  /api/student/exams/{examId}/start:
+    post:
+      tags: [Student Exams]
+      summary: 시험 응시 시작
+      operationId: startExam
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 시작 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamStartResponse'
+
+  /api/student/exams/{examId}/answers:
+    post:
+      tags: [Student Exams]
+      summary: 답안 저장 (자동/수동 저장)
+      operationId: saveAnswers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerSaveRequest'
+      responses:
+        '200':
+          description: 답안 저장 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnswerSaveResponse'
+
+  /api/student/exams/{examId}/submit:
+    post:
+      tags: [Student Exams]
+      summary: 시험 제출
+      operationId: submitExam
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 제출 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamSubmitResponse'
+
+  /api/student/exams/{examId}/result:
+    get:
+      tags: [Student Exams]
+      summary: 시험 결과 조회
+      operationId: getExamResult
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamResultResponse'
+
+  /api/student/exams/records:
+    get:
+      tags: [Student Exams]
+      summary: 내 시험 기록 목록 조회
+      operationId: getExamRecords
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 시험 기록 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExamRecordResponse'
+
+  ########################
+  # StudentDashboardController (/api/students)
+  ########################
+  /api/students/{studentId}/lectures:
+    get:
+      tags: [Student Dashboard]
+      summary: 내 강의 목록 조회
+      operationId: getMyLectures
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 내 강의 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MyLectureResponse'
+
+  /api/students/{studentId}/attendance/check-in:
+    post:
+      tags: [Student Dashboard]
+      summary: 출석 체크
+      operationId: checkIn
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 출석 체크 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceCheckInResponse'
+
+  /api/students/{studentId}/assignments:
+    get:
+      tags: [Student Dashboard]
+      summary: 내 과제 목록
+      operationId: getMyAssignments
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 내 과제 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentSummaryResponse'
+
+  /api/students/{studentId}/exams:
+    get:
+      tags: [Student Dashboard]
+      summary: 내 시험 목록
+      operationId: getMyExams
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 내 시험 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExamSummaryResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ########################
+    # Users
+    ########################
+    SignInRequest:
+      type: object
+      properties:
+        loginId:
+          type: string
+        password:
+          type: string
+      required: [loginId, password]
+
+    SignInResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        userId:
+          type: integer
+          format: int64
+        role:
+          type: string
+
+    MyInfoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+
+    SignupRequest:
+      type: object
+      properties:
+        loginId:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        academyCode:
+          type: string
+
+    SignupResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        loginId:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+
+    SendEmailVerificationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+      required: [email]
+
+    VerifyEmailRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        token:
+          type: string
+      required: [email, token]
+
+    UserSearchResultResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        loginId:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+
+    ########################
+    # Principal
+    ########################
+    PrincipalRegistrationRequest:
+      type: object
+      properties:
+        academyName:
+          type: string
+        principalName:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      required: [academyName, principalName, email, password]
+
+    PrincipalRegistrationResponse:
+      type: object
+      properties:
+        academyId:
+          type: integer
+          format: int64
+        principalId:
+          type: integer
+          format: int64
+
+    ########################
+    # Lectures
+    ########################
+    LectureCreationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+      required: [title, date, startDate, endDate]
+
+    LectureCreationResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+
+    LectureForTeacherResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        studentCount:
+          type: integer
+          format: int32
+
+    LectureDetailForTeacherResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/LectureForTeacherResponse'
+        - type: object
+          properties:
+            description:
+              type: string
+            studentDetails:
+              type: array
+              items:
+                $ref: '#/components/schemas/StudentInfo'
+
+    StudentInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+
+    LectureDetailWithStatisticsResponse:
+      type: object
+      properties:
+        lectureDetailForTeacherResponse:
+          $ref: '#/components/schemas/LectureDetailForTeacherResponse'
+        lectureStatisticsResponse:
+          $ref: '#/components/schemas/LectureStatisticsResponse'
+
+    LectureStatisticsResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        studentCount:
+          type: integer
+          format: int32
+        attendanceRate:
+          type: number
+          format: double
+        assignmentSubmissionRate:
+          type: number
+          format: double
+        examParticipationRate:
+          type: number
+          format: double
+        averageScore:
+          type: number
+          format: double
+        total10PercentScore:
+          type: number
+          format: double
+
+    StudentSearchResponse:
+      type: object
+      properties:
+        studentId:
+          type: integer
+          format: int64
+        name:
+          type: string
+
+    LectureStudentAssignRequest:
+      type: object
+      properties:
+        studentIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+      required: [studentIds]
+
+    LectureStudentAssignResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        assignedCount:
+          type: integer
+          format: int32
+
+    ########################
+    # Assignments
+    ########################
+    AssignmentCreateRequest:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+      required: [lectureId, title, dueDate]
+
+    AssignmentCreateResponse:
+      type: object
+      properties:
+        assignmentId:
+          type: integer
+          format: int64
+
+    PresignedUrlRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+        contentType:
+          type: string
+      required: [fileName]
+
+    PresignedUrlResponse:
+      type: object
+      properties:
+        url:
+          type: string
+        fileKey:
+          type: string
+
+    AssignmentSubmitRequest:
+      type: object
+      properties:
+        fileKey:
+          type: string
+        comment:
+          type: string
+
+    AssignmentSubmitResponse:
+      type: object
+      properties:
+        submissionId:
+          type: integer
+          format: int64
+        submittedAt:
+          type: string
+          format: date-time
+
+    AssignmentListResponse:
+      type: object
+      properties:
+        assignmentId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        endDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [NOT_SUBMITTED, SUBMITTED]
+
+    AssignmentSubmissionListResponse:
+      type: object
+      properties:
+        submissionId:
+          type: integer
+          format: int64
+        studentId:
+          type: integer
+          format: int64
+        studentName:
+          type: string
+        fileUrl:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    AssignmentSubmissionStudentViewResponse:
+      type: object
+      properties:
+        submissionId:
+          type: integer
+          format: int64
+        assignmentId:
+          type: integer
+          format: int64
+        lectureName:
+          type: string
+        teacherName:
+          type: string
+        studentLoginId:
+          type: string
+        studentName:
+          type: string
+        assignmentTitle:
+          type: string
+        assignmentDescription:
+          type: string
+        filePath:
+          type: string
+        score:
+          type: integer
+          format: int32
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+
+    AssignmentSubmissionTeacherViewResponse:
+      type: object
+      properties:
+        submissionId:
+          type: integer
+          format: int64
+        assignmentId:
+          type: integer
+          format: int64
+        lectureName:
+          type: string
+        teacherName:
+          type: string
+        studentLoginId:
+          type: string
+        studentName:
+          type: string
+        assignmentTitle:
+          type: string
+        assignmentDescription:
+          type: string
+        filePath:
+          type: string
+        score:
+          type: integer
+          format: int32
+          nullable: true
+        feedback:
+          type: string
+          nullable: true
+
+    AssignmentGradeRequest:
+      type: object
+      properties:
+        score:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+        feedback:
+          type: string
+      required: [score]
+
+    AssignmentGradeResponse:
+      type: object
+      properties:
+        submissionId:
+          type: integer
+          format: int64
+        assignmentId:
+          type: integer
+          format: int64
+        studentId:
+          type: integer
+          format: int64
+        score:
+          type: integer
+          format: int32
+        feedback:
+          type: string
+
+    ########################
+    # Exams
+    ########################
+    ExamCreationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+      required: [title, startTime, endTime]
+
+    ExamCreationResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+
+    QuestionRegistrationRequest:
+      type: object
+      properties:
+        questionText:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+        correctAnswerIndex:
+          type: integer
+          format: int32
+        difficulty:
+          type: string
+          enum: [EASY, MEDIUM, HARD]
+        unitId:
+          type: integer
+          format: int64
+      required: [questionText, choices, correctAnswerIndex, difficulty, unitId]
+
+    QuestionIdResponse:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+
+    ExamDetailResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        lectureId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        durationMinute:
+          type: integer
+          format: int32
+        status:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionDetail'
+
+    QuestionDetail:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        score:
+          type: integer
+          format: int32
+        answerNumber:
+          type: integer
+          format: int32
+        difficulty:
+          type: string
+        unitId:
+          type: integer
+          format: int64
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceDetail'
+
+    ChoiceDetail:
+      type: object
+      properties:
+        choiceId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        choiceNumber:
+          type: integer
+          format: int32
+
+    ########################
+    # Student Exams
+    ########################
+    ExamStartResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        studentId:
+          type: integer
+          format: int64
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        durationMinute:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        examStartedAt:
+          type: string
+          format: date-time
+        personalDeadline:
+          type: string
+          format: date-time
+        status:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionForStudent'
+
+    QuestionForStudent:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        score:
+          type: integer
+          format: int32
+        difficulty:
+          type: string
+        choices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChoiceForStudent'
+
+    ChoiceForStudent:
+      type: object
+      properties:
+        choiceId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        choiceNumber:
+          type: integer
+          format: int32
+
+    AnswerSaveRequest:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnswerSubmitRequest'
+      required: [answers]
+
+    AnswerSubmitRequest:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        selectedAnswerNumber:
+          type: integer
+          format: int32
+      required: [questionId, selectedAnswerNumber]
+
+    AnswerSaveResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        studentId:
+          type: integer
+          format: int64
+        savedCount:
+          type: integer
+          format: int32
+        savedAt:
+          type: string
+          format: date-time
+
+    ExamSubmitResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        studentId:
+          type: integer
+          format: int64
+        submittedAt:
+          type: string
+          format: date-time
+        message:
+          type: string
+
+    ExamResultResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        examTitle:
+          type: string
+        studentId:
+          type: integer
+          format: int64
+        studentName:
+          type: string
+        status:
+          type: string
+        totalScore:
+          type: integer
+          format: int32
+        earnedScore:
+          type: integer
+          format: int32
+        correctCount:
+          type: integer
+          format: int32
+        totalQuestionCount:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        submittedAt:
+          type: string
+          format: date-time
+        questionResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResult'
+
+    QuestionResult:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        score:
+          type: integer
+          format: int32
+        submittedAnswer:
+          type: integer
+          format: int32
+        correctAnswer:
+          type: integer
+          format: int32
+        isCorrect:
+          type: boolean
+        unitId:
+          type: integer
+          format: int64
+        difficulty:
+          type: string
+        earnedScore:
+          type: integer
+          format: int32
+
+    ExamRecordResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        examTitle:
+          type: string
+        lectureName:
+          type: string
+        status:
+          type: string
+        totalScore:
+          type: integer
+          format: int32
+        earnedScore:
+          type: integer
+          format: int32
+        startedAt:
+          type: string
+          format: date-time
+        submittedAt:
+          type: string
+          format: date-time
+        examStartDate:
+          type: string
+          format: date-time
+        examEndDate:
+          type: string
+          format: date-time
+
+    ########################
+    # Student Dashboard
+    ########################
+    MyLectureResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        lectureTitle:
+          type: string
+        teacherName:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    AttendanceCheckInResponse:
+      type: object
+      properties:
+        studentId:
+          type: integer
+          format: int64
+        attendanceDate:
+          type: string
+          format: date
+        alreadyCheckedIn:
+          type: boolean
+
+    AssignmentSummaryResponse:
+      type: object
+      properties:
+        assignmentId:
+          type: integer
+          format: int64
+        lectureTitle:
+          type: string
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        score:
+          type: integer
+          format: int32
+          nullable: true
+
+    ExamSummaryResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        lectureTitle:
+          type: string
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        earnedScore:
+          type: integer
+          format: int32
+          nullable: true
+        status:
+          type: string
