@@ -58,4 +58,7 @@ public interface ExamStudentAnswerRepository extends JpaRepository<ExamStudentAn
            "WHERE esa.examStudent.exam.id = :examId " +
            "AND esa.examStudent.student.id = :studentId")
     int countByExamIdAndStudentId(@Param("examId") Long examId, @Param("studentId") Long studentId);
+
+    // 여러 문제에 대한 전체 학생 답안 조회
+    List<ExamStudentAnswer> findAllByQuestionIn(List<Question> questions);
 }

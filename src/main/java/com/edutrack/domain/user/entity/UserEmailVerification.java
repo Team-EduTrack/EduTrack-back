@@ -26,11 +26,6 @@ public class UserEmailVerification {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-//  // fk : user_id
-//  @ManyToOne(fetch = FetchType.LAZY)
-//  @JoinColumn(name = "user_id")
-//  private User user;
-
   // 이메일 직접 저장 (TempUser, User 둘 다 가능)
   @Column(name = "email", length = 100, nullable = false)
   private String email;

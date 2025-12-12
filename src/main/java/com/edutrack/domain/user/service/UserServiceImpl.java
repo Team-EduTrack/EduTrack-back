@@ -2,6 +2,7 @@ package com.edutrack.domain.user.service;
 
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
+import com.edutrack.domain.user.dto.AcademyVerifyRequest;
 import com.edutrack.domain.user.dto.SignupRequest;
 import com.edutrack.domain.user.dto.SignupResponse;
 import com.edutrack.domain.user.entity.Role;
@@ -28,7 +29,7 @@ public class UserServiceImpl implements UserService {
   private final SignupLockRepository signupLockRepository;
 
   @Override
-  public void signup(SignupRequest request) {
+  public void signupRequest(SignupRequest request) {
 
     // 이미 정식 회원인지 체크
     if (userRepository.existsByLoginId(request.getLoginId())) {
@@ -54,10 +55,6 @@ public class UserServiceImpl implements UserService {
       throw new IllegalArgumentException("이미 가입 신청된 전화번호입니다.");
     }
 
-    // 학원 코드 검증 (이때는 academyCode 만 확인)
-    academyRepository.findByCode(request.getAcademyCode())
-        .orElseThrow(() -> new IllegalArgumentException("학원 코드가 올바르지 않습니다."));
-
     // 임시 등록 TempUser 생성 (비밀번호 암호화)
     TempUser tempUser = TempUser.builder()
         .loginId(request.getLoginId())
@@ -65,20 +62,37 @@ public class UserServiceImpl implements UserService {
         .name(request.getName())
         .phone(request.getPhone())
         .email(request.getEmail())
-        .academyCode(request.getAcademyCode())
         .verified(false)
         .build();
 
-    // Redis 저장 + TTL 30분
-    tempUserRedisRepository.save(tempUser, 5 * 60);
+    tempUserRedisRepository.save(tempUser, 10 * 60);
 
-    // Lock 저장 (중복 방지)
     signupLockRepository.lockAll(
         tempUser.getLoginId(),
         tempUser.getEmail(),
-        tempUser.getPhone());
+        tempUser.getPhone()
+    );
   }
 
+  // 학원 코드 검증
+  @Override
+  public void verifyAcademyCode(AcademyVerifyRequest request){
+
+    TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
+
+    if(tempUser == null){
+      throw new IllegalArgumentException("가입 신청 정보가 없습니다.");
+    }
+
+    Academy academy = academyRepository.findByCode(request.getAcademyCode())
+        .orElseThrow(() -> new IllegalArgumentException("학원 코드가 올바르지 않습니다."));
+
+    tempUser.updateAcademyCode(academy.getCode());
+    tempUserRedisRepository.save(tempUser, 10 * 60);
+
+  }
+
+  // 최종 회원가입
   public SignupResponse completeSignup(String email) {
 
     TempUser tempUser = tempUserRedisRepository.findByEmail(email);
@@ -89,6 +103,10 @@ public class UserServiceImpl implements UserService {
 
     if (!tempUser.isVerified()) {
       throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+    }
+
+    if(tempUser.getAcademyCode() == null){
+      throw new IllegalArgumentException("학원 코드 인증이 필요합니다.");
     }
 
     // 학원 코드로 Academy 조회
@@ -121,6 +139,13 @@ public class UserServiceImpl implements UserService {
 
     // TempUser 정리
     tempUserRedisRepository.deleteByEmail(email);
+
+    // 락 해제
+    signupLockRepository.unLockAll(
+        tempUser.getLoginId(),
+        tempUser.getEmail(),
+        tempUser.getPhone()
+    );
 
     return new SignupResponse(
         user.getId(),

@@ -3,13 +3,11 @@ package com.edutrack.domain.user.service;
 import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
 import com.edutrack.domain.user.dto.VerifyEmailRequest;
 import com.edutrack.domain.user.entity.TempUser;
-import com.edutrack.domain.user.entity.UserEmailVerification;
 import com.edutrack.domain.user.repository.SignupLockRepository;
 import com.edutrack.domain.user.repository.TempUserRedisRepository;
 import com.edutrack.domain.user.repository.UserEmailVerificationRedisRepository;
 import com.edutrack.global.mail.MailSendService;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -85,12 +83,6 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     // 인증 코드 삭제
     userEmailVerificationRedisRepository.deleteCode(request.getEmail());
-    // signupLock 즉시 해제
-    signupLockRepository.unLockAll(
-        tempUser.getLoginId(),
-        tempUser.getEmail(),
-        tempUser.getPhone());
-
   }
 
   private String generateCode() {

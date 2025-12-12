@@ -25,7 +25,7 @@ public class TempUser {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "login_id" , nullable = false, unique = true, length = 50)
+  @Column(name = "login_id", nullable = false, unique = true, length = 50)
   private String loginId;
 
   @Column(name = "password", nullable = false, length = 255)
@@ -40,7 +40,8 @@ public class TempUser {
   @Column(name = "email", nullable = false, unique = true, length = 100)
   private String email;
 
-  @Column(name = "academy_code", nullable = false, length = 50)
+  // 이메일 인증 이후에만 세팅됨
+  @Column(name = "academy_code", length = 50)
   private String academyCode;
 
   @Builder.Default
@@ -51,8 +52,13 @@ public class TempUser {
   @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
-  public void markVerified(){
+  public void markVerified() {
     this.verified = true;
+  }
+
+  // 학원 코드 입력 단계에서 호출
+  public void updateAcademyCode(String academyCode) {
+    this.academyCode = academyCode;
   }
 
 }
