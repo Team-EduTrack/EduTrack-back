@@ -18,7 +18,7 @@ import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.MediaType;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -83,7 +83,7 @@ public class SignupFlowIntegrationTest {
     signupRequest.setEmail("test1@test.com");
 
     mockMvc.perform(post("/api/auth/signup/request")
-            .contentType(String.valueOf(MediaType.APPLICATION_JSON))
+            .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(signupRequest)))
         .andExpect(status().isOk());
 
@@ -91,7 +91,7 @@ public class SignupFlowIntegrationTest {
     SendEmailVerificationRequest request = new SendEmailVerificationRequest("test1@test.com");
 
     mockMvc.perform(post("/api/auth/send-email-verification")
-            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
 
@@ -101,7 +101,7 @@ public class SignupFlowIntegrationTest {
     VerifyEmailRequest verifyEmailRequest = new VerifyEmailRequest("test1@test.com", code);
 
     mockMvc.perform(post("/api/auth/verify-email")
-            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(verifyEmailRequest)))
         .andExpect(status().isOk());
 
@@ -110,7 +110,7 @@ public class SignupFlowIntegrationTest {
         "EDU-1234");
 
     mockMvc.perform(post("/api/auth/academy-verify")
-            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(academyVerifyRequest)))
         .andExpect(status().isOk());
 
@@ -118,7 +118,7 @@ public class SignupFlowIntegrationTest {
     CompleteSignupRequest completeSignupRequest = new CompleteSignupRequest("test1@test.com");
 
     mockMvc.perform(post("/api/auth/signup/complete")
-            .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(completeSignupRequest)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.loginId").value("testuser1"))
