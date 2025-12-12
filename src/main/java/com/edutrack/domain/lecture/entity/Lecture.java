@@ -1,15 +1,7 @@
 package com.edutrack.domain.lecture.entity;
 
-
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.user.entity.User;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -21,17 +13,21 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Table;
+import jakarta.persistence.PrePersist;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "lecture")
 @EntityListeners(AuditingEntityListener.class)
 public class Lecture {
 
@@ -39,7 +35,7 @@ public class Lecture {
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "academy_id", referencedColumnName = "id", nullable = false)
+  @JoinColumn(name = "academy_id", referencedColumnName = "id",  nullable = false)
   private Academy academy;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -65,4 +61,11 @@ public class Lecture {
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
+
+  @PrePersist
+  protected void onCreate() {
+    if (this.createdAt == null) {
+      this.createdAt = LocalDateTime.now();
+    }
+  }
 }

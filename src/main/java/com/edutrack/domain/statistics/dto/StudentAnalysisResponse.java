@@ -8,6 +8,7 @@ import java.util.List;
 @Getter
 @Builder
 public class StudentAnalysisResponse {
+    private final Long studentId;
     // 평균 점수
     private final Double avgScore;
 

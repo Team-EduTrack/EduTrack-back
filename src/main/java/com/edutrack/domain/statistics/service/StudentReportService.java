@@ -7,6 +7,8 @@ import com.edutrack.domain.statistics.dto.StudentAnalysisResponse;
 import com.edutrack.domain.statistics.dto.StudentExamSummaryResponse;
 import com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse;
 import com.edutrack.domain.statistics.repository.UnitStatisticsRepository;
+import com.edutrack.domain.unit.entity.Unit;
+import com.edutrack.domain.unit.repository.UnitRepository;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +29,7 @@ public class StudentReportService {
     private final ExamStudentRepository examStudentRepository;
     private final UnitStatisticsRepository unitStatisticsRepository;
     private final UserRepository userRepository;
+    private final UnitRepository unitRepository;
 
     private static final int DEFAULT_WEAK_UNITS_COUNT = 3;
 
@@ -39,7 +44,7 @@ public class StudentReportService {
         // 채점 완료된 시험만 필터링
         List<ExamStudent> gradedExams = examRecords.stream()
                 .filter(es -> es.getStatus() == StudentExamStatus.GRADED && es.getEarnedScore() != null)
-                .collect(Collectors.toList());
+                .toList();
 
         // 평균 점수
         Double avgScore = gradedExams.stream()
@@ -47,20 +52,18 @@ public class StudentReportService {
                 .average()
                 .orElse(0.0);
 
-        // 취약 단원 (상위 3개, 정답률 낮은 순)
-        List<StudentUnitCorrectRateResponse> weakUnits = unitStatisticsRepository.findAllUnitCorrectRatesByStudentId(studentId);
-        List<String> unitWeak = weakUnits.stream()
-                .limit(DEFAULT_WEAK_UNITS_COUNT)
-                .map(u -> String.valueOf(u.getUnitId()))
-                .collect(Collectors.toList());
+        // 취약 단원
+        List<String> unitWeak = getWeakUnitNames(studentId, DEFAULT_WEAK_UNITS_COUNT);
 
         // 점수 추이 (시간순)
         List<Integer> trend = gradedExams.stream()
-                .sorted((a, b) -> a.getSubmittedAt().compareTo(b.getSubmittedAt()))
+                .filter(es -> es.getEarnedScore() != null)
+                .sorted(Comparator.comparing(ExamStudent::getSubmittedAt))
                 .map(ExamStudent::getEarnedScore)
                 .collect(Collectors.toList());
 
         return StudentAnalysisResponse.builder()
+                .studentId(studentId)
                 .avgScore(avgScore)
                 .unitWeak(unitWeak)
                 .trend(trend)
@@ -74,15 +77,26 @@ public class StudentReportService {
         validateStudentExists(studentId);
 
         return examStudentRepository.findAllByStudentIdWithExam(studentId).stream()
-                .filter(es -> es.getStatus() == StudentExamStatus.GRADED)
+                .filter(es -> es.getStatus() == StudentExamStatus.GRADED && es.getEarnedScore() != null)
                 .map(es -> StudentExamSummaryResponse.builder()
                         .examId(es.getExam().getId())
                         .examTitle(es.getExam().getTitle())
                         .lectureName(es.getExam().getLecture().getTitle())
-                        .totalScore(es.getExam().getTotalScore())
-                        .earnedScore(es.getEarnedScore())
+                        .totalScore(Optional.ofNullable(es.getExam().getTotalScore()).orElse(0))
+                        .earnedScore(Optional.ofNullable(es.getEarnedScore()).orElse(0))
                         .submittedAt(es.getSubmittedAt())
                         .build())
+                .collect(Collectors.toList());
+    }
+
+    private List<String> getWeakUnitNames(Long studentId, int limit) {
+        List<StudentUnitCorrectRateResponse> weakUnits = unitStatisticsRepository.findAllUnitCorrectRatesByStudentId(studentId);
+
+        return weakUnits.stream()
+                .limit(limit)
+                .map(u -> unitRepository.findById(u.getUnitId())
+                        .map(Unit::getName)
+                        .orElse("단원 정보 없음"))
                 .collect(Collectors.toList());
     }
 
