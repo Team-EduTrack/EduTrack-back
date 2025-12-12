@@ -84,11 +84,11 @@ paths:
               $ref: '#/components/schemas/SignupRequest'
       responses:
         '200':
-          description: 회원가입 성공
+          description: 가입 신청이 완료되었습니다. 이메일 인증을 해주세요.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SignupResponse'
+                type: string
 
   /api/auth/send-email-verification:
     post:
@@ -122,11 +122,105 @@ paths:
               $ref: '#/components/schemas/VerifyEmailRequest'
       responses:
         '200':
-          description: 이메일 인증 완료
+          description: 이메일 인증이 완료되었습니다. 진행중이던 회원가입을 완료하세요.
           content:
             application/json:
               schema:
                 type: string
+
+  /api/auth/signup/complete:
+    post:
+      tags: [Auth]
+      summary: 최종 회원가입 완료
+      operationId: completeSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: 회원가입 완료
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+
+  ########################
+  # QuestionStatisticsController
+  ########################
+  /api/student/statistics/exams/{examId}/questions:
+    get:
+      tags: [Student Exams]
+      summary: 학생 개인 + 특정 시험 문항별 정답률 조회
+      operationId: getStudentQuestionStatistics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생 개인 문항별 정답률
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentQuestionStatisticsResponse'
+
+  /api/statistics/exams/{examId}/questions:
+    get:
+      tags: [Exams]
+      summary: 강사용: 특정 시험 문항별 정답률
+      operationId: getExamQuestionCorrectRates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 문항별 정답률
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionCorrectRateResponse'
+
+  /api/statistics/lectures/{lectureId}/questions:
+    get:
+      tags: [Lectures]
+      summary: 강사용: 강의 전체 문항별 정답률
+      operationId: getLectureQuestionCorrectRates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 강의 전체 문항별 정답률
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestionCorrectRateResponse'
 
   ########################
   # UserSearchController (/api/academies/{academyId}/users)
@@ -1020,9 +1114,17 @@ components:
           type: string
         refreshToken:
           type: string
-        userId:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+
+    UserInfo:
+      type: object
+      properties:
+        id:
           type: integer
           format: int64
+        name:
+          type: string
         role:
           type: string
 
@@ -1035,6 +1137,8 @@ components:
         name:
           type: string
         email:
+          type: string
+        phone:
           type: string
         role:
           type: string
@@ -1054,6 +1158,7 @@ components:
           type: string
         academyCode:
           type: string
+      required: [loginId, password, name, phone, email, academyCode]
 
     SignupResponse:
       type: object
@@ -1105,25 +1210,32 @@ components:
     PrincipalRegistrationRequest:
       type: object
       properties:
-        academyName:
-          type: string
         principalName:
           type: string
-        email:
+        loginId:
           type: string
         password:
           type: string
-      required: [academyName, principalName, email, password]
+        passwordConfirm:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        academyName:
+          type: string
+      required: [principalName, loginId, password, passwordConfirm, phone, email, academyName]
 
     PrincipalRegistrationResponse:
       type: object
       properties:
-        academyId:
+        id:
           type: integer
           format: int64
-        principalId:
-          type: integer
-          format: int64
+        academyName:
+          type: string
+        academyCode:
+          type: string
 
     ########################
     # Lectures
@@ -1764,6 +1876,60 @@ components:
         examEndDate:
           type: string
           format: date-time
+
+    ########################
+    # Statistics
+    ########################
+    QuestionCorrectRateResponse:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        questionContent:
+          type: string
+        totalCount:
+          type: integer
+          format: int64
+        correctCount:
+          type: integer
+          format: int64
+        correctRate:
+          type: number
+          format: double
+
+    StudentQuestionStatisticsResponse:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        questionContent:
+          type: string
+        correctAnswer:
+          type: integer
+          format: int32
+        submittedAnswer:
+          type: integer
+          format: int32
+          nullable: true
+        isCorrect:
+          type: boolean
+        earnedScore:
+          type: integer
+          format: int32
+        maxScore:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int64
+        correctCount:
+          type: integer
+          format: int64
+        correctRate:
+          type: number
+          format: double
 
     ########################
     # Student Dashboard
