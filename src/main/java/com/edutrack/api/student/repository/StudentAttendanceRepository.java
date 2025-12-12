@@ -1,12 +1,15 @@
 package com.edutrack.api.student.repository;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.user.entity.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.time.LocalDate;
-import java.util.Optional;
 
 /**
  * 학생 출석 Repository
@@ -29,4 +32,16 @@ public interface StudentAttendanceRepository extends JpaRepository<Attendance, L
      * 학생과 날짜로 출석 기록 조회
      */
     Optional<Attendance> findByStudentAndDate(User student, LocalDate date);
+
+    @Query("""
+    SELECT a 
+    FROM Attendance a
+    WHERE a.student.id IN :studentIds 
+      AND a.date IN :dates
+      AND a.status = true
+    """)
+    List<Attendance> findAllByStudentIdsAndDates(
+    @Param("studentIds") List<Long> studentIds,
+    @Param("dates") List<LocalDate> dates
+);
 }
