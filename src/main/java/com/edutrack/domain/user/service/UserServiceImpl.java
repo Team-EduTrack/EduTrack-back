@@ -25,6 +25,7 @@ import com.edutrack.global.exception.user.TempUserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -102,6 +103,7 @@ public class UserServiceImpl implements UserService {
   }
 
   // 최종 회원가입
+  @Transactional
   public SignupResponse completeSignup(String email) {
 
     TempUser tempUser = tempUserRedisRepository.findByEmail(email);

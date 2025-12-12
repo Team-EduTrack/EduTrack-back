@@ -40,4 +40,34 @@ public interface ExamStudentRepository extends JpaRepository<ExamStudent, ExamSt
     boolean existsByExamIdAndStudentId(@Param("examId") Long examId, @Param("studentId") Long studentId);
 
     List<ExamStudent> findByExamId(Long examId);
+
+
+  /**
+   * 특정 시험 목록과 학생 목록에 대한 응시 기록을 한 번에 조회
+   * @param examIds 시험 ID 목록
+   * @param studentIds 학생 ID 목록
+   * @return 응시 기록 목록
+   */
+  @Query("""
+    SELECT es 
+    FROM ExamStudent es
+    WHERE es.exam.id IN :examIds 
+      AND es.student.id IN :studentIds
+    """)
+  List<ExamStudent> findAllByExamIdsAndStudentIds(
+      @Param("examIds") List<Long> examIds,
+      @Param("studentIds") List<Long> studentIds
+  );
+
+  /**
+   * 특정 시험 ID 목록에 대한 모든 응시 기록을 한 번에 조회
+   * @param examIds 시험 ID 목록
+   * @return 응시 기록 목록
+   */
+  @Query("""
+        SELECT es 
+        FROM ExamStudent es
+        WHERE es.exam.id IN :examIds
+        """)
+  List<ExamStudent> findAllByExamIds(@Param("examIds") List<Long> examIds);
 }

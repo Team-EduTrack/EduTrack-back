@@ -27,9 +27,9 @@ public class QuestionStatisticsService {
   private final ExamStudentRepository examStudentRepository;
   private final ExamStudentAnswerRepository examStudentAnswerRepository;
 
-  // ============================================================
-  // 1️⃣ 학생 개인 + 특정 시험 문항별 정답률
-  // ============================================================
+  private static final double PERCENTAGE_MULTIPLIER = 100.0;
+
+  // 1. 학생 개인 + 특정 시험 문항별 정답률
   public List<StudentQuestionStatisticsResponse> getStudentQuestionStatistics(
       Long examId, Long studentId) {
 
@@ -79,7 +79,7 @@ public class QuestionStatisticsService {
 
       long total = totalCountMap.getOrDefault(questionId, 0L);
       long correct = correctCountMap.getOrDefault(questionId, 0L);
-      double rate = total == 0 ? 0.0 : (correct * 100.0 / total);
+      double rate = total == 0 ? 0.0 : (correct * PERCENTAGE_MULTIPLIER / total);
 
       results.add(new StudentQuestionStatisticsResponse(
           questionId,
@@ -98,9 +98,7 @@ public class QuestionStatisticsService {
     return results;
   }
 
-  // ============================================================
-  // 2️⃣ 강사용: 특정 시험 문항별 정답률
-  // ============================================================
+  // 2. 강사용: 특정 시험 문항별 정답률
   public List<QuestionCorrectRateResponse> getExamQuestionCorrectRates(Long examId) {
 
     // 문항 조회
@@ -110,41 +108,10 @@ public class QuestionStatisticsService {
     List<ExamStudentAnswer> answers =
         examStudentAnswerRepository.findAllByQuestionIn(questions);
 
-    Map<Long, Long> totalCountMap = new HashMap<>();
-    Map<Long, Long> correctCountMap = new HashMap<>();
-
-    for (ExamStudentAnswer answer : answers) {
-      Long questionId = answer.getQuestion().getId();
-      totalCountMap.put(questionId, totalCountMap.getOrDefault(questionId, 0L) + 1);
-
-      if (answer.isCorrect()) {
-        correctCountMap.put(questionId, correctCountMap.getOrDefault(questionId, 0L) + 1);
-      }
-    }
-
-    List<QuestionCorrectRateResponse> results = new ArrayList<>();
-
-    for (Question question : questions) {
-      Long questionId = question.getId();
-      long total = totalCountMap.getOrDefault(questionId, 0L);
-      long correct = correctCountMap.getOrDefault(questionId, 0L);
-      double rate = total == 0 ? 0 : (correct * 100.0 / total);
-
-      results.add(new QuestionCorrectRateResponse(
-          questionId,
-          question.getContent(),
-          total,
-          correct,
-          rate
-      ));
-    }
-
-    return results;
+    return calculateCorrectRates(questions, answers);
   }
 
-  // ============================================================
-  // 3️⃣ 강의 전체 문항별 정답률
-  // ============================================================
+  // 3. 강의 전체 문항별 정답률
   public List<QuestionCorrectRateResponse> getLectureQuestionCorrectRates(Long lectureId) {
 
     // 강의에 포함된 모든 시험의 모든 문항 조회
@@ -154,6 +121,14 @@ public class QuestionStatisticsService {
     List<ExamStudentAnswer> answers =
         examStudentAnswerRepository.findAllByQuestionIn(questions);
 
+    return calculateCorrectRates(questions, answers);
+  }
+
+  private List<QuestionCorrectRateResponse> calculateCorrectRates(
+      List<Question> questions,
+      List<ExamStudentAnswer> answers
+  ){
+
     Map<Long, Long> totalCountMap = new HashMap<>();
     Map<Long, Long> correctCountMap = new HashMap<>();
 
@@ -172,7 +147,7 @@ public class QuestionStatisticsService {
       Long questionId = question.getId();
       long total = totalCountMap.getOrDefault(questionId, 0L);
       long correct = correctCountMap.getOrDefault(questionId, 0L);
-      double rate = total == 0 ? 0 : (correct * 100.0 / total);
+      double rate = total == 0 ? 0 : (correct * PERCENTAGE_MULTIPLIER / total);
 
       results.add(new QuestionCorrectRateResponse(
           questionId,
@@ -185,5 +160,6 @@ public class QuestionStatisticsService {
 
     return results;
   }
+
 
 }

@@ -1,4 +1,4 @@
-package com.edutrack.domain.principal;
+package com.edutrack.domain.principal.service;
 
 import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
 import com.edutrack.domain.principal.dto.PrincipalRegistrationResponse;

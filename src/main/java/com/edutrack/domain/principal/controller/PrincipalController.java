@@ -1,5 +1,6 @@
-package com.edutrack.domain.principal;
+package com.edutrack.domain.principal.controller;
 
+import com.edutrack.domain.principal.service.PrincipalService;
 import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
 import com.edutrack.domain.principal.dto.PrincipalRegistrationResponse;
 import jakarta.validation.Valid;
