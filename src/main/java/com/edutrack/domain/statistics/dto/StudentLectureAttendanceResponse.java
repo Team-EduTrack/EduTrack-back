@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Builder
@@ -17,4 +18,4 @@ public class StudentLectureAttendanceResponse {
     private final int attendedDays;
     private final double attendanceRate;
 }
-}
+
