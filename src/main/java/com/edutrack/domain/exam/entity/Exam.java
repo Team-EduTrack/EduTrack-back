@@ -25,6 +25,9 @@ public class Exam {
     @Column(length = 100, nullable = false)
     private String title;
 
+    @Column(name = "total_score")
+    private Integer totalScore;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -47,9 +50,10 @@ public class Exam {
     @Column(name = "duration_minute")
     private Integer durationMinute;
 
-    public Exam(Lecture lecture, String title, ExamStatus status, LocalDateTime startDate, LocalDateTime endDate, Integer durationMinute) {
+    public Exam(Lecture lecture, String title, Integer totalScore, ExamStatus status, LocalDateTime startDate, LocalDateTime endDate, Integer durationMinute) {
         this.lecture = lecture;
         this.title = title;
+        this.totalScore = totalScore;
         this.status = status;
         this.startDate = startDate;
         this.endDate = endDate;
