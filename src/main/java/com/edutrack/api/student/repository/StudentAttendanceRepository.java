@@ -3,9 +3,12 @@ package com.edutrack.api.student.repository;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,4 +32,38 @@ public interface StudentAttendanceRepository extends JpaRepository<Attendance, L
      * 학생과 날짜로 출석 기록 조회
      */
     Optional<Attendance> findByStudentAndDate(User student, LocalDate date);
+
+    /**
+     * 학생의 특정 월 출석 기록 조회 (출석한 것만)
+     */
+    @Query("SELECT a FROM Attendance a WHERE a.student.id = :studentId " +
+           "AND a.status = true " +
+           "AND YEAR(a.date) = :year AND MONTH(a.date) = :month")
+    List<Attendance> findByStudentIdAndYearAndMonth(
+            @Param("studentId") Long studentId,
+            @Param("year") int year,
+            @Param("month") int month
+    );
+
+    /**
+     * 여러 학생의 특정 월 출석 기록 조회 (출석한 것만)
+     */
+    @Query("SELECT a FROM Attendance a WHERE a.student.id IN :studentIds " +
+           "AND a.status = true " +
+           "AND YEAR(a.date) = :year AND MONTH(a.date) = :month")
+    List<Attendance> findByStudentIdsAndYearAndMonth(
+            @Param("studentIds") List<Long> studentIds,
+            @Param("year") int year,
+            @Param("month") int month
+    );
+
+    /**
+     * 학생의 특정기간 출석 기록 조회
+     * 복수 요일 지원과 함께 사용됩니다.
+     */
+    List<Attendance> findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
+            Long studentId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }

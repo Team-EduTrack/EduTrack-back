@@ -3,8 +3,6 @@ package com.edutrack.api.student.service;
 import com.edutrack.api.student.dto.*;
 import com.edutrack.api.student.repository.*;
 import com.edutrack.domain.attendance.entity.Attendance;
-import com.edutrack.domain.exam.entity.Exam;
-import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.NotFoundException;
@@ -13,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /**
  * 학생 대시보드 서비스
@@ -82,6 +79,7 @@ public class StudentDashboardService {
 
         return new AttendanceCheckInResponse(studentId, today, false);
     }
+
 
     /**
      * 학생 존재 여부 검증
