@@ -17,5 +17,6 @@ public class StudentLectureAttendanceResponse {
     private final int totalClassDays;
     private final int attendedDays;
     private final double attendanceRate;
+    private final double otherStudentsAvgAttendanceRate;
 }
 

@@ -47,7 +47,7 @@ public interface StudentAttendanceRepository extends JpaRepository<Attendance, L
 );
 
     //학생의 특정기간 출석 기록 조회
-    List<Attendance> indByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
+    List<Attendance> findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
             Long studentId,
             LocalDate startDate,
             LocalDate endDate
