@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 
 /**
  * 학생 출석 서비스
- * 
  * 현재 코드베이스의 복수 요일(daysOfWeek) 지원 기능과 호환되도록 작성되었습니다.
  */
 @Service
