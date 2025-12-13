@@ -5,5 +5,6 @@ public record UserSearchResultResponse(
         String name,
         String loginId,
         String phone,
+        String email,
         String role
 ) { }
