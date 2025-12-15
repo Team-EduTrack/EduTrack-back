@@ -11,6 +11,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
+import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.exam.entity.Exam;
 import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
@@ -37,17 +41,12 @@ public class LectureService {
   private final UserRepository userRepository;
   private final ExamRepository examRepository;
   private final LectureStatisticsService lectureStatisticsService;
+  private final AssignmentRepository assignmentRepository;
+  private final AssignmentSubmissionRepository assignmentSubmissionRepository;
 
   private final LectureHelper lectureHelper;
 
   //강사의 ID로 강의 목록과 각 강의의 수강생 수 조회
-
-  /**
-   * 해당 방식은 Batch 조회를 통해 N+1 문제를 방지하고,
-   * 한 강사가 담당하는 강의 수가 적고 (많으면 대략 10~20개)
-   * 강의당 학생 수가 수천 명 이하인 경우에 효율적이라고 생각합니다.
-   * 위 두 조건이 지켜지지 않는 경우, DB 집계가 더 효율적이라고 생각합니다.
-   */
   @Transactional(readOnly = true)
   public List<LectureForTeacherResponse> getLecturesByTeacherId(Long teacherId) {
 
@@ -90,14 +89,56 @@ public class LectureService {
     //강의에 배정된 수강생 리스트 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
 
+    // 과제별 제출 학생 목록 조회 (제출자가 있는 과제만)
+    List<LectureDetailForTeacherResponse.AssignmentWithSubmissions> assignmentsWithSubmissions = 
+        getAssignmentsWithSubmissions(lectureId);
+
     return new LectureDetailForTeacherResponse(
         lecture.getId(),
         lecture.getTitle(),
         lecture.getDescription(),
         lectureStudents,
         null,  // teacherName은 목록 조회에서만 필요
-        null   // averageGrade는 목록 조회에서만 필요
+        null,  // averageGrade는 목록 조회에서만 필요
+        assignmentsWithSubmissions
     );
+  }
+
+  /**
+   * 강의의 과제별 제출 학생 목록 조회
+   * 제출자가 있는 과제만 반환 (0명인 과제는 제외)
+   */
+  private List<LectureDetailForTeacherResponse.AssignmentWithSubmissions> getAssignmentsWithSubmissions(Long lectureId) {
+    // 강의의 모든 과제 조회
+    List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
+
+    return assignments.stream()
+        .map(assignment -> {
+          // 해당 과제에 제출한 학생 목록 조회
+          List<AssignmentSubmission> submissions = 
+              assignmentSubmissionRepository.findAllByAssignmentId(assignment.getId());
+
+          // 제출자가 있는 경우만 포함
+          if (!submissions.isEmpty()) {
+            List<LectureDetailForTeacherResponse.SubmissionStudentInfo> submittedStudents = 
+                submissions.stream()
+                    .map(submission -> new LectureDetailForTeacherResponse.SubmissionStudentInfo(
+                        submission.getStudent().getId(),
+                        submission.getStudent().getName(),
+                        submission.getId()  // submissionId는 채점 페이지로 이동하기 위해 필요
+                    ))
+                    .toList();
+
+            return new LectureDetailForTeacherResponse.AssignmentWithSubmissions(
+                assignment.getId(),
+                assignment.getTitle(),
+                submittedStudents
+            );
+          }
+          return null; // 제출자가 없으면 null
+        })
+        .filter(Objects::nonNull) // null 제거 (제출자가 없는 과제 제외)
+        .toList();
   }
 
   //학생 목록 조회
