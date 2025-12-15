@@ -25,6 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.edutrack.domain.academy.Academy;
+import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
+import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
@@ -56,6 +60,12 @@ class LectureServiceTest {
 
   @Mock
   private LectureStatisticsService lectureStatisticsService;
+
+  @Mock
+  private AssignmentRepository assignmentRepository;
+
+  @Mock
+  private AssignmentSubmissionRepository assignmentSubmissionRepository;
 
   @Mock
   private LectureHelper lectureHelper;
@@ -157,6 +167,78 @@ class LectureServiceTest {
     when(lectureHelper.getLectureWithValidation(lecture.getId(), teacher.getId()))
         .thenReturn(lecture);
 
+    //assignmentRepository stub - 과제가 없는 경우
+    when(assignmentRepository.findByLectureId(lecture.getId())).thenReturn(List.of());
+
+    //when
+    var result = lectureService.getLectureDetailForTeacherId(lecture.getId(), teacher.getId());
+
+    //then
+    assertNotNull(result);
+    assertEquals(lecture.getId(), result.getLectureId());
+    assertEquals(2, result.getStudentCount());
+    assertNotNull(result.getAssignmentsWithSubmissions());
+    assertTrue(result.getAssignmentsWithSubmissions().isEmpty());
+
+    verify(lectureHelper).getLectureWithValidation(lecture.getId(), teacher.getId());
+    verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
+    verify(assignmentRepository).findByLectureId(lecture.getId());
+
+    log.info("=== 강의 상세 조회 테스트 결과 ===");
+    log.info("강의 ID : {}, 학생 수 : {}", result.getLectureId(), result.getStudentCount());
+  }
+
+  @Test
+  void 강의_상세_조회_과제_제출_학생_포함() {
+    //given
+    LectureStudent ls1 = mock(LectureStudent.class);
+    when(ls1.getStudent()).thenReturn(student1);
+    LectureStudent ls2 = mock(LectureStudent.class);
+    when(ls2.getStudent()).thenReturn(student2);
+
+    when(lectureStudentRepository.findAllByLectureId(lecture.getId())).thenReturn(List.of(ls1, ls2));
+
+    //lectureHelper stub
+    when(lectureHelper.getLectureWithValidation(lecture.getId(), teacher.getId()))
+        .thenReturn(lecture);
+    when(lecture.getDescription()).thenReturn("테스트 강의 설명");
+
+    // 과제 생성
+    Assignment assignment1 = mock(Assignment.class);
+    when(assignment1.getId()).thenReturn(100L);
+    when(assignment1.getTitle()).thenReturn("영문법 과제 1");
+
+    Assignment assignment2 = mock(Assignment.class);
+    when(assignment2.getId()).thenReturn(101L);
+    // assignment2.getTitle()은 제출자가 없어 호출되지 않으므로 stubbing 불필요
+
+    //assignmentRepository stub - 2개의 과제가 있음
+    when(assignmentRepository.findByLectureId(lecture.getId()))
+        .thenReturn(List.of(assignment1, assignment2));
+
+    // 과제 제출 생성
+    // assignment1에는 student1, student2가 제출
+    AssignmentSubmission submission1_1 = mock(AssignmentSubmission.class);
+    when(submission1_1.getId()).thenReturn(1000L);
+    when(submission1_1.getStudent()).thenReturn(student1);
+
+    AssignmentSubmission submission1_2 = mock(AssignmentSubmission.class);
+    when(submission1_2.getId()).thenReturn(1001L);
+    when(submission1_2.getStudent()).thenReturn(student2);
+
+    // assignment2에는 제출이 없음 (0명)
+
+    when(student1.getId()).thenReturn(20L);
+    when(student1.getName()).thenReturn("김ㅇㅇ");
+    when(student2.getId()).thenReturn(30L);
+    when(student2.getName()).thenReturn("박ㅇㅇ");
+
+    //assignmentSubmissionRepository stub
+    when(assignmentSubmissionRepository.findAllByAssignmentId(assignment1.getId()))
+        .thenReturn(List.of(submission1_1, submission1_2));
+    when(assignmentSubmissionRepository.findAllByAssignmentId(assignment2.getId()))
+        .thenReturn(List.of()); // 제출이 없는 과제
+
     //when
     var result = lectureService.getLectureDetailForTeacherId(lecture.getId(), teacher.getId());
 
@@ -165,11 +247,54 @@ class LectureServiceTest {
     assertEquals(lecture.getId(), result.getLectureId());
     assertEquals(2, result.getStudentCount());
 
+    // 과제 제출 목록 검증
+    var assignmentsWithSubmissions = result.getAssignmentsWithSubmissions();
+    assertNotNull(assignmentsWithSubmissions);
+    
+    // 제출자가 있는 과제만 포함되어야 함 (assignment2는 제외)
+    assertEquals(1, assignmentsWithSubmissions.size());
+
+    var assignmentWithSubmissions = assignmentsWithSubmissions.get(0);
+    assertEquals(assignment1.getId(), assignmentWithSubmissions.getAssignmentId());
+    assertEquals("영문법 과제 1", assignmentWithSubmissions.getAssignmentTitle());
+
+    // 제출한 학생 목록 검증
+    var submittedStudents = assignmentWithSubmissions.getSubmittedStudents();
+    assertEquals(2, submittedStudents.size());
+
+    // 첫 번째 학생 검증
+    var student1Info = submittedStudents.get(0);
+    assertEquals(student1.getId(), student1Info.getStudentId());
+    assertEquals("김ㅇㅇ", student1Info.getStudentName());
+    assertEquals(1000L, student1Info.getSubmissionId()); // 채점 페이지 연결을 위한 submissionId 확인
+
+    // 두 번째 학생 검증
+    var student2Info = submittedStudents.get(1);
+    assertEquals(student2.getId(), student2Info.getStudentId());
+    assertEquals("박ㅇㅇ", student2Info.getStudentName());
+    assertEquals(1001L, student2Info.getSubmissionId()); // 채점 페이지 연결을 위한 submissionId 확인
+
     verify(lectureHelper).getLectureWithValidation(lecture.getId(), teacher.getId());
     verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
+    verify(assignmentRepository).findByLectureId(lecture.getId());
+    verify(assignmentSubmissionRepository).findAllByAssignmentId(assignment1.getId());
+    verify(assignmentSubmissionRepository).findAllByAssignmentId(assignment2.getId());
 
-    log.info("=== 강의 상세 조회 테스트 결과 ===");
+    log.info("=== 강의 상세 조회 (과제 제출 포함) 테스트 결과 ===");
     log.info("강의 ID : {}, 학생 수 : {}", result.getLectureId(), result.getStudentCount());
+    log.info("과제 제출 포함된 과제 수 : {}", assignmentsWithSubmissions.size());
+    assignmentsWithSubmissions.forEach(assignment -> {
+      log.info("과제 ID : {}, 제목 : {}, 제출 학생 수 : {}", 
+          assignment.getAssignmentId(), 
+          assignment.getAssignmentTitle(), 
+          assignment.getSubmittedStudents().size());
+      assignment.getSubmittedStudents().forEach(student -> {
+        log.info("  - 학생 ID : {}, 이름 : {}, 제출 ID : {} (채점 페이지 연결용)", 
+            student.getStudentId(), 
+            student.getStudentName(), 
+            student.getSubmissionId());
+      });
+    });
   }
 
   @Test
