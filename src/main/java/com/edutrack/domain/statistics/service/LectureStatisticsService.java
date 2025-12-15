@@ -127,11 +127,11 @@ public class LectureStatisticsService {
     List<LocalDate> dates = new ArrayList<>();
     LocalDate startDate = lecture.getStartDate().toLocalDate();
     LocalDate endDate = lecture.getEndDate().toLocalDate();
-    DayOfWeek lectureDayOfWeek = lecture.getDayOfWeek();
+    List<DayOfWeek> lectureDaysOfWeek = lecture.getDaysOfWeek();
 
     LocalDate currentDate = startDate;
     while (!currentDate.isAfter(endDate)) {
-      if (currentDate.getDayOfWeek() == lectureDayOfWeek) {
+      if (lectureDaysOfWeek.contains(currentDate.getDayOfWeek())) {
         dates.add(currentDate);
       }
       currentDate = currentDate.plusDays(1);

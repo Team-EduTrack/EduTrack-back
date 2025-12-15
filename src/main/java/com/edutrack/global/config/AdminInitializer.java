@@ -226,7 +226,7 @@ public class AdminInitializer implements CommandLineRunner {
                 .teacher(teacher)
                 .title("A강의")
                 .description("A강의 설명입니다")
-                .dayOfWeek(DayOfWeek.MONDAY)
+                .daysOfWeek(List.of(DayOfWeek.MONDAY))
                 .startDate(LocalDateTime.of(LocalDate.now().minusDays(7), java.time.LocalTime.of(9, 0)))
                 .endDate(LocalDateTime.of(LocalDate.now().plusDays(30), java.time.LocalTime.of(10, 0)))
                 .build();
@@ -238,7 +238,7 @@ public class AdminInitializer implements CommandLineRunner {
                 .teacher(teacher)
                 .title("B강의")
                 .description("B강의 설명입니다")
-                .dayOfWeek(DayOfWeek.WEDNESDAY)
+                .daysOfWeek(List.of(DayOfWeek.WEDNESDAY))
                 .startDate(LocalDateTime.of(LocalDate.now().minusDays(5), java.time.LocalTime.of(14, 0)))
                 .endDate(LocalDateTime.of(LocalDate.now().plusDays(35), java.time.LocalTime.of(15, 0)))
                 .build();

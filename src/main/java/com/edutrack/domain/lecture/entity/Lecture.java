@@ -53,6 +53,7 @@ public class Lecture {
   @ElementCollection(fetch = FetchType.LAZY)
   @Enumerated(EnumType.STRING)
   @Column(name = "day_of_week", nullable = false)
+  @Builder.Default
   private List<DayOfWeek> daysOfWeek = new ArrayList<>();
 
   @Column(nullable = false)

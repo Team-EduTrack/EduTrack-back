@@ -29,7 +29,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -237,6 +236,5 @@ class StudentAttendanceServiceTest {
         verify(lectureStudentRepository, never()).existsById(any());
 
         log.info("=== 존재하지 않는 학생 조회 시 예외 발생 확인 ===");
-    }
     }
 }

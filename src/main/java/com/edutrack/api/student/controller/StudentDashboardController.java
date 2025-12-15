@@ -59,18 +59,4 @@ public class StudentDashboardController {
         return ResponseEntity.ok(studentDashboardService.getMyExams(studentId));
     }
 
-    /*
-     * 강의별 월별 출석률 조회
-     */
-    @GetMapping("/{studentId}/lectures/{lectureId}/attendance/monthly")
-    public ResponseEntity<MonthlyAttendanceResponse> getMonthlyAttendance(
-            @PathVariable Long studentId,
-            @PathVariable Long lectureId,
-            @RequestParam int year,
-            @RequestParam int month
-    ) {
-        return ResponseEntity.ok(studentDashboardService.getMonthlyAttendance(
-                studentId, lectureId, year, month));
-    }
-
 }
