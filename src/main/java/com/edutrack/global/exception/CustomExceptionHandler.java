@@ -70,9 +70,107 @@ public class CustomExceptionHandler {
     return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
   }
 
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.NOT_FOUND.value())
+            .errorCode("G-003")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(ForbiddenException.class)
+  public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.FORBIDDEN.value())
+            .errorCode("G-004")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
+  @ExceptionHandler(UserNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.NOT_FOUND.value())
+            .errorCode("U-001")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(LectureAccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleLectureAccessDeniedException(LectureAccessDeniedException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.FORBIDDEN.value())
+            .errorCode("L-001")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
+  @ExceptionHandler(AssignmentNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleAssignmentNotFoundException(AssignmentNotFoundException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.NOT_FOUND.value())
+            .errorCode("A-001")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(AssignmentAlreadySubmittedException.class)
+  public ResponseEntity<ErrorResponse> handleAssignmentAlreadySubmittedException(AssignmentAlreadySubmittedException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.CONFLICT.value())
+            .errorCode("A-002")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+  }
+
+  @ExceptionHandler(AssignmentPermissionException.class)
+  public ResponseEntity<ErrorResponse> handleAssignmentPermissionException(AssignmentPermissionException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.FORBIDDEN.value())
+            .errorCode("A-003")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
+  @ExceptionHandler(TeacherNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleTeacherNotFoundException(TeacherNotFoundException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.NOT_FOUND.value())
+            .errorCode("T-001")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+  }
+
+  @ExceptionHandler(AcademyMismatchException.class)
+  public ResponseEntity<ErrorResponse> handleAcademyMismatchException(AcademyMismatchException ex) {
+    ErrorResponse response = ErrorResponse.builder()
+            .status(HttpStatus.FORBIDDEN.value())
+            .errorCode("AC-001")
+            .message(ex.getMessage())
+            .build();
+
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
   @ExceptionHandler(BusinessException.class)
   public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
-
     ErrorResponse response = ErrorResponse.builder()
         .status(e.getStatus().value())
         .errorCode("B-001")
@@ -81,5 +179,4 @@ public class CustomExceptionHandler {
 
     return ResponseEntity.status(e.getStatus()).body(response);
   }
-
 }

@@ -16,8 +16,12 @@ import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.AssignmentAlreadySubmittedException;
+import com.edutrack.global.exception.AssignmentNotFoundException;
+import com.edutrack.global.exception.AssignmentPermissionException;
 import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
+import com.edutrack.global.exception.UserNotFoundException;
 import com.edutrack.global.s3.S3PresignedService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -59,13 +63,13 @@ public class AssignmentSubmissionService {
   public AssignmentSubmitResponse submit(Long assignmentId, Long studentId, AssignmentSubmitRequest request) {
 
     Assignment assignment = assignmentRepository.findById(assignmentId)
-        .orElseThrow(() -> new RuntimeException("과제가 존재하지 않습니다."));
+        .orElseThrow(() -> new AssignmentNotFoundException("과제가 존재하지 않습니다. ID: " + assignmentId));
 
     User student = userRepository.findById(studentId)
-        .orElseThrow(() -> new RuntimeException("학생이 존재하지 않습니다."));
+        .orElseThrow(() -> new UserNotFoundException("학생이 존재하지 않습니다. ID: " + studentId));
 
         if (assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(assignmentId, studentId)) {
-            throw new RuntimeException("이미 제출한 과제입니다.");
+            throw new AssignmentAlreadySubmittedException("이미 제출한 과제입니다.");
         }
 
     // S3 접근 가능한 최종 URL
@@ -232,11 +236,11 @@ public class AssignmentSubmissionService {
 
     // 과제가 존재하는지 확인
     Assignment assignment = assignmentRepository.findById(assignmentId)
-        .orElseThrow(() -> new RuntimeException("과제가 존재하지 않습니다."));
+        .orElseThrow(() -> new AssignmentNotFoundException("과제가 존재하지 않습니다. ID: " + assignmentId));
 
     // 이 과제를 만든 강사가 맞는지 검증
     if (!assignment.getTeacher().getId().equals(teacherId)) {
-      throw new RuntimeException("해당 과제의 강사만 제출 리스트를 조회할 수 있습니다.");
+      throw new AssignmentPermissionException("해당 과제의 강사만 제출 리스트를 조회할 수 있습니다.");
     }
 
     List<AssignmentSubmission> submissions = assignmentSubmissionRepository.findAllByAssignmentId(

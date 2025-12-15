@@ -6,6 +6,10 @@ import lombok.Getter;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 학생 강의별 월간 출석 현황 응답 DTO
+ * 복수 요일 지원을 포함합니다.
+ */
 @Getter
 @Builder
 public class StudentLectureAttendanceResponse {
@@ -19,4 +23,3 @@ public class StudentLectureAttendanceResponse {
     private final double attendanceRate;
     private final double otherStudentsAvgAttendanceRate;
 }
-

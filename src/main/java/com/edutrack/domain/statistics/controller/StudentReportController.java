@@ -15,8 +15,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
-
+/**
+ * 학생 리포트 컨트롤러
+ * 
+ * 현재 코드베이스의 복수 요일 지원 기능과 호환됩니다.
+ * 
+ */
 @RestController
 @RequiredArgsConstructor
 public class StudentReportController {
@@ -24,7 +28,9 @@ public class StudentReportController {
     private final StudentReportService studentReportService;
     private final StudentAttendanceService studentAttendanceService;
 
-    //학생 통합 분석 리포트 API
+    /**
+     * 학생 통합 분석 리포트 API
+     */
     @GetMapping("/api/analysis/student/{studentId}")
     @PreAuthorize("hasAnyRole('STUDENT')")
     public ResponseEntity<StudentAnalysisResponse> getStudentAnalysis(
@@ -39,7 +45,9 @@ public class StudentReportController {
         return ResponseEntity.ok(response);
     }
 
-    //학생 전체 시험 요약 조회 API
+    /**
+     * 학생 전체 시험 요약 조회 API
+     */
     @GetMapping("/api/students/{studentId}/analysis/exams")
     @PreAuthorize("hasAnyRole('STUDENT')")
     public ResponseEntity<List<StudentExamSummaryResponse>> getExamSummary(
@@ -53,7 +61,9 @@ public class StudentReportController {
         return ResponseEntity.ok(response);
     }
 
-    //학생의 단원별 성취도 조회 (정답률 낮은 순)
+    /**
+     * 학생의 단원별 성취도 조회 (정답률 낮은 순)
+     */
     @GetMapping("/api/students/{studentId}/analysis/weak-units")
     @PreAuthorize("hasAnyRole('STUDENT')")
     public ResponseEntity<List<StudentUnitCorrectRateResponse>> getWeakUnits(
@@ -68,7 +78,16 @@ public class StudentReportController {
         return ResponseEntity.ok(response);
     }
 
-    //학생의 강의별 월간 출석 현황 조회
+    /**
+     * 학생의 강의별 월간 출석 현황 조회
+     * 
+     * @param studentId 학생 ID
+     * @param lectureId 강의 ID
+     * @param year 조회할 연도
+     * @param month 조회할 월
+     * @param principalId 인증된 사용자 ID
+     * @return 학생의 월별 출석 현황 정보
+     */
     @GetMapping("/api/students/{studentId}/lectures/{lectureId}/attendance/monthly")
     @PreAuthorize("hasAnyRole('STUDENT')")
     public ResponseEntity<StudentLectureAttendanceResponse> getMonthlyAttendance(
@@ -78,9 +97,11 @@ public class StudentReportController {
             @RequestParam int month,
             @AuthenticationPrincipal Long principalId
     ) {
-        // 권한 검증은 서비스 레이어에서 처리
+        if (!studentId.equals(principalId)) {
+            throw new ForbiddenException("본인의 출석 현황만 조회할 수 있습니다.");
+        }
         StudentLectureAttendanceResponse response = studentAttendanceService
-                .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
+                .getMonthlyAttendance(studentId, lectureId, year, month);
         return ResponseEntity.ok(response);
     }
 }

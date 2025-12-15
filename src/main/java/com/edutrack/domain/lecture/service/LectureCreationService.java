@@ -1,6 +1,8 @@
 package com.edutrack.domain.lecture.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,8 @@ import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import java.time.DayOfWeek;
+import com.edutrack.global.exception.AcademyMismatchException;
 import com.edutrack.global.exception.ConflictException;
 import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
@@ -42,7 +46,10 @@ public class LectureCreationService {
         // 3. 날짜 유효성 검증
         validateDates(request.getStartDate(), request.getEndDate());
 
-        // 4. Lecture 엔티티 생성 및 저장
+        // 4. 요일 유효성 검증
+        validateDaysOfWeek(request.getDaysOfWeek());
+
+        // 5. Lecture 엔티티 생성 및 저장
         Academy academy = academyRepository.getReferenceById(principalAcademyId);
 
         Lecture lecture = Lecture.builder()
@@ -50,7 +57,7 @@ public class LectureCreationService {
                 .teacher(teacher)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .dayOfWeek(request.getDate())
+                .daysOfWeek(request.getDaysOfWeek() != null ? new ArrayList<>(request.getDaysOfWeek()) : new ArrayList<>())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
                 .build();
@@ -74,7 +81,9 @@ public class LectureCreationService {
 
         // 3. 조건: 강사가 원장과 동일한 학원 소속인가?
         if (teacher.getAcademy() == null || !teacher.getAcademy().getId().equals(principalAcademyId)) {
-            throw new ForbiddenException("지정된 강사는 이 학원 소속이 아닙니다.");
+            throw new AcademyMismatchException("지정된 강사는 이 학원 소속이 아닙니다. 강사 학원 ID: " + 
+                (teacher.getAcademy() != null ? teacher.getAcademy().getId() : "null") + 
+                ", 요청 학원 ID: " + principalAcademyId);
         }
 
         return teacher;
@@ -84,6 +93,18 @@ public class LectureCreationService {
     private void validateDates(LocalDateTime start, LocalDateTime end) {
         if (start.isAfter(end)) {
             throw new ConflictException("강의 시작일이 종료일보다 늦을 수 없습니다.");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    private void validateDaysOfWeek(List<DayOfWeek> daysOfWeek) {
+        if (daysOfWeek == null || daysOfWeek.isEmpty()) {
+            throw new ConflictException("강의 요일은 최소 1개 이상 선택해야 합니다.");
+        }
+        // 중복 요일 체크
+        long distinctCount = daysOfWeek.stream().distinct().count();
+        if (distinctCount != daysOfWeek.size()) {
+            throw new ConflictException("중복된 요일이 선택되었습니다.");
         }
     }
 }

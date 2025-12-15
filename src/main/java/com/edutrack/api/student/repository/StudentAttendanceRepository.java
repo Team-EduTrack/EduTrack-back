@@ -33,27 +33,58 @@ public interface StudentAttendanceRepository extends JpaRepository<Attendance, L
      */
     Optional<Attendance> findByStudentAndDate(User student, LocalDate date);
 
+    /**
+     * 학생의 특정 월 출석 기록 조회 (출석한 것만)
+     */
+    @Query("SELECT a FROM Attendance a WHERE a.student.id = :studentId " +
+           "AND a.status = true " +
+           "AND YEAR(a.date) = :year AND MONTH(a.date) = :month")
+    List<Attendance> findByStudentIdAndYearAndMonth(
+            @Param("studentId") Long studentId,
+            @Param("year") int year,
+            @Param("month") int month
+    );
+
+    /**
+     * 여러 학생의 특정 월 출석 기록 조회 (출석한 것만)
+     */
+    @Query("SELECT a FROM Attendance a WHERE a.student.id IN :studentIds " +
+           "AND a.status = true " +
+           "AND YEAR(a.date) = :year AND MONTH(a.date) = :month")
+    List<Attendance> findByStudentIdsAndYearAndMonth(
+            @Param("studentIds") List<Long> studentIds,
+            @Param("year") int year,
+            @Param("month") int month
+    );
+
+    /**
+     * 여러 학생의 특정 날짜 목록에 대한 출석 기록 배치 조회
+     */
     @Query("""
-
             SELECT a 
-    FROM Attendance a
-    WHERE a.student.id IN :studentIds 
-      AND a.date IN :dates
-      AND a.status = true
-    """)
+            FROM Attendance a
+            WHERE a.student.id IN :studentIds 
+              AND a.date IN :dates
+              AND a.status = true
+            """)
     List<Attendance> findAllByStudentIdsAndDates(
-    @Param("studentIds") List<Long> studentIds,
-    @Param("dates") List<LocalDate> dates
-);
+            @Param("studentIds") List<Long> studentIds,
+            @Param("dates") List<LocalDate> dates
+    );
 
-    //학생의 특정기간 출석 기록 조회
+    /**
+     * 학생의 특정기간 출석 기록 조회
+     * 복수 요일 지원과 함께 사용됩니다.
+     */
     List<Attendance> findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
             Long studentId,
             LocalDate startDate,
             LocalDate endDate
     );
 
-    //여러 학생의 특정기간 출석 기록 배치 조회
+    /**
+     * 여러 학생의 특정기간 출석 기록 배치 조회
+     */
     List<Attendance> findByStudentIdInAndDateBetweenAndStatusTrueOrderByDateAsc(
             List<Long> studentIds,
             LocalDate startDate,
