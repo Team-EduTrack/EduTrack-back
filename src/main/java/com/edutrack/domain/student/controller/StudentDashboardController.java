@@ -1,8 +1,11 @@
-package com.edutrack.api.student.controller;
+package com.edutrack.domain.student.controller;
 
-import com.edutrack.api.student.dto.*;
-import com.edutrack.api.student.service.StudentDashboardService;
-import com.edutrack.domain.statistics.service.StudentAttendanceService;
+import com.edutrack.domain.student.dto.*;
+import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
+import com.edutrack.domain.student.dto.AttendanceCheckInResponse;
+import com.edutrack.domain.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.MyLectureResponse;
+import com.edutrack.domain.student.service.StudentDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -3,7 +3,7 @@ package com.edutrack.domain.statistics.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.edutrack.api.student.repository.StudentAttendanceRepository;
+import com.edutrack.domain.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
@@ -29,7 +29,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 /**

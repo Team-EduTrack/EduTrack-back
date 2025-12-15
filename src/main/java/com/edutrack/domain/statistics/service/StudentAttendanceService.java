@@ -1,6 +1,6 @@
 package com.edutrack.domain.statistics.service;
 
-import com.edutrack.api.student.repository.StudentAttendanceRepository;
+import com.edutrack.domain.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.edutrack.api.student.repository.StudentAttendanceRepository;
+import com.edutrack.domain.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;

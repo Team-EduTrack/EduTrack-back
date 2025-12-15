@@ -1,6 +1,6 @@
-package com.edutrack.api.student.repository;
+package com.edutrack.domain.student.repository;
 
-import com.edutrack.api.student.dto.MyLectureResponse;
+import com.edutrack.domain.student.dto.MyLectureResponse;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.entity.LectureStudentId;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,7 +22,7 @@ public interface StudentLectureQueryRepository extends JpaRepository<LectureStud
      * - 강의 시작일, 제목 순으로 정렬
      */
     @Query("""
-            SELECT new com.edutrack.api.student.dto.MyLectureResponse(
+            SELECT new com.edutrack.domain.student.dto.MyLectureResponse(
                 l.id,
                 l.title,
                 t.name,
