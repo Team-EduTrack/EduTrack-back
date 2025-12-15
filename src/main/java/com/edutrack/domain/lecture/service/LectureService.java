@@ -6,13 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
+import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.repository.ExamRepository;
+import com.edutrack.domain.exam.repository.ExamStudentRepository;
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
@@ -37,22 +44,22 @@ public class LectureService {
   private final UserRepository userRepository;
   private final ExamRepository examRepository;
   private final LectureStatisticsService lectureStatisticsService;
+  private final AssignmentRepository assignmentRepository;
+  private final AssignmentSubmissionRepository assignmentSubmissionRepository;
+  private final ExamStudentRepository examStudentRepository;
 
   private final LectureHelper lectureHelper;
 
   //강사의 ID로 강의 목록과 각 강의의 수강생 수 조회
-
-  /**
-   * 해당 방식은 Batch 조회를 통해 N+1 문제를 방지하고,
-   * 한 강사가 담당하는 강의 수가 적고 (많으면 대략 10~20개)
-   * 강의당 학생 수가 수천 명 이하인 경우에 효율적이라고 생각합니다.
-   * 위 두 조건이 지켜지지 않는 경우, DB 집계가 더 효율적이라고 생각합니다.
-   */
   @Transactional(readOnly = true)
   public List<LectureForTeacherResponse> getLecturesByTeacherId(Long teacherId) {
 
     //강사의 강의 목록 조회
     List<Lecture> lectures = lectureRepository.findAllByTeacherId(teacherId);
+
+    if (lectures.isEmpty()) {
+      return List.of();
+    }
 
     // Batch 조회를 통한 해당 강의들의 모든 수강생 수 조회
     List<LectureStudent> lectureStudents = findLectureStudentByLectureId(lectures);
@@ -61,11 +68,20 @@ public class LectureService {
     Map<Long, Long> studentCountMap = lectureStudents.stream()
         .collect(Collectors.groupingBy(ls -> ls.getLecture().getId(), Collectors.counting()));
 
+    // 성능 최적화: 모든 강의의 시험을 한 번에 배치 조회
+    List<Long> lectureIds = toIdList(lectures, Lecture::getId);
+    
+    List<Exam> allExams = lectureIds.isEmpty() ? List.of() : examRepository.findByLectureIdIn(lectureIds);
+    
+    // 강의별 시험 그룹핑
+    Map<Long, List<Exam>> examsByLectureId = allExams.stream()
+        .collect(Collectors.groupingBy(exam -> exam.getLecture().getId()));
+
     //각 강의와 수강생 수를 매핑하여 DTO 생성
     return lectures.stream()
         .map(lecture -> {
-          // 각 강의의 시험 목록 조회 (기존 메서드 재활용)
-          List<Exam> exams = examRepository.findByLectureId(lecture.getId());
+          // 그룹핑된 시험 목록 조회
+          List<Exam> exams = examsByLectureId.getOrDefault(lecture.getId(), List.of());
           // LectureStatisticsService의 calculateAverageScore 재사용
           Double averageScore = lectureStatisticsService.calculateAverageScore(exams);
           // 선생님 이름 조회
@@ -73,7 +89,7 @@ public class LectureService {
           
           return LectureForTeacherResponse.of(
               lecture,
-              studentCountMap.getOrDefault(lecture.getId(), 0L).intValue(),
+              (int) (long) studentCountMap.getOrDefault(lecture.getId(), 0L),
               teacherName,
               averageScore
           );
@@ -90,14 +106,112 @@ public class LectureService {
     //강의에 배정된 수강생 리스트 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
 
+    // 과제별 제출 학생 목록 조회 (제출자가 있는 과제만)
+    List<LectureDetailForTeacherResponse.AssignmentWithSubmissions> assignmentsWithSubmissions = 
+        getAssignmentsWithSubmissions(lectureId);
+
+    // 시험별 응시 현황 조회
+    List<LectureDetailForTeacherResponse.ExamParticipationInfo> examsWithParticipation = 
+        getExamsWithParticipation(lectureId, lectureStudents.size());
+
     return new LectureDetailForTeacherResponse(
         lecture.getId(),
         lecture.getTitle(),
         lecture.getDescription(),
         lectureStudents,
         null,  // teacherName은 목록 조회에서만 필요
-        null   // averageGrade는 목록 조회에서만 필요
+        null,  // averageGrade는 목록 조회에서만 필요
+        assignmentsWithSubmissions,
+        examsWithParticipation
     );
+  }
+
+  /**
+   * 강의의 과제별 제출 학생 목록 조회
+   * 제출자가 있는 과제만 반환 (0명인 과제는 제외)
+   */
+  private List<LectureDetailForTeacherResponse.AssignmentWithSubmissions> getAssignmentsWithSubmissions(Long lectureId) {
+    // 강의의 모든 과제 조회
+    List<Assignment> assignments = assignmentRepository.findByLectureId(lectureId);
+
+    if (assignments.isEmpty()) {
+      return List.of();
+    }
+
+    // 성능 최적화: 모든 과제의 제출물을 한 번에 배치 조회
+    List<Long> assignmentIds = toIdList(assignments, Assignment::getId);
+
+    List<AssignmentSubmission> allSubmissions = assignmentSubmissionRepository.findAllByAssignmentIds(assignmentIds);
+
+    // 과제별로 제출물 그룹핑
+    Map<Long, List<AssignmentSubmission>> submissionsByAssignmentId = allSubmissions.stream()
+        .collect(Collectors.groupingBy(submission -> submission.getAssignment().getId()));
+
+    // DTO 생성 (제출자가 있는 과제만 포함)
+    return assignments.stream()
+        .map(assignment -> {
+          List<AssignmentSubmission> submissions = submissionsByAssignmentId.getOrDefault(assignment.getId(), List.of());
+
+          // 제출자가 있는 경우만 포함
+          if (!submissions.isEmpty()) {
+            List<LectureDetailForTeacherResponse.SubmissionStudentInfo> submittedStudents = 
+                submissions.stream()
+                    .map(submission -> new LectureDetailForTeacherResponse.SubmissionStudentInfo(
+                        submission.getStudent().getId(),
+                        submission.getStudent().getName(),
+                        submission.getId()  // submissionId는 채점 페이지로 이동하기 위해 필요
+                    ))
+                    .toList();
+
+            return new LectureDetailForTeacherResponse.AssignmentWithSubmissions(
+                assignment.getId(),
+                assignment.getTitle(),
+                submittedStudents
+            );
+          }
+          return null; // 제출자가 없으면 null
+        })
+        .filter(Objects::nonNull) // null 제거 (제출자가 없는 과제 제외)
+        .toList();
+  }
+
+  /**
+   * 강의의 시험별 응시 현황 조회
+   * 모든 시험을 포함하며, 각 시험별 응시한 학생 수와 전체 학생 수를 반환
+   */
+  private List<LectureDetailForTeacherResponse.ExamParticipationInfo> getExamsWithParticipation(
+      Long lectureId, int totalStudentCount) {
+    // 강의의 모든 시험 조회
+    List<Exam> exams = examRepository.findByLectureId(lectureId);
+
+    if (exams.isEmpty()) {
+      return List.of();
+    }
+
+    // 성능 최적화: 모든 시험 ID를 한 번에 조회
+    List<Long> examIds = toIdList(exams, Exam::getId);
+
+    List<ExamStudent> allExamStudents = examStudentRepository.findAllByExamIds(examIds);
+
+    // 시험별로 응시 학생 수 그룹핑
+    Map<Long, Long> participationCountMap = allExamStudents.stream()
+        .collect(Collectors.groupingBy(
+            es -> es.getExam().getId(),
+            Collectors.counting()
+        ));
+
+    // DTO 생성
+    return exams.stream()
+        .map(exam -> {
+          long participatedCount = participationCountMap.getOrDefault(exam.getId(), 0L);
+          return new LectureDetailForTeacherResponse.ExamParticipationInfo(
+              exam.getId(),
+              exam.getTitle(),
+              (int) participatedCount,
+              totalStudentCount
+          );
+        })
+        .toList();
   }
 
   //학생 목록 조회
@@ -121,29 +235,18 @@ public class LectureService {
     Long academyId = lecture.getAcademy().getId();
 
     //이미 배정된 학생 ID 조회
-    List<Long> assignedIds = lectureStudentRepository.findAllByLectureId((lectureId))
-        .stream().map(ls -> ls.getStudent().getId())
-        .toList();
+    List<Long> assignedIds = getAssignedStudentIds(lectureId);
 
-    //배정 가능한 학생 조회
+    //배정 가능한 학생 조회 (Repository에서 이미 name과 STUDENT 역할로 필터링 처리됨)
     List<User> candidates = userRepository.findAvailableStudents(
         academyId,
-        assignedIds.isEmpty() ? Collections.emptyList() : assignedIds,
+        assignedIds,
         name
     );
 
-    //문자열 기반 필터링, name이 null 일 경우 모든 배정 가능한 학생 반환
-    if(name != null && !name.isEmpty()) {
-    String lowerName = name.toLowerCase();
-    candidates = candidates.stream()
-        .filter(u -> u.getName() != null && u.getName().toLowerCase().contains(lowerName))
-        .toList();
-    }
-
     return candidates.stream()
-        .filter(lectureHelper::isStudent)
         .map(this::toDto)
-      .toList();
+        .toList();
   }
 
   //학생 배정 API
@@ -155,9 +258,7 @@ public class LectureService {
     Set<User> students = lectureHelper.getValidStudents(studentIds, lecture);
 
     //이미 배정된 학생 ID 목록 조회
-    Set<Long> assignedIds = lectureStudentRepository.findAllByLectureId(lectureId).stream()
-        .map(ls -> ls.getStudent().getId())
-        .collect(Collectors.toSet());
+    Set<Long> assignedIds = getAssignedStudentIdSet(lectureId);
 
     //배정 가능한 학생 필터링
     Set<User> newStudents = students.stream()
@@ -173,19 +274,33 @@ public class LectureService {
     Set<LectureStudent> lectureStudents = newStudents.stream()
         .map(s -> new LectureStudent(lecture, s))
         .collect(Collectors.toSet());
-
-
-      lectureStudentRepository.saveAll(lectureStudents);
+    lectureStudentRepository.saveAll(lectureStudents);
 
     return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
   }
 
   private List<LectureStudent> findLectureStudentByLectureId(List<Lecture> lectures) {
-    List<Long> ids = lectures.stream()
-        .map(Lecture::getId)
+    List<Long> ids = toIdList(lectures, Lecture::getId);
+    return ids.isEmpty() ? Collections.emptyList() : lectureStudentRepository.findAllByLectureIdIn(ids);
+  }
+
+  private <T> List<Long> toIdList(List<T> entities, Function<T, Long> idExtractor) {
+    return entities.stream()
+        .map(idExtractor)
         .filter(Objects::nonNull)
         .toList();
-    return ids.isEmpty() ? Collections.emptyList() : lectureStudentRepository.findAllByLectureIdIn(ids);
+  }
+
+  private List<Long> getAssignedStudentIds(Long lectureId) {
+    return lectureStudentRepository.findAllByLectureId(lectureId).stream()
+        .map(ls -> ls.getStudent().getId())
+        .toList();
+  }
+
+  private Set<Long> getAssignedStudentIdSet(Long lectureId) {
+    return lectureStudentRepository.findAllByLectureId(lectureId).stream()
+        .map(ls -> ls.getStudent().getId())
+        .collect(Collectors.toSet());
   }
 
   private StudentSearchResponse toDto(User user) {

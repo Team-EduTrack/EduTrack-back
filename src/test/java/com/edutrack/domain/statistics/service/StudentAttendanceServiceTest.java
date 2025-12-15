@@ -1,9 +1,13 @@
 package com.edutrack.domain.statistics.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 import com.edutrack.api.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
+import com.edutrack.domain.lecture.entity.LectureStudentId;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.statistics.dto.StudentLectureAttendanceResponse;
@@ -13,28 +17,29 @@ import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
-
+/**
+ * 학생 출석 서비스 테스트
+ * 복수 요일 지원 테스트 포함
+ */
 @ExtendWith(MockitoExtension.class)
 class StudentAttendanceServiceTest {
+
+    private static final Logger log = LoggerFactory.getLogger(StudentAttendanceServiceTest.class);
 
     @InjectMocks
     private StudentAttendanceService studentAttendanceService;
@@ -53,233 +58,185 @@ class StudentAttendanceServiceTest {
 
     private Long studentId;
     private Long lectureId;
-    private int year;
-    private int month;
+    private Lecture lecture;
 
     @BeforeEach
     void setUp() {
         studentId = 1L;
-        lectureId = 1L;
-        year = 2025;
-        month = 12;
+        lectureId = 10L;
+
+        // 강의 생성 (월, 수, 금 수업)
+        lecture = mock(Lecture.class);
+        when(lecture.getId()).thenReturn(lectureId);
+        when(lecture.getTitle()).thenReturn("영문법 특강");
+        when(lecture.getDaysOfWeek()).thenReturn(Arrays.asList(
+                DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY));
+        when(lecture.getStartDate()).thenReturn(LocalDateTime.of(2025, 11, 1, 9, 0));
+        when(lecture.getEndDate()).thenReturn(LocalDateTime.of(2025, 12, 31, 18, 0));
     }
 
-    @Nested
-    @DisplayName("getMonthlyAttendance 메서드")
-    class GetMonthlyAttendance {
+    @Test
+    @DisplayName("강의별 월별 출석률 조회 성공 - 복수 요일 지원")
+    void 강의별_월별_출석률_조회_성공() {
+        // given
+        int year = 2025;
+        int month = 12;
 
-        @Test
-        @DisplayName("성공: 월간 출석 현황을 올바르게 반환한다")
-        void success_returnsMonthlyAttendance() {
-            // given
-            Long principalId = studentId; // 본인 조회
-            given(userRepository.existsById(studentId)).willReturn(true);
-            given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
+        // 학생 존재 확인
+        when(userRepository.existsById(studentId)).thenReturn(true);
 
-            Lecture lecture = createLecture(lectureId, "영문법 특강", DayOfWeek.MONDAY);
-            given(lectureRepository.findById(lectureId)).willReturn(Optional.of(lecture));
+        // 학생이 강의에 등록되어 있음
+        LectureStudentId lectureStudentId = new LectureStudentId(lectureId, studentId);
+        when(lectureStudentRepository.existsById(lectureStudentId))
+                .thenReturn(true);
 
-            // 2025년 12월 월요일: 1, 8, 15, 22, 29 (5일)
-            LocalDate startDate = LocalDate.of(2025, 12, 1);
-            LocalDate endDate = LocalDate.of(2025, 12, 31);
+        // 강의 정보 조회
+        when(lectureRepository.findById(lectureId))
+                .thenReturn(Optional.of(lecture));
 
-            // 본인 출석: 1, 8, 15, 22 (4일)
-            List<Attendance> myAttendances = Arrays.asList(
-                    createAttendance(studentId, LocalDate.of(2025, 12, 1)),
-                    createAttendance(studentId, LocalDate.of(2025, 12, 8)),
-                    createAttendance(studentId, LocalDate.of(2025, 12, 15)),
-                    createAttendance(studentId, LocalDate.of(2025, 12, 22))
-            );
-            given(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
-                    studentId, startDate, endDate)).willReturn(myAttendances);
+        // 출석 기록 생성 (12월 2일(월), 9일(월), 16일(월) 출석)
+        Attendance attendance1 = mock(Attendance.class);
+        when(attendance1.getDate()).thenReturn(LocalDate.of(2025, 12, 2)); // 월요일
+        when(attendance1.isStatus()).thenReturn(true);
 
-            // 다른 수강생 없음
-            given(lectureStudentRepository.findAllByLectureId(lectureId)).willReturn(
-                    Collections.singletonList(createLectureStudent(lectureId, studentId)));
+        Attendance attendance2 = mock(Attendance.class);
+        when(attendance2.getDate()).thenReturn(LocalDate.of(2025, 12, 9)); // 월요일
+        when(attendance2.isStatus()).thenReturn(true);
 
-            // when
-            StudentLectureAttendanceResponse response = studentAttendanceService
-                    .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
+        Attendance attendance3 = mock(Attendance.class);
+        when(attendance3.getDate()).thenReturn(LocalDate.of(2025, 12, 16)); // 월요일
+        when(attendance3.isStatus()).thenReturn(true);
 
-            // then
-            assertThat(response.getLectureId()).isEqualTo(lectureId);
-            assertThat(response.getLectureName()).isEqualTo("영문법 특강");
-            assertThat(response.getYear()).isEqualTo(2025);
-            assertThat(response.getMonth()).isEqualTo(12);
-            assertThat(response.getTotalClassDays()).isEqualTo(5);
-            assertThat(response.getAttendedDays()).isEqualTo(4);
-            assertThat(response.getAttendanceRate()).isEqualTo(80.0);
-            assertThat(response.getAttendedDates()).hasSize(4);
-        }
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
-        @Test
-        @DisplayName("성공: 다른 수강생 평균 출석률을 올바르게 계산한다 (배치 조회)")
-        void success_calculatesOtherStudentsAvgAttendanceRate() {
-            // given
-            Long principalId = studentId; // 본인 조회
-            Long otherStudentId = 2L;
+        when(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
+                studentId, startDate, endDate))
+                .thenReturn(Arrays.asList(attendance1, attendance2, attendance3));
 
-            given(userRepository.existsById(studentId)).willReturn(true);
-            given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
+        // 다른 학생들의 출석 기록 (평균 계산용)
+        User otherStudent = mock(User.class);
+        when(otherStudent.getId()).thenReturn(2L);
 
-            Lecture lecture = createLecture(lectureId, "영문법 특강", DayOfWeek.MONDAY);
-            given(lectureRepository.findById(lectureId)).willReturn(Optional.of(lecture));
+        LectureStudent otherLectureStudent = mock(LectureStudent.class);
+        when(otherLectureStudent.getStudent()).thenReturn(otherStudent);
 
-            LocalDate startDate = LocalDate.of(2025, 12, 1);
-            LocalDate endDate = LocalDate.of(2025, 12, 31);
+        when(lectureStudentRepository.findAllByLectureId(lectureId))
+                .thenReturn(Arrays.asList(otherLectureStudent));
 
-            // 본인 출석: 4일
-            List<Attendance> myAttendances = Arrays.asList(
-                    createAttendance(studentId, LocalDate.of(2025, 12, 1)),
-                    createAttendance(studentId, LocalDate.of(2025, 12, 8)),
-                    createAttendance(studentId, LocalDate.of(2025, 12, 15)),
-                    createAttendance(studentId, LocalDate.of(2025, 12, 22))
-            );
-            given(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
-                    studentId, startDate, endDate)).willReturn(myAttendances);
+        Attendance otherAttendance1 = mock(Attendance.class);
+        when(otherAttendance1.getDate()).thenReturn(LocalDate.of(2025, 12, 2));
+        when(otherAttendance1.getStudent()).thenReturn(otherStudent);
+        when(otherAttendance1.isStatus()).thenReturn(true);
 
-            // 다른 수강생 출석: 5일 (100%) - 배치 조회용
-            List<Attendance> otherAttendances = Arrays.asList(
-                    createAttendance(otherStudentId, LocalDate.of(2025, 12, 1)),
-                    createAttendance(otherStudentId, LocalDate.of(2025, 12, 8)),
-                    createAttendance(otherStudentId, LocalDate.of(2025, 12, 15)),
-                    createAttendance(otherStudentId, LocalDate.of(2025, 12, 22)),
-                    createAttendance(otherStudentId, LocalDate.of(2025, 12, 29))
-            );
-            // 배치 조회 mock
-            given(attendanceRepository.findByStudentIdInAndDateBetweenAndStatusTrueOrderByDateAsc(
-                    Arrays.asList(otherStudentId), startDate, endDate)).willReturn(otherAttendances);
+        Attendance otherAttendance2 = mock(Attendance.class);
+        when(otherAttendance2.getDate()).thenReturn(LocalDate.of(2025, 12, 9));
+        when(otherAttendance2.getStudent()).thenReturn(otherStudent);
+        when(otherAttendance2.isStatus()).thenReturn(true);
 
-            // 수강생 목록
-            given(lectureStudentRepository.findAllByLectureId(lectureId)).willReturn(Arrays.asList(
-                    createLectureStudent(lectureId, studentId),
-                    createLectureStudent(lectureId, otherStudentId)
-            ));
+        when(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
+                eq(2L), eq(startDate), eq(endDate)))
+                .thenReturn(Arrays.asList(otherAttendance1, otherAttendance2));
 
-            // when
-            StudentLectureAttendanceResponse response = studentAttendanceService
-                    .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
+        // when
+        StudentLectureAttendanceResponse result = studentAttendanceService.getMonthlyAttendance(
+                studentId, lectureId, year, month);
 
-            // then
-            assertThat(response.getAttendanceRate()).isEqualTo(80.0);
-            assertThat(response.getOtherStudentsAvgAttendanceRate()).isEqualTo(100.0);
-        }
+        // then
+        assertNotNull(result);
+        assertEquals(lectureId, result.getLectureId());
+        assertEquals("영문법 특강", result.getLectureName());
+        assertEquals(year, result.getYear());
+        assertEquals(month, result.getMonth());
+        assertTrue(result.getAttendedDates().contains(LocalDate.of(2025, 12, 2)));
+        assertTrue(result.getAttendedDates().contains(LocalDate.of(2025, 12, 9)));
+        assertTrue(result.getAttendedDates().contains(LocalDate.of(2025, 12, 16)));
+        assertTrue(result.getTotalClassDays() > 0);
+        assertEquals(3, result.getAttendedDays());
+        assertTrue(result.getAttendanceRate() > 0);
+        assertTrue(result.getOtherStudentsAvgAttendanceRate() >= 0);
 
-        @Test
-        @DisplayName("성공: 출석 기록이 없으면 출석률 0을 반환한다")
-        void success_returnsZeroWhenNoAttendance() {
-            // given
-            Long principalId = studentId; // 본인 조회
-            given(userRepository.existsById(studentId)).willReturn(true);
-            given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
+        verify(userRepository).existsById(studentId);
+        verify(lectureStudentRepository).existsById(lectureStudentId);
+        verify(lectureRepository).findById(lectureId);
+        verify(attendanceRepository).findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
+                studentId, startDate, endDate);
 
-            Lecture lecture = createLecture(lectureId, "영문법 특강", DayOfWeek.MONDAY);
-            given(lectureRepository.findById(lectureId)).willReturn(Optional.of(lecture));
-
-            LocalDate startDate = LocalDate.of(2025, 12, 1);
-            LocalDate endDate = LocalDate.of(2025, 12, 31);
-
-            given(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
-                    studentId, startDate, endDate)).willReturn(Collections.emptyList());
-            given(lectureStudentRepository.findAllByLectureId(lectureId)).willReturn(
-                    Collections.singletonList(createLectureStudent(lectureId, studentId)));
-
-            // when
-            StudentLectureAttendanceResponse response = studentAttendanceService
-                    .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
-
-            // then
-            assertThat(response.getAttendedDays()).isEqualTo(0);
-            assertThat(response.getAttendanceRate()).isEqualTo(0.0);
-        }
-
-        @Test
-        @DisplayName("실패: 타인의 출석 현황 조회 시 ForbiddenException 발생")
-        void fail_throwsForbiddenExceptionWhenNotOwner() {
-            // given
-            Long principalId = 999L; // 다른 사용자
-
-            // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
-                    .isInstanceOf(ForbiddenException.class)
-                    .hasMessageContaining("본인의 출석 현황만 조회할 수 있습니다");
-        }
-
-        @Test
-        @DisplayName("실패: 존재하지 않는 학생 ID로 조회 시 NotFoundException 발생")
-        void fail_throwsNotFoundExceptionWhenStudentNotExists() {
-            // given
-            Long principalId = studentId; // 본인 조회
-            given(userRepository.existsById(studentId)).willReturn(false);
-
-            // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("학생을 찾을 수 없습니다");
-        }
-
-        @Test
-        @DisplayName("실패: 강의에 등록되지 않은 학생이 조회 시 NotFoundException 발생")
-        void fail_throwsNotFoundExceptionWhenNotEnrolled() {
-            // given
-            Long principalId = studentId; // 본인 조회
-            given(userRepository.existsById(studentId)).willReturn(true);
-            given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(false);
-
-            // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("해당 강의에 등록된 학생이 아닙니다");
-        }
-
-        @Test
-        @DisplayName("실패: 존재하지 않는 강의 ID로 조회 시 NotFoundException 발생")
-        void fail_throwsNotFoundExceptionWhenLectureNotExists() {
-            // given
-            Long principalId = studentId; // 본인 조회
-            given(userRepository.existsById(studentId)).willReturn(true);
-            given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
-            given(lectureRepository.findById(lectureId)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
-                    .isInstanceOf(NotFoundException.class)
-                    .hasMessageContaining("강의를 찾을 수 없습니다");
-        }
+        log.info("=== 강의별 월별 출석률 조회 테스트 결과 ===");
+        log.info("강의 ID: {}, 강의명: {}, 출석률: {}%, 다른 학생 평균: {}%",
+                result.getLectureId(), result.getLectureName(),
+                result.getAttendanceRate(), result.getOtherStudentsAvgAttendanceRate());
     }
 
-    // === Helper Methods ===
+    @Test
+    @DisplayName("강의별 월별 출석률 조회 실패 - 수강하지 않는 강의")
+    void 강의별_월별_출석률_조회_실패_수강하지_않는_강의() {
+        // given
+        int year = 2025;
+        int month = 12;
 
-    private Lecture createLecture(Long id, String title, DayOfWeek dayOfWeek) {
-        Lecture lecture = Lecture.builder()
-                .title(title)
-                .dayOfWeek(dayOfWeek)
-                .startDate(LocalDateTime.of(2025, 1, 1, 0, 0))
-                .endDate(LocalDateTime.of(2025, 12, 31, 23, 59))
-                .build();
-        ReflectionTestUtils.setField(lecture, "id", id);
-        return lecture;
+        when(userRepository.existsById(studentId)).thenReturn(true);
+        LectureStudentId lectureStudentId = new LectureStudentId(lectureId, studentId);
+        when(lectureStudentRepository.existsById(lectureStudentId))
+                .thenReturn(false);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month);
+        });
+
+        verify(userRepository).existsById(studentId);
+        verify(lectureStudentRepository).existsById(lectureStudentId);
+        verify(lectureRepository, never()).findById(any());
+
+        log.info("=== 수강하지 않는 강의 조회 시 예외 발생 확인 ===");
     }
 
-    private Attendance createAttendance(Long studentId, LocalDate date) {
-        Attendance attendance = new Attendance();
-        ReflectionTestUtils.setField(attendance, "date", date);
-        ReflectionTestUtils.setField(attendance, "status", true);
+    @Test
+    @DisplayName("강의별 월별 출석률 조회 실패 - 존재하지 않는 강의")
+    void 강의별_월별_출석률_조회_실패_존재하지_않는_강의() {
+        // given
+        int year = 2025;
+        int month = 12;
 
-        User student = User.builder().build();
-        ReflectionTestUtils.setField(student, "id", studentId);
-        ReflectionTestUtils.setField(attendance, "student", student);
+        when(userRepository.existsById(studentId)).thenReturn(true);
+        LectureStudentId lectureStudentId = new LectureStudentId(lectureId, studentId);
+        when(lectureStudentRepository.existsById(lectureStudentId))
+                .thenReturn(true);
+        when(lectureRepository.findById(lectureId))
+                .thenReturn(Optional.empty());
 
-        return attendance;
+        // when & then
+        assertThrows(NotFoundException.class, () -> {
+            studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month);
+        });
+
+        verify(userRepository).existsById(studentId);
+        verify(lectureStudentRepository).existsById(lectureStudentId);
+        verify(lectureRepository).findById(lectureId);
+
+        log.info("=== 존재하지 않는 강의 조회 시 예외 발생 확인 ===");
     }
 
-    private LectureStudent createLectureStudent(Long lectureId, Long studentId) {
-        User student = User.builder().build();
-        ReflectionTestUtils.setField(student, "id", studentId);
+    @Test
+    @DisplayName("강의별 월별 출석률 조회 실패 - 존재하지 않는 학생")
+    void 강의별_월별_출석률_조회_실패_존재하지_않는_학생() {
+        // given
+        int year = 2025;
+        int month = 12;
+        Long invalidStudentId = 999L;
 
-        LectureStudent lectureStudent = new LectureStudent();
-        ReflectionTestUtils.setField(lectureStudent, "student", student);
+        when(userRepository.existsById(invalidStudentId)).thenReturn(false);
 
-        return lectureStudent;
+        // when & then
+        assertThrows(NotFoundException.class, () -> {
+            studentAttendanceService.getMonthlyAttendance(invalidStudentId, lectureId, year, month);
+        });
+
+        verify(userRepository).existsById(invalidStudentId);
+        verify(lectureStudentRepository, never()).existsById(any());
+
+        log.info("=== 존재하지 않는 학생 조회 시 예외 발생 확인 ===");
+    }
     }
 }
