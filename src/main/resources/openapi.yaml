@@ -178,7 +178,7 @@ paths:
   /api/statistics/exams/{examId}/questions:
     get:
       tags: [Exams]
-      summary: 강사용: 특정 시험 문항별 정답률
+      summary: "강사용: 특정 시험 문항별 정답률"
       operationId: getExamQuestionCorrectRates
       security:
         - BearerAuth: []
@@ -202,7 +202,7 @@ paths:
   /api/statistics/lectures/{lectureId}/questions:
     get:
       tags: [Lectures]
-      summary: 강사용: 강의 전체 문항별 정답률
+      summary: "강사용: 강의 전체 문항별 정답률"
       operationId: getLectureQuestionCorrectRates
       security:
         - BearerAuth: []
