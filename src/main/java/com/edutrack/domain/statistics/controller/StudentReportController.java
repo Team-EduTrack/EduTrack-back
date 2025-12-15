@@ -2,7 +2,9 @@ package com.edutrack.domain.statistics.controller;
 
 import com.edutrack.domain.statistics.dto.StudentAnalysisResponse;
 import com.edutrack.domain.statistics.dto.StudentExamSummaryResponse;
+import com.edutrack.domain.statistics.dto.StudentLectureAttendanceResponse;
 import com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse;
+import com.edutrack.domain.statistics.service.StudentAttendanceService;
 import com.edutrack.domain.statistics.service.StudentReportService;
 import com.edutrack.global.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import java.util.List;
 public class StudentReportController {
 
     private final StudentReportService studentReportService;
+    private final StudentAttendanceService studentAttendanceService;
 
     //학생 통합 분석 리포트 API
     @GetMapping("/api/analysis/student/{studentId}")
@@ -62,6 +65,22 @@ public class StudentReportController {
             throw new ForbiddenException("본인의 취약 단원 분석만 조회할 수 있습니다.");
         }
         List<StudentUnitCorrectRateResponse> response = studentReportService.getWeakUnits(studentId, limit);
+        return ResponseEntity.ok(response);
+    }
+
+    //학생의 강의별 월간 출석 현황 조회
+    @GetMapping("/api/students/{studentId}/lectures/{lectureId}/attendance/monthly")
+    @PreAuthorize("hasAnyRole('STUDENT')")
+    public ResponseEntity<StudentLectureAttendanceResponse> getMonthlyAttendance(
+            @PathVariable Long studentId,
+            @PathVariable Long lectureId,
+            @RequestParam int year,
+            @RequestParam int month,
+            @AuthenticationPrincipal Long principalId
+    ) {
+        // 권한 검증은 서비스 레이어에서 처리
+        StudentLectureAttendanceResponse response = studentAttendanceService
+                .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
         return ResponseEntity.ok(response);
     }
 }
