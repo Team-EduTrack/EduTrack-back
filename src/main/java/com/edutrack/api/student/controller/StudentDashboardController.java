@@ -58,6 +58,10 @@ public class StudentDashboardController {
         return ResponseEntity.ok(studentDashboardService.getMyExams(studentId));
     }
 
+
+    //TODO : 해당 부분에 studentDashboardService에는 getMonthlyAttendance 메소드가 존재하지 않습니다.
+  // TODO : 해당 부분 고려하셔서 컨트롤러 메소드 다시 작성 부탁드립니다.
+
 //    /*
 //     * 강의별 월별 출석률 조회
 //     */
