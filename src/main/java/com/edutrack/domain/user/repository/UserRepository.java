@@ -23,9 +23,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
       join u.userToRoles ur
       join ur.role r
       where u.academy.id = :academyId
-        and r.name = :roleType
+        and (:roleType is null or r.name = :roleType)
         and (
-              u.name like %:keyword%
+              :keyword is null
+           or u.name like %:keyword%
            or u.loginId like %:keyword%
            or u.phone like %:keyword%
            or u.email like %:keyword%
