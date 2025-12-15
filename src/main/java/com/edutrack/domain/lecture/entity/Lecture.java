@@ -57,7 +57,6 @@ public class Lecture {
   @Column(columnDefinition = "TEXT", nullable = false)
   private String description;
 
-  @Builder.Default
   @ElementCollection(fetch = FetchType.LAZY)
   @Enumerated(EnumType.STRING)
   @Column(name = "day_of_week", nullable = false)
