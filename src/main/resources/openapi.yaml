@@ -1422,6 +1422,14 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/StudentInfo'
+            assignmentsWithSubmissions:
+              type: array
+              items:
+                $ref: '#/components/schemas/AssignmentWithSubmissions'
+            examsWithParticipation:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExamParticipationInfo'
 
     StudentInfo:
       type: object
@@ -1431,6 +1439,46 @@ components:
           format: int64
         name:
           type: string
+
+    AssignmentWithSubmissions:
+      type: object
+      properties:
+        assignmentId:
+          type: integer
+          format: int64
+        assignmentTitle:
+          type: string
+        submittedStudents:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmissionStudentInfo'
+
+    SubmissionStudentInfo:
+      type: object
+      properties:
+        studentId:
+          type: integer
+          format: int64
+        studentName:
+          type: string
+        submissionId:
+          type: integer
+          format: int64
+
+    ExamParticipationInfo:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        examTitle:
+          type: string
+        participatedCount:
+          type: integer
+          format: int32
+        totalStudentCount:
+          type: integer
+          format: int32
 
     LectureDetailWithStatisticsResponse:
       type: object
