@@ -29,7 +29,10 @@ import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.repository.ExamRepository;
+import com.edutrack.domain.exam.repository.ExamStudentRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
@@ -66,6 +69,9 @@ class LectureServiceTest {
 
   @Mock
   private AssignmentSubmissionRepository assignmentSubmissionRepository;
+
+  @Mock
+  private ExamStudentRepository examStudentRepository;
 
   @Mock
   private LectureHelper lectureHelper;
@@ -120,8 +126,9 @@ class LectureServiceTest {
     when(lectureStudentRepository.findAllByLectureIdIn(lectureIds))
         .thenReturn(List.of(ls1, ls2));
 
-    //examRepository stub
-    when(examRepository.findByLectureId(lecture.getId()))
+    //examRepository stub - 배치 조회로 변경됨
+    List<Long> lectureIdsForExam = List.of(lecture.getId());
+    when(examRepository.findByLectureIdIn(lectureIdsForExam))
         .thenReturn(List.of());
 
     //lectureStatisticsService stub
@@ -136,7 +143,7 @@ class LectureServiceTest {
     assertEquals(1, result.size());
     verify(lectureRepository).findAllByTeacherId(teacher.getId());
     verify(lectureStudentRepository).findAllByLectureIdIn(lectureIds);
-    verify(examRepository).findByLectureId(lecture.getId());
+    verify(examRepository).findByLectureIdIn(lectureIdsForExam);
     verify(lectureStatisticsService).calculateAverageScore(List.of());
 
     log.info("=== 강사의 강의 목록 조회 테스트 결과 ===");
@@ -170,6 +177,9 @@ class LectureServiceTest {
     //assignmentRepository stub - 과제가 없는 경우
     when(assignmentRepository.findByLectureId(lecture.getId())).thenReturn(List.of());
 
+    //examRepository stub - 시험이 없는 경우
+    when(examRepository.findByLectureId(lecture.getId())).thenReturn(List.of());
+
     //when
     var result = lectureService.getLectureDetailForTeacherId(lecture.getId(), teacher.getId());
 
@@ -179,10 +189,13 @@ class LectureServiceTest {
     assertEquals(2, result.getStudentCount());
     assertNotNull(result.getAssignmentsWithSubmissions());
     assertTrue(result.getAssignmentsWithSubmissions().isEmpty());
+    assertNotNull(result.getExamsWithParticipation());
+    assertTrue(result.getExamsWithParticipation().isEmpty());
 
     verify(lectureHelper).getLectureWithValidation(lecture.getId(), teacher.getId());
     verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
     verify(assignmentRepository).findByLectureId(lecture.getId());
+    verify(examRepository).findByLectureId(lecture.getId());
 
     log.info("=== 강의 상세 조회 테스트 결과 ===");
     log.info("강의 ID : {}, 학생 수 : {}", result.getLectureId(), result.getStudentCount());
@@ -221,10 +234,12 @@ class LectureServiceTest {
     AssignmentSubmission submission1_1 = mock(AssignmentSubmission.class);
     when(submission1_1.getId()).thenReturn(1000L);
     when(submission1_1.getStudent()).thenReturn(student1);
+    when(submission1_1.getAssignment()).thenReturn(assignment1);
 
     AssignmentSubmission submission1_2 = mock(AssignmentSubmission.class);
     when(submission1_2.getId()).thenReturn(1001L);
     when(submission1_2.getStudent()).thenReturn(student2);
+    when(submission1_2.getAssignment()).thenReturn(assignment1);
 
     // assignment2에는 제출이 없음 (0명)
 
@@ -233,11 +248,12 @@ class LectureServiceTest {
     when(student2.getId()).thenReturn(30L);
     when(student2.getName()).thenReturn("박ㅇㅇ");
 
-    //assignmentSubmissionRepository stub
-    when(assignmentSubmissionRepository.findAllByAssignmentId(assignment1.getId()))
-        .thenReturn(List.of(submission1_1, submission1_2));
-    when(assignmentSubmissionRepository.findAllByAssignmentId(assignment2.getId()))
-        .thenReturn(List.of()); // 제출이 없는 과제
+    //assignmentSubmissionRepository stub - 배치 조회로 변경됨
+    when(assignmentSubmissionRepository.findAllByAssignmentIds(List.of(assignment1.getId(), assignment2.getId())))
+        .thenReturn(List.of(submission1_1, submission1_2)); // assignment1의 제출만 반환 (assignment2는 제출 없음)
+
+    //examRepository stub - 시험이 없는 경우
+    when(examRepository.findByLectureId(lecture.getId())).thenReturn(List.of());
 
     //when
     var result = lectureService.getLectureDetailForTeacherId(lecture.getId(), teacher.getId());
@@ -277,8 +293,8 @@ class LectureServiceTest {
     verify(lectureHelper).getLectureWithValidation(lecture.getId(), teacher.getId());
     verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
     verify(assignmentRepository).findByLectureId(lecture.getId());
-    verify(assignmentSubmissionRepository).findAllByAssignmentId(assignment1.getId());
-    verify(assignmentSubmissionRepository).findAllByAssignmentId(assignment2.getId());
+    verify(assignmentSubmissionRepository).findAllByAssignmentIds(List.of(assignment1.getId(), assignment2.getId()));
+    verify(examRepository).findByLectureId(lecture.getId());
 
     log.info("=== 강의 상세 조회 (과제 제출 포함) 테스트 결과 ===");
     log.info("강의 ID : {}, 학생 수 : {}", result.getLectureId(), result.getStudentCount());
@@ -294,6 +310,101 @@ class LectureServiceTest {
             student.getStudentName(), 
             student.getSubmissionId());
       });
+    });
+  }
+
+  @Test
+  void 강의_상세_조회_시험_응시_현황_포함() {
+    //given
+    LectureStudent ls1 = mock(LectureStudent.class);
+    when(ls1.getStudent()).thenReturn(student1);
+    LectureStudent ls2 = mock(LectureStudent.class);
+    when(ls2.getStudent()).thenReturn(student2);
+
+    when(lectureStudentRepository.findAllByLectureId(lecture.getId())).thenReturn(List.of(ls1, ls2));
+
+    //lectureHelper stub
+    when(lectureHelper.getLectureWithValidation(lecture.getId(), teacher.getId()))
+        .thenReturn(lecture);
+    when(lecture.getDescription()).thenReturn("테스트 강의 설명");
+
+    //assignmentRepository stub - 과제가 없는 경우
+    when(assignmentRepository.findByLectureId(lecture.getId())).thenReturn(List.of());
+
+    // 시험 생성
+    Exam exam1 = mock(Exam.class);
+    when(exam1.getId()).thenReturn(200L);
+    when(exam1.getTitle()).thenReturn("중간고사");
+
+    Exam exam2 = mock(Exam.class);
+    when(exam2.getId()).thenReturn(201L);
+    when(exam2.getTitle()).thenReturn("기말고사");
+
+    //examRepository stub - 2개의 시험이 있음
+    when(examRepository.findByLectureId(lecture.getId()))
+        .thenReturn(List.of(exam1, exam2));
+
+    // 시험 응시 생성
+    // exam1에는 student1, student2가 응시
+    ExamStudent examStudent1_1 = mock(ExamStudent.class);
+    when(examStudent1_1.getExam()).thenReturn(exam1);
+
+    ExamStudent examStudent1_2 = mock(ExamStudent.class);
+    when(examStudent1_2.getExam()).thenReturn(exam1);
+
+    // exam2에는 student1만 응시
+    ExamStudent examStudent2_1 = mock(ExamStudent.class);
+    when(examStudent2_1.getExam()).thenReturn(exam2);
+
+    //examStudentRepository stub
+    when(examStudentRepository.findAllByExamIds(List.of(200L, 201L)))
+        .thenReturn(List.of(examStudent1_1, examStudent1_2, examStudent2_1));
+
+    //when
+    var result = lectureService.getLectureDetailForTeacherId(lecture.getId(), teacher.getId());
+
+    //then
+    assertNotNull(result);
+    assertEquals(lecture.getId(), result.getLectureId());
+    assertEquals(2, result.getStudentCount());
+
+    // 시험 응시 현황 검증
+    var examsWithParticipation = result.getExamsWithParticipation();
+    assertNotNull(examsWithParticipation);
+    assertEquals(2, examsWithParticipation.size());
+
+    // 첫 번째 시험 검증 (중간고사)
+    var exam1Info = examsWithParticipation.stream()
+        .filter(e -> e.getExamId().equals(200L))
+        .findFirst()
+        .orElseThrow();
+    assertEquals("중간고사", exam1Info.getExamTitle());
+    assertEquals(2, exam1Info.getParticipatedCount()); // student1, student2 응시
+    assertEquals(2, exam1Info.getTotalStudentCount()); // 전체 학생 수
+
+    // 두 번째 시험 검증 (기말고사)
+    var exam2Info = examsWithParticipation.stream()
+        .filter(e -> e.getExamId().equals(201L))
+        .findFirst()
+        .orElseThrow();
+    assertEquals("기말고사", exam2Info.getExamTitle());
+    assertEquals(1, exam2Info.getParticipatedCount()); // student1만 응시
+    assertEquals(2, exam2Info.getTotalStudentCount()); // 전체 학생 수
+
+    verify(lectureHelper).getLectureWithValidation(lecture.getId(), teacher.getId());
+    verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
+    verify(examRepository).findByLectureId(lecture.getId());
+    verify(examStudentRepository).findAllByExamIds(List.of(200L, 201L));
+
+    log.info("=== 강의 상세 조회 (시험 응시 현황 포함) 테스트 결과 ===");
+    log.info("강의 ID : {}, 학생 수 : {}", result.getLectureId(), result.getStudentCount());
+    log.info("시험 수 : {}", examsWithParticipation.size());
+    examsWithParticipation.forEach(exam -> {
+      log.info("시험 ID : {}, 제목 : {}, 응시 학생 수 : {}/{}", 
+          exam.getExamId(), 
+          exam.getExamTitle(), 
+          exam.getParticipatedCount(),
+          exam.getTotalStudentCount());
     });
   }
 
@@ -379,10 +490,6 @@ class LectureServiceTest {
     List<Long> excludedIds = List.of(20L, 30L);
     when(userRepository.findAvailableStudents(eq(academy.getId()), eq(excludedIds), isNull()))
         .thenReturn(List.of(availableStudent1, availableStudent2));
-
-    //lectureHelper stub
-    when(lectureHelper.isStudent(availableStudent1)).thenReturn(true);
-    when(lectureHelper.isStudent(availableStudent2)).thenReturn(true);
 
     // when
     var result = lectureService.getAvailableStudents(lecture.getId(), null);
