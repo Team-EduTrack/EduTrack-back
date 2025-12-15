@@ -13,6 +13,15 @@ import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.SignupLockRepository;
 import com.edutrack.domain.user.repository.TempUserRedisRepository;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.academy.AcademyNotFoundException;
+import com.edutrack.global.exception.academy.AcademyNotVerifiedException;
+import com.edutrack.global.exception.user.EmailAlreadyExistsException;
+import com.edutrack.global.exception.user.EmailNotVerifiedException;
+import com.edutrack.global.exception.user.LoginIdAlreadyExistsException;
+import com.edutrack.global.exception.user.PhoneAlreadyExistsException;
+import com.edutrack.global.exception.user.RoleNotPreparedException;
+import com.edutrack.global.exception.user.SignupRequestAlreadyExistsException;
+import com.edutrack.global.exception.user.TempUserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,26 +43,26 @@ public class UserServiceImpl implements UserService {
 
     // 이미 정식 회원인지 체크
     if (userRepository.existsByLoginId(request.getLoginId())) {
-      throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+      throw new LoginIdAlreadyExistsException();
     }
 
     if (userRepository.existsByEmail(request.getEmail())) {
-      throw new IllegalArgumentException("이미 등록된 이메일입니다.");
+      throw new EmailAlreadyExistsException();
     }
 
     if (userRepository.existsByPhone(request.getPhone())) {
-      throw new IllegalArgumentException("이미 등록된 전화번호입니다.");
+      throw new PhoneAlreadyExistsException();
     }
 
     // Redis 중복 체크
     if (signupLockRepository.existsByLoginId(request.getLoginId())) {
-      throw new IllegalArgumentException("이미 가입 신청된 아이디입니다.");
+      throw new SignupRequestAlreadyExistsException("아이디");
     }
     if (signupLockRepository.existsByEmail(request.getEmail())) {
-      throw new IllegalArgumentException("이미 가입 신청된 이메일입니다.");
+      throw new SignupRequestAlreadyExistsException("이메일");
     }
     if (signupLockRepository.existsByPhone(request.getPhone())) {
-      throw new IllegalArgumentException("이미 가입 신청된 전화번호입니다.");
+      throw new SignupRequestAlreadyExistsException("전화번호");
     }
 
     // 임시 등록 TempUser 생성 (비밀번호 암호화)
@@ -82,11 +91,11 @@ public class UserServiceImpl implements UserService {
     TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
 
     if(tempUser == null){
-      throw new IllegalArgumentException("가입 신청 정보가 없습니다.");
+      throw new TempUserNotFoundException();
     }
 
     Academy academy = academyRepository.findByCode(request.getAcademyCode())
-        .orElseThrow(() -> new IllegalArgumentException("학원 코드가 올바르지 않습니다."));
+        .orElseThrow(AcademyNotFoundException::new);
 
     tempUser.updateAcademyCode(academy.getCode());
     tempUserRedisRepository.save(tempUser, 10 * 60);
@@ -100,20 +109,20 @@ public class UserServiceImpl implements UserService {
     TempUser tempUser = tempUserRedisRepository.findByEmail(email);
 
     if (tempUser == null) {
-      throw new IllegalArgumentException("가입 신청 정보가 없습니다.");
+      throw new TempUserNotFoundException();
     }
 
     if (!tempUser.isVerified()) {
-      throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다.");
+      throw new EmailNotVerifiedException();
     }
 
     if(tempUser.getAcademyCode() == null){
-      throw new IllegalArgumentException("학원 코드 인증이 필요합니다.");
+      throw new AcademyNotVerifiedException();
     }
 
     // 학원 코드로 Academy 조회
     Academy academy = academyRepository.findByCode(tempUser.getAcademyCode())
-        .orElseThrow(() -> new IllegalArgumentException("학원 코드가 올바르지 않습니다."));
+        .orElseThrow(AcademyNotVerifiedException::new);
 
     // 정식 User 생성 (여기서 비밀번호 암호화)
     User user = User.builder()
@@ -133,7 +142,7 @@ public class UserServiceImpl implements UserService {
 
     // 기본 역할 STUDENT 부여
     Role studentRole = roleRepository.findByName(RoleType.STUDENT)
-        .orElseThrow(() -> new IllegalArgumentException("학생 역할이 사전에 세팅되어 있지 않습니다."));
+        .orElseThrow(RoleNotPreparedException::new);
 
     user.addRole(studentRole);
 
