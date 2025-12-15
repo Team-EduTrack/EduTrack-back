@@ -21,10 +21,13 @@ public class LectureDetailForTeacherResponse extends LectureForTeacherResponse{
   // 과제별 제출 학생 목록 (제출자가 있는 과제만 포함)
   private final List<AssignmentWithSubmissions> assignmentsWithSubmissions;
 
+  // 시험별 응시 현황 목록
+  private final List<ExamParticipationInfo> examsWithParticipation;
+
   /**
    * LectureStudent 리스트 기반으로 학생 정보 매핑
    */
-  public LectureDetailForTeacherResponse(Long lectureId, String title, String description, List<LectureStudent> lectureStudents, String teacherName, Double averageGrade, List<AssignmentWithSubmissions> assignmentsWithSubmissions) {
+  public LectureDetailForTeacherResponse(Long lectureId, String title, String description, List<LectureStudent> lectureStudents, String teacherName, Double averageGrade, List<AssignmentWithSubmissions> assignmentsWithSubmissions, List<ExamParticipationInfo> examsWithParticipation) {
     super(lectureId, title, lectureStudents.size(), teacherName, averageGrade);
     this.description = description;
 
@@ -35,6 +38,7 @@ public class LectureDetailForTeacherResponse extends LectureForTeacherResponse{
         .toList();
     
     this.assignmentsWithSubmissions = assignmentsWithSubmissions != null ? assignmentsWithSubmissions : List.of();
+    this.examsWithParticipation = examsWithParticipation != null ? examsWithParticipation : List.of();
   }
 
   // 내부 정적 클래스: 학생 정보
@@ -63,7 +67,7 @@ public class LectureDetailForTeacherResponse extends LectureForTeacherResponse{
     }
   }
 
-  // 내부 정적 클래스: 제출 학생 정보
+  // 내부 정적 클래스: 과제 제출 학생 정보
   @Getter
   public static class SubmissionStudentInfo {
     private final Long studentId;
@@ -74,6 +78,21 @@ public class LectureDetailForTeacherResponse extends LectureForTeacherResponse{
       this.studentId = studentId;
       this.studentName = studentName;
       this.submissionId = submissionId;
+    }
+  }
+
+  @Getter
+  public static class ExamParticipationInfo {
+    private final Long examId;
+    private final String examTitle;
+    private final int participatedCount;    // 응시한 학생 수
+    private final int totalStudentCount;    // 강의에 할당된 전체 학생 수
+
+    public ExamParticipationInfo(Long examId, String examTitle, int participatedCount, int totalStudentCount) {
+      this.examId = examId;
+      this.examTitle = examTitle;
+      this.participatedCount = participatedCount;
+      this.totalStudentCount = totalStudentCount;
     }
   }
 }
