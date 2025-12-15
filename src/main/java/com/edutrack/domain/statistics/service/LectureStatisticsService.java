@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.edutrack.api.student.repository.StudentAttendanceRepository;
+import com.edutrack.domain.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
@@ -120,14 +120,18 @@ public class LectureStatisticsService {
   }
 
   /**
-   * 강의 기간 내 출석 가능한 날짜 계산 (해당 요일만)
-   * 예: 강의가 월요일이면, 강의 기간 내 모든 월요일 반환
+   * 강의 기간 내 출석 가능한 날짜 계산 (해당 요일들만)
+   * 예: 강의가 월요일, 수요일이면, 강의 기간 내 모든 월요일과 수요일 반환
    */
   private List<LocalDate> calculateAttendancePossibleDates(Lecture lecture) {
     List<LocalDate> dates = new ArrayList<>();
     LocalDate startDate = lecture.getStartDate().toLocalDate();
     LocalDate endDate = lecture.getEndDate().toLocalDate();
     List<DayOfWeek> lectureDaysOfWeek = lecture.getDaysOfWeek();
+
+    if (lectureDaysOfWeek.isEmpty()) {
+      return dates;
+    }
 
     LocalDate currentDate = startDate;
     while (!currentDate.isAfter(endDate)) {

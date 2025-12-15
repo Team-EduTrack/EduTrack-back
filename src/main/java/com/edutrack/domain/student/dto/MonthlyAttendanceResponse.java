@@ -1,4 +1,4 @@
-package com.edutrack.api.student.dto;
+package com.edutrack.domain.student.dto;
 
 import lombok.Builder;
 import lombok.Getter;

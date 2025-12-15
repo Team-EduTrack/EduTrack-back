@@ -1,7 +1,11 @@
-package com.edutrack.api.student.controller;
+package com.edutrack.domain.student.controller;
 
-import com.edutrack.api.student.dto.*;
-import com.edutrack.api.student.service.StudentDashboardService;
+import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
+import com.edutrack.domain.student.dto.AttendanceCheckInResponse;
+import com.edutrack.domain.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.MyLectureResponse;
+import com.edutrack.domain.student.service.StudentDashboardService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,13 +13,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/students")
+@RequiredArgsConstructor
 public class StudentDashboardController {
 
     private final StudentDashboardService studentDashboardService;
-
-    public StudentDashboardController(StudentDashboardService studentDashboardService) {
-        this.studentDashboardService = studentDashboardService;
-    }
 
     /*
      * 내강의 조회
@@ -58,5 +59,4 @@ public class StudentDashboardController {
     ) {
         return ResponseEntity.ok(studentDashboardService.getMyExams(studentId));
     }
-
 }

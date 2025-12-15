@@ -3,10 +3,17 @@ package com.edutrack.api.student.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.edutrack.api.student.dto.*;
-import com.edutrack.api.student.repository.*;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.exam.entity.ExamStatus;
+import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
+import com.edutrack.domain.student.dto.AttendanceCheckInResponse;
+import com.edutrack.domain.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.MyLectureResponse;
+import com.edutrack.domain.student.repository.StudentAssignmentQueryRepository;
+import com.edutrack.domain.student.repository.StudentAttendanceRepository;
+import com.edutrack.domain.student.repository.StudentExamQueryRepository;
+import com.edutrack.domain.student.repository.StudentLectureQueryRepository;
+import com.edutrack.domain.student.service.StudentDashboardService;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.NotFoundException;
@@ -21,10 +28,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 

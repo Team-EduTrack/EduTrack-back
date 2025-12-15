@@ -1,18 +1,23 @@
-package com.edutrack.api.student.service;
+package com.edutrack.domain.student.service;
 
-import com.edutrack.api.student.dto.*;
-import com.edutrack.api.student.repository.*;
+import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
+import com.edutrack.domain.student.dto.AttendanceCheckInResponse;
+import com.edutrack.domain.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.MyLectureResponse;
+import com.edutrack.domain.student.repository.StudentAssignmentQueryRepository;
+import com.edutrack.domain.student.repository.StudentAttendanceRepository;
+import com.edutrack.domain.student.repository.StudentExamQueryRepository;
+import com.edutrack.domain.student.repository.StudentLectureQueryRepository;
 import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.NotFoundException;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
 
 /**
  * 학생 대시보드 서비스

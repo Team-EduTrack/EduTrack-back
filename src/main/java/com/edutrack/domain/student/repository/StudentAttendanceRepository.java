@@ -1,4 +1,4 @@
-package com.edutrack.api.student.repository;
+package com.edutrack.domain.student.repository;
 
 import java.time.LocalDate;
 import java.util.List;
