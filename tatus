@@ -296,3 +296,24 @@
  TAB ...................................... Complete filename & cycle.
  SHIFT-TAB ...................... ESC-TAB   Complete filename & reverse cycle.
  ctrl-L ................................... Complete filename, list all.
+*[33m-[m[33m.[m   [33mdecdb2b[m[33m ([m[1;35mrefs/stash[m[33m)[m On feature/lecture-creation-multi-days: before conflict help
+[31m|[m[32m\[m [33m\[m  
+[31m|[m [32m|[m * [33ma418c1f[m untracked files on feature/lecture-creation-multi-days: 50875d9 feat: support multi-day lecture creation
+[31m|[m * [33md42f8fd[m index on feature/lecture-creation-multi-days: 50875d9 feat: support multi-day lecture creation
+[31m|[m[31m/[m  
+* [33m50875d9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/lecture-creation-multi-days[m[33m, [m[1;31morigin/feature/lecture-creation-multi-days[m[33m)[m feat: support multi-day lecture creation
+* [33m1ac938c[m feat: 학생 강의별 월간 출석 현황 API 구현 (복수 요일 지원)
+[33m|[m * [33m07273e1[m[33m ([m[1;31morigin/feat/lecture-assignment-submissions[m[33m)[m [feat/lecture-assignment-submissions] 강의 상세 조회에 과제 제출한 학생 목록 및 채점 연결
+[33m|[m [34m|[m * [33meba8b2e[m[33m ([m[1;31morigin/fix/openapi-generator[m[33m)[m [fix/openapi-generator] 파싱 오류 수정
+[33m|[m [34m|[m * [33m9e7ca44[m [fix/openapi-generator] openapi.yaml 파일을 최신 develop 에 맞게 업데이트
+[33m|[m [34m|[m *   [33medfc4e6[m Merge remote-tracking branch 'origin/develop' into fix/openapi-generator
+[33m|[m [34m|[m [36m|[m[34m\[m  
+[33m|[m [34m|[m [36m|[m[34m/[m  
+[33m|[m [34m|[m[34m/[m[36m|[m   
+[33m|[m * [36m|[m   [33md0093d9[m[33m ([m[1;31morigin/feature/exam-review-feedback[m[33m, [m[1;31morigin/develop[m[33m)[m Merge pull request #64 from Team-EduTrack/feat/student-monthly-attendance-api
+[33m|[m [1;32m|[m[1;33m\[m [36m\[m  
+[33m|[m [1;32m|[m * [36m|[m [33m1132c25[m[33m ([m[1;31morigin/feat/student-monthly-attendance-api[m[33m)[m refactor: 출석 API N+1 해결 및 권한검증 서비스 레이어로 이동
+[33m|[m [1;32m|[m * [36m|[m [33mb676769[m feat :test 코드 작성
+[33m|[m [1;32m|[m * [36m|[m [33m41c2101[m feat: 학생 강의별 월간 출석 현황 API 추가
+[33m|[m [1;32m|[m * [36m|[m [33mf9ee22b[m feat : 학생의 특정기간 출석기록 조회 repository 추가
+[33m|[m [1;32m|[m * [36m|[m [33meb9e0d1[m feat : StudentLectureAttendanceResponse DTO 생성

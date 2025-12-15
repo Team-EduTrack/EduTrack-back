@@ -1,6 +1,6 @@
 package com.edutrack.domain.exam.service;
 
-import com.edutrack.domain.exam.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.dto.ExamCreationRequest;
 import com.edutrack.domain.exam.dto.ExamDetailResponse;
 import com.edutrack.domain.exam.dto.QuestionRegistrationRequest;
@@ -67,6 +67,7 @@ public class ExamService {
         Exam exam = new Exam(
                 lecture,
                 request.getTitle(),
+                null,
                 ExamStatus.DRAFT,
                 request.getStartDate(),
                 request.getEndDate(),

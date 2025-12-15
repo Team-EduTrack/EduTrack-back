@@ -12,4 +12,6 @@ public interface LectureStudentRepository extends JpaRepository<LectureStudent, 
 
   //강의에 배정된 모든 학생 조회
   List<LectureStudent> findAllByLectureId(Long lectureId);
+
+  boolean existsByLecture_IdAndStudent_Id(Long lectureId, Long studentId);
 }

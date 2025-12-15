@@ -1,24 +1,27 @@
 package com.edutrack.domain.lecture.service;
 
-import com.edutrack.domain.lecture.dto.LectureCreationRequest;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
+import com.edutrack.domain.lecture.dto.LectureCreationRequest;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import java.time.DayOfWeek;
 import com.edutrack.global.exception.AcademyMismatchException;
 import com.edutrack.global.exception.ConflictException;
 import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
-import com.edutrack.global.exception.TeacherNotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -49,15 +52,15 @@ public class LectureCreationService {
         // 5. Lecture 엔티티 생성 및 저장
         Academy academy = academyRepository.getReferenceById(principalAcademyId);
 
-        Lecture lecture = new Lecture(
-                academy,
-                teacher,
-                request.getTitle(),
-                request.getDescription(),
-                request.getDaysOfWeek(),
-                request.getStartDate(),
-                request.getEndDate()
-        );
+        Lecture lecture = Lecture.builder()
+                .academy(academy)
+                .teacher(teacher)
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .daysOfWeek(request.getDaysOfWeek() != null ? new ArrayList<>(request.getDaysOfWeek()) : new ArrayList<>())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .build();
 
         Lecture savedLecture = lectureRepository.save(lecture);
         return savedLecture.getId();
@@ -94,7 +97,7 @@ public class LectureCreationService {
     }
 
     @Transactional(readOnly = true)
-    private void validateDaysOfWeek(List<java.time.DayOfWeek> daysOfWeek) {
+    private void validateDaysOfWeek(List<DayOfWeek> daysOfWeek) {
         if (daysOfWeek == null || daysOfWeek.isEmpty()) {
             throw new ConflictException("강의 요일은 최소 1개 이상 선택해야 합니다.");
         }

@@ -67,10 +67,15 @@ class LectureCreationServiceTest {
         request.setStartDate(LocalDateTime.now().plusDays(1));
         request.setEndDate(LocalDateTime.now().plusMonths(3));
 
-        Lecture savedLecture = new Lecture(
-                academy, teacher, "수학 기초", "기초 수학 강의",
-                request.getDaysOfWeek(), request.getStartDate(), request.getEndDate()
-        );
+        Lecture savedLecture = Lecture.builder()
+                .academy(academy)
+                .teacher(teacher)
+                .title("수학 기초")
+                .description("기초 수학 강의")
+                .daysOfWeek(request.getDaysOfWeek())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .build();
 
         given(userRepository.findById(principalId)).willReturn(Optional.of(principal));
         given(userRepository.findById(teacherId)).willReturn(Optional.of(teacher));

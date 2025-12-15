@@ -1,5 +1,20 @@
 package com.edutrack.domain.lecture.controller;
 
+import com.edutrack.domain.statistics.service.LectureStatisticsService;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.edutrack.domain.lecture.dto.LectureCreationRequest;
 import com.edutrack.domain.lecture.dto.LectureCreationResponse;
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
@@ -11,17 +26,9 @@ import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
 import com.edutrack.domain.lecture.dto.StudentSearchResponse;
 import com.edutrack.domain.lecture.service.LectureCreationService;
 import com.edutrack.domain.lecture.service.LectureService;
-import com.edutrack.domain.user.entity.User;
-import java.util.List;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/lectures")
@@ -30,6 +37,7 @@ public class LectureController {
 
   private final LectureService lectureService;
   private final LectureCreationService lectureCreationService;
+  private final LectureStatisticsService lectureStatisticsService;
 
   // 강의 생성 API
 
@@ -38,13 +46,9 @@ public class LectureController {
   @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL')")
   public ResponseEntity<LectureCreationResponse> createLecture(
           @Valid @RequestBody LectureCreationRequest request,
-          Authentication authentication) {
+          @AuthenticationPrincipal Long teacherId) {
 
-
-    Long principalUserId = (Long) authentication.getPrincipal();
-
-
-    Long lectureId = lectureCreationService.createLecture(principalUserId, request);
+    Long lectureId = lectureCreationService.createLecture(teacherId, request);
 
     LectureCreationResponse response = LectureCreationResponse.builder()
             .lectureId(lectureId)
@@ -56,8 +60,7 @@ public class LectureController {
   //강의 목록 조회 (선생용)
   @PreAuthorize(("hasAnyRole('TEACHER', 'PRINCIPAL')"))
   @GetMapping
-  public ResponseEntity<List<LectureForTeacherResponse>> getLecturesByTeacherId(Authentication authentication) {
-    Long teacherId = (Long) authentication.getPrincipal();
+  public ResponseEntity<List<LectureForTeacherResponse>> getLecturesByTeacherId(@AuthenticationPrincipal Long teacherId) {
     List<LectureForTeacherResponse> lectures = lectureService.getLecturesByTeacherId(teacherId);
     return ResponseEntity.ok(lectures);
   }
@@ -67,12 +70,13 @@ public class LectureController {
   @GetMapping("/{lectureId}")
   public ResponseEntity<LectureDetailWithStatisticsResponse> getLectureDetailWithStatisticsForTeacherId(
       @PathVariable Long lectureId,
-      Authentication authentication) {
-    Long teacherId = (Long) authentication.getPrincipal();
+      @AuthenticationPrincipal Long teacherId) {
 
-    //상세 정보
+    /**
+     * 강의 진행률, 과제 제출률, 출석률
+     */
     LectureDetailForTeacherResponse detail = lectureService.getLectureDetailForTeacherId(lectureId, teacherId);
-    LectureStatisticsResponse statistics = lectureService.getLecutureStatistics(lectureId, teacherId);
+    LectureStatisticsResponse statistics = lectureStatisticsService.getLecutureStatistics(lectureId, teacherId);
 
     LectureDetailWithStatisticsResponse response = new LectureDetailWithStatisticsResponse(detail, statistics);
     return ResponseEntity.ok(response);

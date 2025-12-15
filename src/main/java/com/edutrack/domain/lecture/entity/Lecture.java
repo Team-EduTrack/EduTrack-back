@@ -1,6 +1,5 @@
 package com.edutrack.domain.lecture.entity;
 
-
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.user.entity.User;
 import jakarta.persistence.Column;
@@ -13,7 +12,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,16 +20,16 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "lecture")
 @EntityListeners(AuditingEntityListener.class)
 public class Lecture {
 
@@ -39,7 +37,7 @@ public class Lecture {
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "academy_id", referencedColumnName = "id", nullable = false)
+  @JoinColumn(name = "academy_id", referencedColumnName = "id",  nullable = false)
   private Academy academy;
 
   @ManyToOne(fetch = FetchType.LAZY)

@@ -21,7 +21,8 @@ public class CustomExceptionHandler {
   }
 
   @ExceptionHandler(ExamDeadlineExceededException.class)
-  public ResponseEntity<String> handleExamDeadlineExceededException(ExamDeadlineExceededException ex) {
+  public ResponseEntity<String> handleExamDeadlineExceededException(
+      ExamDeadlineExceededException ex) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
   }
 
@@ -31,17 +32,18 @@ public class CustomExceptionHandler {
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+  public ResponseEntity<ErrorResponse> handleValidationException(
+      MethodArgumentNotValidException ex) {
     String message = ex.getBindingResult().getFieldErrors().stream()
-            .map(error -> error.getField() + ": " + error.getDefaultMessage())
-            .findFirst()
-            .orElse("유효성 검증에 실패했습니다.");
+        .map(error -> error.getField() + ": " + error.getDefaultMessage())
+        .findFirst()
+        .orElse("유효성 검증에 실패했습니다.");
 
     ErrorResponse response = ErrorResponse.builder()
-            .status(HttpStatus.BAD_REQUEST.value())
-            .errorCode("G-001")
-            .message(message)
-            .build();
+        .status(HttpStatus.BAD_REQUEST.value())
+        .errorCode("G-001")
+        .message(message)
+        .build();
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
@@ -49,10 +51,10 @@ public class CustomExceptionHandler {
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
     ErrorResponse response = ErrorResponse.builder()
-            .status(HttpStatus.BAD_REQUEST.value())
-            .errorCode("G-002")
-            .message(ex.getMessage())
-            .build();
+        .status(HttpStatus.BAD_REQUEST.value())
+        .errorCode("G-002")
+        .message(ex.getMessage())
+        .build();
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
@@ -60,10 +62,10 @@ public class CustomExceptionHandler {
   @ExceptionHandler(ConflictException.class)
   public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
     ErrorResponse response = ErrorResponse.builder()
-            .status(HttpStatus.CONFLICT.value())
-            .errorCode("R-001")
-            .message(ex.getMessage())
-            .build();
+        .status(HttpStatus.CONFLICT.value())
+        .errorCode("R-001")
+        .message(ex.getMessage())
+        .build();
 
     return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
   }
@@ -165,5 +167,16 @@ public class CustomExceptionHandler {
             .build();
 
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+  }
+
+  @ExceptionHandler(BusinessException.class)
+  public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException e) {
+    ErrorResponse response = ErrorResponse.builder()
+        .status(e.getStatus().value())
+        .errorCode("B-001")
+        .message(e.getMessage())
+        .build();
+
+    return ResponseEntity.status(e.getStatus()).body(response);
   }
 }

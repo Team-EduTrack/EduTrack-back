@@ -1,5 +1,6 @@
 package com.edutrack.domain.exam.dto;
 
+import com.edutrack.domain.exam.entity.Difficulty;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -39,6 +40,8 @@ public class ExamResultResponse {
         private final Integer submittedAnswer;
         private final Integer correctAnswer;
         private final boolean isCorrect;
+        private final Long unitId;
+        private final String difficulty;
         private final Integer earnedScore;
     }
 }

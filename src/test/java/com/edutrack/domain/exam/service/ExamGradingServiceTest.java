@@ -3,7 +3,7 @@ package com.edutrack.domain.exam.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.edutrack.domain.exam.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.entity.*;
 import com.edutrack.domain.exam.repository.*;
 import com.edutrack.global.exception.ForbiddenException;

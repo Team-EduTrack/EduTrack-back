@@ -1,7 +1,7 @@
 package com.edutrack.api.student.repository;
 
 import com.edutrack.api.student.dto.ExamSummaryResponse;
-import com.edutrack.domain.exam.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.exam.entity.ExamStudentId;
 import org.springframework.data.jpa.repository.JpaRepository;
