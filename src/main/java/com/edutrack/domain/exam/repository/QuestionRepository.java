@@ -39,4 +39,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
      */
     @Query("SELECT COUNT(q) FROM Question q WHERE q.exam.id = :examId")
     int countByExamId(@Param("examId") Long examId);
+
+    // 강의 전체 문항 조회 (시험 여러 개 포함)
+    List<Question> findAllByExam_Lecture_Id(Long lectureId);
 }

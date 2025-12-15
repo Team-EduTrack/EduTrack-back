@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UnitStatisticsRepository extends JpaRepository<ExamStudentAnswer, Long> {
@@ -50,4 +51,23 @@ public interface UnitStatisticsRepository extends JpaRepository<ExamStudentAnswe
             @Param("studentId") Long studentId,
             @Param("unitId") Long unitId
     );
+
+    // 3) 특정 학생의 모든 단원별 정답률 (정답률 낮은 순)
+    @Query("""
+            SELECT new com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse(
+                a.unitId,
+                a.examStudent.student.id,
+                COUNT(a),
+                SUM(CASE WHEN a.correct = true THEN 1 ELSE 0 END),
+                CASE 
+                    WHEN COUNT(a) = 0 THEN 0.0
+                    ELSE (SUM(CASE WHEN a.correct = true THEN 1 ELSE 0 END) * 100.0 / COUNT(a))
+                END
+            )
+            FROM ExamStudentAnswer a
+            WHERE a.examStudent.student.id = :studentId
+            GROUP BY a.unitId, a.examStudent.student.id
+            ORDER BY (SUM(CASE WHEN a.correct = true THEN 1 ELSE 0 END) * 100.0 / COUNT(a)) ASC
+            """)
+    List<StudentUnitCorrectRateResponse> findAllUnitCorrectRatesByStudentId(@Param("studentId") Long studentId);
 }

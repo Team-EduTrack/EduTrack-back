@@ -1,5 +1,6 @@
 package com.edutrack.domain.lecture.controller;
 
+import com.edutrack.domain.statistics.service.LectureStatisticsService;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ public class LectureController {
 
   private final LectureService lectureService;
   private final LectureCreationService lectureCreationService;
+  private final LectureStatisticsService lectureStatisticsService;
 
   // 강의 생성 API
 
@@ -70,9 +72,11 @@ public class LectureController {
       @PathVariable Long lectureId,
       @AuthenticationPrincipal Long teacherId) {
 
-    //상세 정보
+    /**
+     * 강의 진행률, 과제 제출률, 출석률
+     */
     LectureDetailForTeacherResponse detail = lectureService.getLectureDetailForTeacherId(lectureId, teacherId);
-    LectureStatisticsResponse statistics = lectureService.getLecutureStatistics(lectureId, teacherId);
+    LectureStatisticsResponse statistics = lectureStatisticsService.getLecutureStatistics(lectureId, teacherId);
 
     LectureDetailWithStatisticsResponse response = new LectureDetailWithStatisticsResponse(detail, statistics);
     return ResponseEntity.ok(response);

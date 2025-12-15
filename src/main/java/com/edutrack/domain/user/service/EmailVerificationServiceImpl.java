@@ -3,13 +3,16 @@ package com.edutrack.domain.user.service;
 import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
 import com.edutrack.domain.user.dto.VerifyEmailRequest;
 import com.edutrack.domain.user.entity.TempUser;
-import com.edutrack.domain.user.entity.UserEmailVerification;
 import com.edutrack.domain.user.repository.SignupLockRepository;
 import com.edutrack.domain.user.repository.TempUserRedisRepository;
 import com.edutrack.domain.user.repository.UserEmailVerificationRedisRepository;
+import com.edutrack.global.exception.user.EmailAlreadyVerifiedException;
+import com.edutrack.global.exception.user.TempUserNotFoundException;
+import com.edutrack.global.exception.user.VerificationCodeAlreadySentException;
+import com.edutrack.global.exception.user.VerificationCodeExpiredException;
+import com.edutrack.global.exception.user.VerificationCodeMismatchException;
 import com.edutrack.global.mail.MailSendService;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -29,18 +32,18 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
     if (tempUser == null) {
-      throw new IllegalArgumentException("가입 신청이 없습니다.");
+      throw new TempUserNotFoundException();
     }
 
     // 이미 인증된 사용자 재요청 차단
     if (tempUser.isVerified()) {
-      throw new IllegalArgumentException("이미 이메일 인증이 완료되었습니다.");
+      throw new EmailAlreadyVerifiedException();
     }
 
     // 재발급 제한 (이미 코드가 존재하면 차단)
     String alreadySentCode = userEmailVerificationRedisRepository.getCode(request.getEmail());
     if (alreadySentCode != null) {
-      throw new IllegalArgumentException("이미 인증 코드가 발송 되었습니다. 잠시 후 다시 시도하세요.");
+      throw new VerificationCodeAlreadySentException();
     }
 
     String code = generateCode();
@@ -59,22 +62,22 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
     if (tempUser == null) {
-      throw new IllegalArgumentException("가입 신청이 없습니다.");
+      throw new TempUserNotFoundException();
     }
 
     if (tempUser.isVerified()) {
-      throw new IllegalArgumentException("이미 이메일 인증이 완료되었습니다.");
+      throw new EmailAlreadyVerifiedException();
     }
 
     // Redis에 저장된 코드 가져오기
     String savedCode = userEmailVerificationRedisRepository.getCode(request.getEmail());
     if (savedCode == null) {
-      throw new IllegalArgumentException("인증 코드가 만료되었거나 존재하지 않습니다.");
+      throw new VerificationCodeExpiredException();
     }
 
     // 코드 비교
     if (!savedCode.equals(request.getToken())) {
-      throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
+      throw new VerificationCodeMismatchException();
     }
 
     // 이메일 인증 성공
@@ -85,12 +88,6 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     // 인증 코드 삭제
     userEmailVerificationRedisRepository.deleteCode(request.getEmail());
-    // signupLock 즉시 해제
-    signupLockRepository.unLockAll(
-        tempUser.getLoginId(),
-        tempUser.getEmail(),
-        tempUser.getPhone());
-
   }
 
   private String generateCode() {

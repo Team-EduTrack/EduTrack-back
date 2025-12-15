@@ -1,31 +1,32 @@
 package com.edutrack.domain.lecture.service;
 
 
-import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
-import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
-import com.edutrack.domain.lecture.dto.LectureStatisticsResponse;
-import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
-import com.edutrack.domain.lecture.dto.StudentSearchResponse;
-import com.edutrack.domain.lecture.entity.Lecture;
-import com.edutrack.domain.lecture.entity.LectureStudent;
-import com.edutrack.domain.lecture.repository.LectureRepository;
-import com.edutrack.domain.lecture.repository.LectureStudentRepository;
-import com.edutrack.domain.user.entity.RoleType;
-import com.edutrack.domain.user.entity.User;
-import com.edutrack.domain.user.repository.UserRepository;
-import com.edutrack.global.exception.LectureAccessDeniedException;
-import com.edutrack.global.exception.LectureNotFoundException;
-import com.edutrack.global.exception.UserNotFoundException;
-import jakarta.validation.constraints.NotEmpty;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.repository.ExamRepository;
+import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
+import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
+import com.edutrack.domain.lecture.dto.StudentSearchResponse;
+import com.edutrack.domain.lecture.entity.Lecture;
+import com.edutrack.domain.lecture.entity.LectureStudent;
+import com.edutrack.domain.lecture.repository.LectureRepository;
+import com.edutrack.domain.lecture.repository.LectureStudentRepository;
+import com.edutrack.domain.statistics.service.LectureStatisticsService;
+import com.edutrack.domain.user.entity.User;
+import com.edutrack.domain.user.repository.UserRepository;
+
+import jakarta.validation.constraints.NotEmpty;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,10 @@ public class LectureService {
   private final LectureRepository lectureRepository;
   private final LectureStudentRepository lectureStudentRepository;
   private final UserRepository userRepository;
+  private final ExamRepository examRepository;
+  private final LectureStatisticsService lectureStatisticsService;
+
+  private final LectureHelper lectureHelper;
 
   //강사의 ID로 강의 목록과 각 강의의 수강생 수 조회
 
@@ -58,23 +63,29 @@ public class LectureService {
 
     //각 강의와 수강생 수를 매핑하여 DTO 생성
     return lectures.stream()
-        .map(lecture -> LectureForTeacherResponse.of(
-            lecture,
-            studentCountMap.getOrDefault(lecture.getId(), 0L).intValue()
-        )).toList();
+        .map(lecture -> {
+          // 각 강의의 시험 목록 조회 (기존 메서드 재활용)
+          List<Exam> exams = examRepository.findByLectureId(lecture.getId());
+          // LectureStatisticsService의 calculateAverageScore 재사용
+          Double averageScore = lectureStatisticsService.calculateAverageScore(exams);
+          // 선생님 이름 조회
+          String teacherName = lecture.getTeacher().getName();
+          
+          return LectureForTeacherResponse.of(
+              lecture,
+              studentCountMap.getOrDefault(lecture.getId(), 0L).intValue(),
+              teacherName,
+              averageScore
+          );
+        }).toList();
   }
 
   //강의 상세 조회 (선생용)
   @Transactional(readOnly = true)
   public LectureDetailForTeacherResponse getLectureDetailForTeacherId(Long lectureId, Long teacherId) {
-    //강의 조회
-    Lecture lecture = getLecture(lectureId);
 
-    //강사 조회
-    User teacher = getTeacher(teacherId);
-
-    //권한 검증
-    validateLectureAcess(lectureId, teacher, lecture);
+    //강의 조회 및 권한 검증
+    Lecture lecture = lectureHelper.getLectureWithValidation(lectureId, teacherId);
 
     //강의에 배정된 수강생 리스트 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
@@ -83,7 +94,9 @@ public class LectureService {
         lecture.getId(),
         lecture.getTitle(),
         lecture.getDescription(),
-        lectureStudents
+        lectureStudents,
+        null,  // teacherName은 목록 조회에서만 필요
+        null   // averageGrade는 목록 조회에서만 필요
     );
   }
 
@@ -103,7 +116,7 @@ public class LectureService {
   @Transactional(readOnly = true)
   public List<StudentSearchResponse> getAvailableStudents(Long lectureId, String name) {
 
-    Lecture lecture = getLecture(lectureId);
+    Lecture lecture = lectureHelper.getLectureOrThrow(lectureId);
 
     Long academyId = lecture.getAcademy().getId();
 
@@ -128,7 +141,7 @@ public class LectureService {
     }
 
     return candidates.stream()
-        .filter(this::isStudent)
+        .filter(lectureHelper::isStudent)
         .map(this::toDto)
       .toList();
   }
@@ -136,10 +149,10 @@ public class LectureService {
   //학생 배정 API
   @Transactional
   public LectureStudentAssignResponse assignStudents(Long lectureId, @NotEmpty List<Long> studentIds) {
-    Lecture lecture = getLecture(lectureId);
+    Lecture lecture = lectureHelper.getLectureOrThrow(lectureId);
 
     //학원 소속의 전체 학생 조회
-    Set<User> students = getValidStudents(studentIds, lecture);
+    Set<User> students = lectureHelper.getValidStudents(studentIds, lecture);
 
     //이미 배정된 학생 ID 목록 조회
     Set<Long> assignedIds = lectureStudentRepository.findAllByLectureId(lectureId).stream()
@@ -165,79 +178,6 @@ public class LectureService {
       lectureStudentRepository.saveAll(lectureStudents);
 
     return new LectureStudentAssignResponse(lectureId, lectureStudents.size());
-  }
-
-  @Transactional(readOnly = true)
-  public LectureStatisticsResponse getLecutureStatistics(Long lectureId, Long teacherId) {
-
-    //강의 조회
-    Lecture lecture = getLecture(lectureId);
-
-    //강사 조회
-    User teacher = getTeacher(teacherId);
-
-    //권한 검증
-    validateLectureAcess(lectureId, teacher, lecture);
-
-    //수강생 수 조회
-    int studentCount = lectureStudentRepository.findAllByLectureId(lectureId).size();
-
-    // 4) 통계 값들 (일단 TODO: 실제 쿼리/정책에 맞게 계산 로직 채우기)
-    Double attendanceRate = 0.0;            // TODO: 출석률 계산
-    Double assignmentSubmissionRate = 0.0;  // TODO: 과제 제출률 계산
-    Double examParticipationRate = 0.0;     // TODO: 시험 응시율 계산
-
-    Double averageScore = 0.0;             // TODO: 평균 점수
-    Double top10PercentAverage = 0.0;      // TODO: 상위 10% 평균
-
-    return  new LectureStatisticsResponse(
-        lectureId,
-        studentCount,
-        attendanceRate,
-        assignmentSubmissionRate,
-        examParticipationRate,
-        averageScore,
-        top10PercentAverage
-    );
-
-
-  }
-
-  private User getTeacher(Long teacherId) {
-    User teacher = userRepository.findById(teacherId)
-        .orElseThrow(() -> new UserNotFoundException("선생님을 찾을 수 없습니다. ID=" + teacherId));
-    return teacher;
-  }
-
-  private Lecture getLecture(Long lectureId) {
-    Lecture lecture = lectureRepository.findById(lectureId)
-        .orElseThrow(() -> new LectureNotFoundException(lectureId));
-    return lecture;
-  }
-
-
-  private static void validateLectureAcess(Long lectureId, User teacher, Lecture lecture) {
-    boolean isTeacherAndOwner = teacher.hasRole(RoleType.TEACHER)
-        && lecture.getTeacher().getId().equals(teacher.getId());
-
-    boolean isPrincipalOfAcademy = teacher.hasRole(RoleType.PRINCIPAL)
-        && lecture.getAcademy().getId().equals(teacher.getAcademy().getId());
-
-    if(!isTeacherAndOwner && !isPrincipalOfAcademy) {
-      throw new LectureAccessDeniedException(lectureId, teacher.getId());
-    }
-  }
-
-  private Set<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
-    return userRepository.findAllById(studentIds).stream()
-        .filter(s -> s.getAcademy().getId().equals(lecture.getAcademy().getId()))
-        .filter(this::isStudent)
-        .collect(Collectors.toSet());
-  }
-
-  private boolean isStudent(User user) {
-    return user.getUserToRoles().stream()
-        .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT));
   }
 
   private List<LectureStudent> findLectureStudentByLectureId(List<Lecture> lectures) {

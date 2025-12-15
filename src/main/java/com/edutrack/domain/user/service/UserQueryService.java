@@ -37,6 +37,7 @@ public class UserQueryService {
                 user.getName(),
                 user.getLoginId(),
                 user.getPhone(),
+                user.getEmail(),
                 roleName
         );
     }
@@ -62,6 +63,7 @@ public class UserQueryService {
                         user.getName(),
                         user.getLoginId(),
                         user.getPhone(),
+                        user.getEmail(),
                         extractPrimaryRoleName(user)  // 대표 Role 1개
                 ))
                 .toList();
