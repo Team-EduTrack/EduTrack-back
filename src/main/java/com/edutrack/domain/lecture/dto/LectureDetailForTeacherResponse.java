@@ -1,8 +1,9 @@
 package com.edutrack.domain.lecture.dto;
 
+import java.util.List;
+
 import com.edutrack.domain.lecture.entity.LectureStudent;
 
-import java.util.List;
 import lombok.Getter;
 
 
@@ -20,8 +21,8 @@ public class LectureDetailForTeacherResponse extends LectureForTeacherResponse{
   /**
    * LectureStudent 리스트 기반으로 학생 정보 매핑
    */
-  public LectureDetailForTeacherResponse(Long lectureId, String title, String description,List<LectureStudent> lectureStudents) {
-    super(lectureId, title, lectureStudents.size());
+  public LectureDetailForTeacherResponse(Long lectureId, String title, String description, List<LectureStudent> lectureStudents, String teacherName, Double averageGrade) {
+    super(lectureId, title, lectureStudents.size(), teacherName, averageGrade);
     this.description = description;
 
     // LectureStudent에서 학생(User) 추출 후 DTO로 변환

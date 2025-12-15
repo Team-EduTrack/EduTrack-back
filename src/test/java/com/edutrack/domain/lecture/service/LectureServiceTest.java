@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,14 +25,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.edutrack.domain.academy.Academy;
+import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
-import com.edutrack.domain.user.entity.Role;
+import com.edutrack.domain.statistics.service.LectureStatisticsService;
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
-import com.edutrack.domain.user.entity.UserToRole;
 import com.edutrack.domain.user.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +50,15 @@ class LectureServiceTest {
 
   @Mock
   private UserRepository userRepository;
+
+  @Mock
+  private ExamRepository examRepository;
+
+  @Mock
+  private LectureStatisticsService lectureStatisticsService;
+
+  @Mock
+  private LectureHelper lectureHelper;
 
   private Lecture lecture;
   private User teacher;
@@ -77,8 +85,10 @@ class LectureServiceTest {
 
     lecture = mock(Lecture.class);
     lenient().when(lecture.getId()).thenReturn(50L);
+    lenient().when(lecture.getTitle()).thenReturn("테스트 강의");
     lenient().when(lecture.getTeacher()).thenReturn(teacher);
     lenient().when(lecture.getAcademy()).thenReturn(academy);
+    lenient().when(teacher.getName()).thenReturn("선생님");
 
   }
 
@@ -100,6 +110,14 @@ class LectureServiceTest {
     when(lectureStudentRepository.findAllByLectureIdIn(lectureIds))
         .thenReturn(List.of(ls1, ls2));
 
+    //examRepository stub
+    when(examRepository.findByLectureId(lecture.getId()))
+        .thenReturn(List.of());
+
+    //lectureStatisticsService stub
+    when(lectureStatisticsService.calculateAverageScore(List.of()))
+        .thenReturn(0.0);
+
     //실제 서비스 호출
     var result = lectureService.getLecturesByTeacherId(teacher.getId());
 
@@ -108,13 +126,17 @@ class LectureServiceTest {
     assertEquals(1, result.size());
     verify(lectureRepository).findAllByTeacherId(teacher.getId());
     verify(lectureStudentRepository).findAllByLectureIdIn(lectureIds);
+    verify(examRepository).findByLectureId(lecture.getId());
+    verify(lectureStatisticsService).calculateAverageScore(List.of());
 
     log.info("=== 강사의 강의 목록 조회 테스트 결과 ===");
     result.forEach(dto -> log.info(
-        "강의 ID : {}, 제목 : {}, 학생 수 : {}",
+        "강의 ID : {}, 제목 : {}, 학생 수 : {}, 선생님 이름 : {}, 평균 점수 : {}",
         dto.getLectureId(),
         dto.getTitle(),
-        dto.getStudentCount()
+        dto.getStudentCount(),
+        dto.getTeacherName(),
+        dto.getAverageGrade()
     ));
 
 
@@ -129,15 +151,11 @@ class LectureServiceTest {
     LectureStudent ls2 = mock(LectureStudent.class);
     when(ls2.getStudent()).thenReturn(student2);
 
-    when(lectureRepository.findById(lecture.getId())).thenReturn(Optional.of(lecture));
-
-    when(userRepository.findById(teacher.getId())).thenReturn(Optional.of(teacher));
-
     when(lectureStudentRepository.findAllByLectureId(lecture.getId())).thenReturn(List.of(ls1, ls2));
 
-    //권한 체크
-    when(teacher.hasRole(RoleType.TEACHER)).thenReturn(true);
-    when(lecture.getTeacher()).thenReturn(teacher);
+    //lectureHelper stub
+    when(lectureHelper.getLectureWithValidation(lecture.getId(), teacher.getId()))
+        .thenReturn(lecture);
 
     //when
     var result = lectureService.getLectureDetailForTeacherId(lecture.getId(), teacher.getId());
@@ -147,8 +165,7 @@ class LectureServiceTest {
     assertEquals(lecture.getId(), result.getLectureId());
     assertEquals(2, result.getStudentCount());
 
-    verify(lectureRepository).findById(lecture.getId());
-    verify(userRepository).findById(teacher.getId());
+    verify(lectureHelper).getLectureWithValidation(lecture.getId(), teacher.getId());
     verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
 
     log.info("=== 강의 상세 조회 테스트 결과 ===");
@@ -202,7 +219,7 @@ class LectureServiceTest {
   @Test
   void 할당_가능한_학생_조회() {
     // given
-    when(lectureRepository.findById(lecture.getId())).thenReturn(Optional.of(lecture));
+    when(lectureHelper.getLectureOrThrow(lecture.getId())).thenReturn(lecture);
 
     // 이미 배정된 학생 생성
     LectureStudent assigned1 = mock(LectureStudent.class);
@@ -227,30 +244,20 @@ class LectureServiceTest {
     when(availableStudent1.getId()).thenReturn(60L);
     when(availableStudent1.getName()).thenReturn("박영희");
     lenient().when(availableStudent1.getAcademy()).thenReturn(academy);
-    
-    // UserToRole과 Role mock 생성
-    UserToRole userToRole1 = mock(UserToRole.class);
-    Role role1 = mock(Role.class);
-    when(role1.getName()).thenReturn(RoleType.STUDENT);
-    when(userToRole1.getRole()).thenReturn(role1);
-    when(availableStudent1.getUserToRoles()).thenReturn(Set.of(userToRole1));
 
     User availableStudent2 = mock(User.class);
     when(availableStudent2.getId()).thenReturn(70L);
     when(availableStudent2.getName()).thenReturn("김아무개");
     lenient().when(availableStudent2.getAcademy()).thenReturn(academy);
-    
-    // UserToRole과 Role mock 생성
-    UserToRole userToRole2 = mock(UserToRole.class);
-    Role role2 = mock(Role.class);
-    when(role2.getName()).thenReturn(RoleType.STUDENT);
-    when(userToRole2.getRole()).thenReturn(role2);
-    when(availableStudent2.getUserToRoles()).thenReturn(Set.of(userToRole2));
 
     // 실제로 전달되는 값 사용 (assignedIds는 [20L, 30L], name은 null)
     List<Long> excludedIds = List.of(20L, 30L);
     when(userRepository.findAvailableStudents(eq(academy.getId()), eq(excludedIds), isNull()))
         .thenReturn(List.of(availableStudent1, availableStudent2));
+
+    //lectureHelper stub
+    when(lectureHelper.isStudent(availableStudent1)).thenReturn(true);
+    when(lectureHelper.isStudent(availableStudent2)).thenReturn(true);
 
     // when
     var result = lectureService.getAvailableStudents(lecture.getId(), null);
@@ -262,7 +269,7 @@ class LectureServiceTest {
     assertTrue(result.stream().anyMatch(dto -> dto.getStudentId() == 70L && dto.getName().equals("김아무개")));
 
 
-    verify(lectureRepository).findById(lecture.getId());
+    verify(lectureHelper).getLectureOrThrow(lecture.getId());
     verify(lectureStudentRepository).findAllByLectureId(lecture.getId());
     verify(userRepository).findAvailableStudents(eq(academy.getId()), eq(excludedIds), isNull());
 
@@ -276,28 +283,9 @@ class LectureServiceTest {
     Long lectureId = lecture.getId();
     List<Long> studentIds = List.of(student1.getId(), student2.getId());
     
-    // Lecture 조회 stub
-    when(lectureRepository.findById(lectureId)).thenReturn(Optional.of(lecture));
-    
-    // 학생 조회 stub
-    when(userRepository.findAllById(studentIds)).thenReturn(List.of(student1, student2));
-    
-    // 학원 소속 확인 stub
-    when(student1.getAcademy()).thenReturn(academy);
-    when(student2.getAcademy()).thenReturn(academy);
-    
-    // 학생 역할 확인을 위한 UserToRole mock
-    UserToRole student1Role = mock(UserToRole.class);
-    Role role1 = mock(Role.class);
-    when(role1.getName()).thenReturn(RoleType.STUDENT);
-    when(student1Role.getRole()).thenReturn(role1);
-    when(student1.getUserToRoles()).thenReturn(Set.of(student1Role));
-    
-    UserToRole student2Role = mock(UserToRole.class);
-    Role role2 = mock(Role.class);
-    when(role2.getName()).thenReturn(RoleType.STUDENT);
-    when(student2Role.getRole()).thenReturn(role2);
-    when(student2.getUserToRoles()).thenReturn(Set.of(student2Role));
+    // lectureHelper stub
+    when(lectureHelper.getLectureOrThrow(lectureId)).thenReturn(lecture);
+    when(lectureHelper.getValidStudents(studentIds, lecture)).thenReturn(Set.of(student1, student2));
     
     // 이미 배정된 학생이 없는 경우
     when(lectureStudentRepository.findAllByLectureId(lectureId)).thenReturn(List.of());
@@ -336,8 +324,8 @@ class LectureServiceTest {
     assertTrue(savedStudentIds.contains(student1.getId()));
     assertTrue(savedStudentIds.contains(student2.getId()));
     
-    verify(lectureRepository).findById(lectureId);
-    verify(userRepository).findAllById(studentIds);
+    verify(lectureHelper).getLectureOrThrow(lectureId);
+    verify(lectureHelper).getValidStudents(studentIds, lecture);
     verify(lectureStudentRepository).findAllByLectureId(lectureId);
     
     log.info("=== 학생 배정 테스트 결과 ===");
