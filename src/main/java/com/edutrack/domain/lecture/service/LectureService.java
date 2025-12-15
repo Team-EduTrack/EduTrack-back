@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.lecture.dto.LectureDetailForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureForTeacherResponse;
 import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
@@ -19,6 +21,7 @@ import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
+import com.edutrack.domain.statistics.service.LectureStatisticsService;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 
@@ -32,6 +35,8 @@ public class LectureService {
   private final LectureRepository lectureRepository;
   private final LectureStudentRepository lectureStudentRepository;
   private final UserRepository userRepository;
+  private final ExamRepository examRepository;
+  private final LectureStatisticsService lectureStatisticsService;
 
   private final LectureHelper lectureHelper;
 
@@ -58,10 +63,21 @@ public class LectureService {
 
     //각 강의와 수강생 수를 매핑하여 DTO 생성
     return lectures.stream()
-        .map(lecture -> LectureForTeacherResponse.of(
-            lecture,
-            studentCountMap.getOrDefault(lecture.getId(), 0L).intValue()
-        )).toList();
+        .map(lecture -> {
+          // 각 강의의 시험 목록 조회 (기존 메서드 재활용)
+          List<Exam> exams = examRepository.findByLectureId(lecture.getId());
+          // LectureStatisticsService의 calculateAverageScore 재사용
+          Double averageScore = lectureStatisticsService.calculateAverageScore(exams);
+          // 선생님 이름 조회
+          String teacherName = lecture.getTeacher().getName();
+          
+          return LectureForTeacherResponse.of(
+              lecture,
+              studentCountMap.getOrDefault(lecture.getId(), 0L).intValue(),
+              teacherName,
+              averageScore
+          );
+        }).toList();
   }
 
   //강의 상세 조회 (선생용)
@@ -78,7 +94,9 @@ public class LectureService {
         lecture.getId(),
         lecture.getTitle(),
         lecture.getDescription(),
-        lectureStudents
+        lectureStudents,
+        null,  // teacherName은 목록 조회에서만 필요
+        null   // averageGrade는 목록 조회에서만 필요
     );
   }
 

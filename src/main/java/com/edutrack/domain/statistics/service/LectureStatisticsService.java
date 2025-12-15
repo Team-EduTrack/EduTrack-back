@@ -227,8 +227,9 @@ public class LectureStatisticsService {
   /**
    * 평균 점수 계산
    * 강의의 모든 시험에서 채점 완료된 점수들의 평균
+   * LectureService에서 재사용됨
    */
-  private Double calculateAverageScore(List<Exam> exams) {
+  public Double calculateAverageScore(List<Exam> exams) {
     if (exams.isEmpty()) {
       return 0.0;
     }
