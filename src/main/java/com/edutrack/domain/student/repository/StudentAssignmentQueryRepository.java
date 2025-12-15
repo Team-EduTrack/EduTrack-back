@@ -1,6 +1,6 @@
-package com.edutrack.api.student.repository;
+package com.edutrack.domain.student.repository;
 
-import com.edutrack.api.student.dto.AssignmentSummaryResponse;
+import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
 import com.edutrack.domain.assignment.entity.Assignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,7 +23,7 @@ public interface StudentAssignmentQueryRepository extends JpaRepository<Assignme
      * - 마감일 기준 내림차순 정렬
      */
     @Query("""
-            SELECT new com.edutrack.api.student.dto.AssignmentSummaryResponse(
+            SELECT new com.edutrack.domain.student.dto.AssignmentSummaryResponse(
                 a.id,
                 l.title,
                 a.title,

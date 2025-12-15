@@ -1,6 +1,6 @@
-package com.edutrack.api.student.repository;
+package com.edutrack.domain.student.repository;
 
-import com.edutrack.api.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.ExamSummaryResponse;
 import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.exam.entity.ExamStudentId;
@@ -26,7 +26,7 @@ public interface StudentExamQueryRepository extends JpaRepository<ExamStudent, E
      * - 시작일 기준 내림차순 정렬
      */
     @Query("""
-            SELECT new com.edutrack.api.student.dto.ExamSummaryResponse(
+            SELECT new com.edutrack.domain.student.dto.ExamSummaryResponse(
                 e.id,
                 l.title,
                 e.title,
