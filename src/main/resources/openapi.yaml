@@ -18,6 +18,7 @@ tags:
   - name: Exams
   - name: Student Exams
   - name: Student Dashboard
+  - name: Student Reports
 
 paths:
   ########################
@@ -1087,6 +1088,138 @@ paths:
                 items:
                   $ref: '#/components/schemas/ExamSummaryResponse'
 
+  ########################
+  # StudentReportController (/api/analysis/student, /api/students/{studentId}/analysis)
+  ########################
+  /api/analysis/student/{studentId}:
+    get:
+      tags: [Student Reports]
+      summary: 학생 통합 분석 리포트 조회
+      operationId: getStudentAnalysis
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생 통합 분석 리포트
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentAnalysisResponse'
+        '403':
+          description: 본인의 학습리포트만 조회할 수 있습니다.
+
+  /api/students/{studentId}/analysis/exams:
+    get:
+      tags: [Student Reports]
+      summary: 학생 전체 시험 요약 조회
+      operationId: getExamSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생 전체 시험 요약 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentExamSummaryResponse'
+        '403':
+          description: 본인의 시험 기록만 조회할 수 있습니다.
+
+  /api/students/{studentId}/analysis/weak-units:
+    get:
+      tags: [Student Reports]
+      summary: 학생의 단원별 성취도 조회 (정답률 낮은 순)
+      operationId: getWeakUnits
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 5
+      responses:
+        '200':
+          description: 취약 단원 분석 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentUnitCorrectRateResponse'
+        '403':
+          description: 본인의 취약 단원 분석만 조회할 수 있습니다.
+
+  /api/students/{studentId}/lectures/{lectureId}/attendance/monthly:
+    get:
+      tags: [Student Reports]
+      summary: 학생의 강의별 월간 출석 현황 조회
+      operationId: getMonthlyAttendance
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 12
+      responses:
+        '200':
+          description: 학생의 강의별 월간 출석 현황
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentLectureAttendanceResponse'
+        '403':
+          description: 본인의 출석 현황만 조회할 수 있습니다.
+        '404':
+          description: 학생 또는 강의를 찾을 수 없습니다.
+
 components:
   securitySchemes:
     BearerAuth:
@@ -2006,3 +2139,100 @@ components:
           nullable: true
         status:
           type: string
+
+    ########################
+    # Student Reports
+    ########################
+    StudentAnalysisResponse:
+      type: object
+      properties:
+        studentId:
+          type: integer
+          format: int64
+        avgScore:
+          type: number
+          format: double
+          nullable: true
+        unitWeak:
+          type: array
+          items:
+            type: string
+        trend:
+          type: array
+          items:
+            type: integer
+            format: int32
+
+    StudentExamSummaryResponse:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        examTitle:
+          type: string
+        lectureName:
+          type: string
+        totalScore:
+          type: integer
+          format: int32
+          nullable: true
+        earnedScore:
+          type: integer
+          format: int32
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    StudentUnitCorrectRateResponse:
+      type: object
+      properties:
+        unitId:
+          type: integer
+          format: int64
+        studentId:
+          type: integer
+          format: int64
+        totalTryCount:
+          type: integer
+          format: int64
+        correctCount:
+          type: integer
+          format: int64
+        correctRate:
+          type: number
+          format: double
+
+    StudentLectureAttendanceResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        lectureName:
+          type: string
+        year:
+          type: integer
+          format: int32
+        month:
+          type: integer
+          format: int32
+        attendedDates:
+          type: array
+          items:
+            type: string
+            format: date
+        totalClassDays:
+          type: integer
+          format: int32
+        attendedDays:
+          type: integer
+          format: int32
+        attendanceRate:
+          type: number
+          format: double
+        otherStudentsAvgAttendanceRate:
+          type: number
+          format: double
