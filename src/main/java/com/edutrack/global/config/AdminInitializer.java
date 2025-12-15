@@ -26,10 +26,10 @@ import com.edutrack.domain.user.repository.RoleRepository;
 import com.edutrack.domain.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
+
+
 
 @Component
-@Profile("!test")
 @RequiredArgsConstructor
 public class AdminInitializer implements CommandLineRunner {
 
@@ -100,8 +100,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .name("테스트원장")
                 .phone("01000000001")
                 .email("principal@test.com")
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         principal = userRepository.save(principal);
 
@@ -122,8 +120,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .phone("01000000000")
                 .email("student@test.com")
                 .academy(academy)
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         student = userRepository.save(student);
         student.addRole(studentRole);
@@ -137,8 +133,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .phone("01000000002")
                 .email("teacher@test.com")
                 .academy(academy)
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         teacher = userRepository.save(teacher);
         teacher.addRole(teacherRole);
@@ -154,7 +148,6 @@ public class AdminInitializer implements CommandLineRunner {
         // 3) 테스트용 학생 추가 생성 (4명)
         // -------------------------------------------------------
 
-        // ❌ [오류 수정] new User(...) 대신 User.builder() 사용
         // (1) 학생2 생성
         User student2 = User.builder()
                 .loginId("teststudent2")
@@ -163,8 +156,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .phone("01000000011")
                 .email("student2@test.com")
                 .academy(academy)
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         student2 = userRepository.save(student2);
         student2.addRole(studentRole);
@@ -178,8 +169,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .phone("01000000012")
                 .email("student3@test.com")
                 .academy(academy)
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         student3 = userRepository.save(student3);
         student3.addRole(studentRole);
@@ -193,8 +182,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .phone("01000000013")
                 .email("student4@test.com")
                 .academy(academy)
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         student4 = userRepository.save(student4);
         student4.addRole(studentRole);
@@ -208,8 +195,6 @@ public class AdminInitializer implements CommandLineRunner {
                 .phone("01000000014")
                 .email("student5@test.com")
                 .academy(academy)
-                .emailVerified(true)
-                .userStatus(UserStatus.ACTIVE)
                 .build();
         student5 = userRepository.save(student5);
         student5.addRole(studentRole);
@@ -219,29 +204,28 @@ public class AdminInitializer implements CommandLineRunner {
         // 4) 테스트용 강의 생성 (A강의, B강의)
         // -------------------------------------------------------
 
-        // ❌ [오류 수정] new Lecture(...) 대신 Lecture.builder() 사용
         // (1) A강의 생성
-        Lecture lectureA = Lecture.builder()
-                .academy(academy)
-                .teacher(teacher)
-                .title("A강의")
-                .description("A강의 설명입니다")
-                .dayOfWeek(DayOfWeek.MONDAY)
-                .startDate(LocalDateTime.of(LocalDate.now().minusDays(7), java.time.LocalTime.of(9, 0)))
-                .endDate(LocalDateTime.of(LocalDate.now().plusDays(30), java.time.LocalTime.of(10, 0)))
-                .build();
+        Lecture lectureA = new Lecture(
+                academy,
+                teacher,
+                "A강의",
+                "A강의 설명입니다",
+                List.of(DayOfWeek.MONDAY),
+                LocalDateTime.of(LocalDate.now().minusDays(7), java.time.LocalTime.of(9, 0)),
+                LocalDateTime.of(LocalDate.now().plusDays(30), java.time.LocalTime.of(10, 0))
+        );
         lectureA = lectureRepository.save(lectureA);
 
         // (2) B강의 생성
-        Lecture lectureB = Lecture.builder()
-                .academy(academy)
-                .teacher(teacher)
-                .title("B강의")
-                .description("B강의 설명입니다")
-                .dayOfWeek(DayOfWeek.WEDNESDAY)
-                .startDate(LocalDateTime.of(LocalDate.now().minusDays(5), java.time.LocalTime.of(14, 0)))
-                .endDate(LocalDateTime.of(LocalDate.now().plusDays(35), java.time.LocalTime.of(15, 0)))
-                .build();
+        Lecture lectureB = new Lecture(
+                academy,
+                teacher,
+                "B강의",
+                "B강의 설명입니다",
+                List.of(DayOfWeek.WEDNESDAY),
+                LocalDateTime.of(LocalDate.now().minusDays(5), java.time.LocalTime.of(14, 0)),
+                LocalDateTime.of(LocalDate.now().plusDays(35), java.time.LocalTime.of(15, 0))
+        );
         lectureB = lectureRepository.save(lectureB);
 
         // -------------------------------------------------------
