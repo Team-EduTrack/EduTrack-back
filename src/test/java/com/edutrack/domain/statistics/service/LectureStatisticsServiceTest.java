@@ -93,7 +93,7 @@ class LectureStatisticsServiceTest {
       log.info("강의 ID: {}, 강사 ID: {}", lectureId, teacherId);
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
@@ -260,7 +260,7 @@ class LectureStatisticsServiceTest {
       log.info("=== 과제 없음 테스트 시작 ===");
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
@@ -299,7 +299,7 @@ class LectureStatisticsServiceTest {
       log.info("=== 시험 없음 테스트 시작 ===");
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
@@ -351,7 +351,7 @@ class LectureStatisticsServiceTest {
       
       // given
       // 강의 기간이 하루도 해당 요일이 없는 경우 (예: 월요일 강의인데 기간이 화요일~일요일만)
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 2, 9, 0)); // 화요일
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 2, 18, 0)); // 화요일
 
@@ -383,7 +383,7 @@ class LectureStatisticsServiceTest {
       log.info("시나리오: 출석 기록은 있지만 status가 false인 경우는 출석으로 카운트되지 않음");
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
@@ -424,7 +424,7 @@ class LectureStatisticsServiceTest {
       log.info("시나리오: earnedScore가 null인 제출은 평균 점수 계산에서 제외");
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
@@ -475,7 +475,7 @@ class LectureStatisticsServiceTest {
       log.info("시나리오: 학생 2명일 때 상위 10% = Math.ceil(2 * 0.1) = 1명 선택");
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
@@ -533,7 +533,7 @@ class LectureStatisticsServiceTest {
       log.info("시나리오: 학생1: 100점, 학생2: 80점, 학생3: 점수 없음 → 학생3은 제외");
       
       // given
-      given(lecture.getDayOfWeek()).willReturn(DayOfWeek.MONDAY);
+      given(lecture.getDaysOfWeek()).willReturn(List.of(DayOfWeek.MONDAY));
       given(lecture.getStartDate()).willReturn(LocalDateTime.of(2024, 1, 1, 9, 0));
       given(lecture.getEndDate()).willReturn(LocalDateTime.of(2024, 1, 29, 18, 0));
 
