@@ -8,6 +8,7 @@ import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.statistics.dto.StudentLectureAttendanceResponse;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +35,10 @@ public class StudentAttendanceService {
 
     //학생의 특정 강의 월별 출석 현황 조회
     public StudentLectureAttendanceResponse getMonthlyAttendance(
-            Long studentId, Long lectureId, int year, int month) {
+            Long studentId, Long lectureId, int year, int month, Long principalId) {
+
+        // 권한 검증
+        validateOwnership(studentId, principalId);
 
         validateStudentExists(studentId);
 
@@ -100,7 +106,7 @@ public class StudentAttendanceService {
         return attendedDates.size() * 100.0 / totalClassDays;
     }
 
-    //다른 수강생 평균 출석률 계산
+    //다른 수강생 평균 출석률 계산 (배치 조회)
     private double calculateOtherStudentsAvgAttendanceRate(Long lectureId, Long excludeStudentId,
                                                            DayOfWeek lectureDay, LocalDate startDate,
                                                            LocalDate endDate, int totalClassDays) {
@@ -116,10 +122,21 @@ public class StudentAttendanceService {
 
         if (otherStudentIds.isEmpty()) return 0.0;
 
-        // 각 학생의 출석률 계산 후 평균
+        // 배치로 모든 학생의 출석 기록 한 번에 조회
+        List<Attendance> allAttendances = attendanceRepository
+                .findByStudentIdInAndDateBetweenAndStatusTrueOrderByDateAsc(otherStudentIds, startDate, endDate);
+
+        // 학생별로 그룹핑하여 출석률 계산
+        Map<Long, List<Attendance>> attendanceByStudent = allAttendances.stream()
+                .collect(Collectors.groupingBy(a -> a.getStudent().getId()));
+
         double totalRate = 0.0;
         for (Long otherId : otherStudentIds) {
-            totalRate += calculateStudentAttendanceRate(otherId, lectureDay, startDate, endDate, totalClassDays);
+            List<Attendance> studentAttendances = attendanceByStudent.getOrDefault(otherId, Collections.emptyList());
+            long attendedDays = studentAttendances.stream()
+                    .filter(a -> a.getDate().getDayOfWeek() == lectureDay)
+                    .count();
+            totalRate += (attendedDays * 100.0 / totalClassDays);
         }
 
         return totalRate / otherStudentIds.size();
@@ -151,6 +168,12 @@ public class StudentAttendanceService {
     private void validateStudentExists(Long studentId) {
         if (!userRepository.existsById(studentId)) {
             throw new NotFoundException("학생을 찾을 수 없습니다. ID: " + studentId);
+        }
+    }
+
+    private void validateOwnership(Long studentId, Long principalId) {
+        if (!studentId.equals(principalId)) {
+            throw new ForbiddenException("본인의 출석 현황만 조회할 수 있습니다.");
         }
     }
 }

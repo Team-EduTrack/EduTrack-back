@@ -10,7 +10,6 @@ import com.edutrack.global.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -79,11 +78,9 @@ public class StudentReportController {
             @RequestParam int month,
             @AuthenticationPrincipal Long principalId
     ) {
-        if (!studentId.equals(principalId)) {
-            throw new ForbiddenException("본인의 출석 현황만 조회할 수 있습니다.");
-        }
+        // 권한 검증은 서비스 레이어에서 처리
         StudentLectureAttendanceResponse response = studentAttendanceService
-                .getMonthlyAttendance(studentId, lectureId, year, month);
+                .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
         return ResponseEntity.ok(response);
     }
 }

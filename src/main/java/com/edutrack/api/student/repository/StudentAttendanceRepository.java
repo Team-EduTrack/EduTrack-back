@@ -52,4 +52,11 @@ public interface StudentAttendanceRepository extends JpaRepository<Attendance, L
             LocalDate startDate,
             LocalDate endDate
     );
-    }
+
+    //여러 학생의 특정기간 출석 기록 배치 조회
+    List<Attendance> findByStudentIdInAndDateBetweenAndStatusTrueOrderByDateAsc(
+            List<Long> studentIds,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+}

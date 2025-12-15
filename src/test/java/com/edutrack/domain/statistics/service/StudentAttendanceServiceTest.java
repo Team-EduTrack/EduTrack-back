@@ -9,6 +9,7 @@ import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.statistics.dto.StudentLectureAttendanceResponse;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.ForbiddenException;
 import com.edutrack.global.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +72,7 @@ class StudentAttendanceServiceTest {
         @DisplayName("성공: 월간 출석 현황을 올바르게 반환한다")
         void success_returnsMonthlyAttendance() {
             // given
+            Long principalId = studentId; // 본인 조회
             given(userRepository.existsById(studentId)).willReturn(true);
             given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
 
@@ -97,7 +99,7 @@ class StudentAttendanceServiceTest {
 
             // when
             StudentLectureAttendanceResponse response = studentAttendanceService
-                    .getMonthlyAttendance(studentId, lectureId, year, month);
+                    .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
 
             // then
             assertThat(response.getLectureId()).isEqualTo(lectureId);
@@ -111,9 +113,10 @@ class StudentAttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 다른 수강생 평균 출석률을 올바르게 계산한다")
+        @DisplayName("성공: 다른 수강생 평균 출석률을 올바르게 계산한다 (배치 조회)")
         void success_calculatesOtherStudentsAvgAttendanceRate() {
             // given
+            Long principalId = studentId; // 본인 조회
             Long otherStudentId = 2L;
 
             given(userRepository.existsById(studentId)).willReturn(true);
@@ -135,7 +138,7 @@ class StudentAttendanceServiceTest {
             given(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
                     studentId, startDate, endDate)).willReturn(myAttendances);
 
-            // 다른 수강생 출석: 5일 (100%)
+            // 다른 수강생 출석: 5일 (100%) - 배치 조회용
             List<Attendance> otherAttendances = Arrays.asList(
                     createAttendance(otherStudentId, LocalDate.of(2025, 12, 1)),
                     createAttendance(otherStudentId, LocalDate.of(2025, 12, 8)),
@@ -143,8 +146,9 @@ class StudentAttendanceServiceTest {
                     createAttendance(otherStudentId, LocalDate.of(2025, 12, 22)),
                     createAttendance(otherStudentId, LocalDate.of(2025, 12, 29))
             );
-            given(attendanceRepository.findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
-                    otherStudentId, startDate, endDate)).willReturn(otherAttendances);
+            // 배치 조회 mock
+            given(attendanceRepository.findByStudentIdInAndDateBetweenAndStatusTrueOrderByDateAsc(
+                    Arrays.asList(otherStudentId), startDate, endDate)).willReturn(otherAttendances);
 
             // 수강생 목록
             given(lectureStudentRepository.findAllByLectureId(lectureId)).willReturn(Arrays.asList(
@@ -154,7 +158,7 @@ class StudentAttendanceServiceTest {
 
             // when
             StudentLectureAttendanceResponse response = studentAttendanceService
-                    .getMonthlyAttendance(studentId, lectureId, year, month);
+                    .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
 
             // then
             assertThat(response.getAttendanceRate()).isEqualTo(80.0);
@@ -165,6 +169,7 @@ class StudentAttendanceServiceTest {
         @DisplayName("성공: 출석 기록이 없으면 출석률 0을 반환한다")
         void success_returnsZeroWhenNoAttendance() {
             // given
+            Long principalId = studentId; // 본인 조회
             given(userRepository.existsById(studentId)).willReturn(true);
             given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
 
@@ -181,7 +186,7 @@ class StudentAttendanceServiceTest {
 
             // when
             StudentLectureAttendanceResponse response = studentAttendanceService
-                    .getMonthlyAttendance(studentId, lectureId, year, month);
+                    .getMonthlyAttendance(studentId, lectureId, year, month, principalId);
 
             // then
             assertThat(response.getAttendedDays()).isEqualTo(0);
@@ -189,13 +194,26 @@ class StudentAttendanceServiceTest {
         }
 
         @Test
+        @DisplayName("실패: 타인의 출석 현황 조회 시 ForbiddenException 발생")
+        void fail_throwsForbiddenExceptionWhenNotOwner() {
+            // given
+            Long principalId = 999L; // 다른 사용자
+
+            // when & then
+            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
+                    .isInstanceOf(ForbiddenException.class)
+                    .hasMessageContaining("본인의 출석 현황만 조회할 수 있습니다");
+        }
+
+        @Test
         @DisplayName("실패: 존재하지 않는 학생 ID로 조회 시 NotFoundException 발생")
         void fail_throwsNotFoundExceptionWhenStudentNotExists() {
             // given
+            Long principalId = studentId; // 본인 조회
             given(userRepository.existsById(studentId)).willReturn(false);
 
             // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month))
+            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("학생을 찾을 수 없습니다");
         }
@@ -204,11 +222,12 @@ class StudentAttendanceServiceTest {
         @DisplayName("실패: 강의에 등록되지 않은 학생이 조회 시 NotFoundException 발생")
         void fail_throwsNotFoundExceptionWhenNotEnrolled() {
             // given
+            Long principalId = studentId; // 본인 조회
             given(userRepository.existsById(studentId)).willReturn(true);
             given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(false);
 
             // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month))
+            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("해당 강의에 등록된 학생이 아닙니다");
         }
@@ -217,12 +236,13 @@ class StudentAttendanceServiceTest {
         @DisplayName("실패: 존재하지 않는 강의 ID로 조회 시 NotFoundException 발생")
         void fail_throwsNotFoundExceptionWhenLectureNotExists() {
             // given
+            Long principalId = studentId; // 본인 조회
             given(userRepository.existsById(studentId)).willReturn(true);
             given(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).willReturn(true);
             given(lectureRepository.findById(lectureId)).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month))
+            assertThatThrownBy(() -> studentAttendanceService.getMonthlyAttendance(studentId, lectureId, year, month, principalId))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("강의를 찾을 수 없습니다");
         }
