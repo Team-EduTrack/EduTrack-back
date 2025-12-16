@@ -31,6 +31,8 @@ import com.edutrack.domain.student.repository.StudentAssignmentQueryRepository;
 import com.edutrack.domain.student.repository.StudentAttendanceRepository;
 import com.edutrack.domain.student.repository.StudentExamQueryRepository;
 import com.edutrack.domain.student.repository.StudentLectureQueryRepository;
+import com.edutrack.domain.attendance.entity.Attendance;
+import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.ForbiddenException;
