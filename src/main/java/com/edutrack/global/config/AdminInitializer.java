@@ -212,27 +212,27 @@ public class AdminInitializer implements CommandLineRunner {
         // -------------------------------------------------------
 
         // (1) A강의 생성
-        Lecture lectureA = new Lecture(
-                academy,
-                teacher,
-                "A강의",
-                "A강의 설명입니다",
-                List.of(DayOfWeek.MONDAY),
-                LocalDateTime.of(LocalDate.now().minusDays(7), java.time.LocalTime.of(9, 0)),
-                LocalDateTime.of(LocalDate.now().plusDays(30), java.time.LocalTime.of(10, 0))
-        );
+        Lecture lectureA = Lecture.builder()
+                .academy(academy)
+                .teacher(teacher)
+                .title("A강의")
+                .description("A강의 설명입니다")
+                .daysOfWeek(List.of(DayOfWeek.MONDAY))
+                .startDate(LocalDateTime.of(LocalDate.now().minusDays(7), java.time.LocalTime.of(9, 0)))
+                .endDate(LocalDateTime.of(LocalDate.now().plusDays(30), java.time.LocalTime.of(10, 0)))
+                .build();
         lectureA = lectureRepository.save(lectureA);
 
         // (2) B강의 생성
-        Lecture lectureB = new Lecture(
-                academy,
-                teacher,
-                "B강의",
-                "B강의 설명입니다",
-                List.of(DayOfWeek.WEDNESDAY),
-                LocalDateTime.of(LocalDate.now().minusDays(5), java.time.LocalTime.of(14, 0)),
-                LocalDateTime.of(LocalDate.now().plusDays(35), java.time.LocalTime.of(15, 0))
-        );
+        Lecture lectureB = Lecture.builder()
+                .academy(academy)
+                .teacher(teacher)
+                .title("B강의")
+                .description("B강의 설명입니다")
+                .daysOfWeek(List.of(DayOfWeek.WEDNESDAY))
+                .startDate(LocalDateTime.of(LocalDate.now().minusDays(5), java.time.LocalTime.of(14, 0)))
+                .endDate(LocalDateTime.of(LocalDate.now().plusDays(35), java.time.LocalTime.of(15, 0)))
+                .build();
         lectureB = lectureRepository.save(lectureB);
 
         // -------------------------------------------------------
