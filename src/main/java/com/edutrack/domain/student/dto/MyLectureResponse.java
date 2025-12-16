@@ -16,6 +16,7 @@ public class MyLectureResponse {
     private final Long lectureId;
     private final String lectureTitle;
     private final String teacherName;
+    private final String description;
     private final LocalDateTime startDate;
     private final LocalDateTime endDate;
 
@@ -23,11 +24,12 @@ public class MyLectureResponse {
      * JPQL new 연산자용 생성자
      */
     public MyLectureResponse(Long lectureId, String lectureTitle, 
-                             String teacherName, LocalDateTime startDate, 
+                             String teacherName, String description, LocalDateTime startDate,
                              LocalDateTime endDate) {
         this.lectureId = lectureId;
         this.lectureTitle = lectureTitle;
         this.teacherName = teacherName;
+        this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
     }

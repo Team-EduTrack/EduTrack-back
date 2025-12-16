@@ -7,12 +7,13 @@ import com.edutrack.domain.student.dto.MyLectureResponse;
 import com.edutrack.domain.student.service.StudentDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/students")
+@RequestMapping("/api/student")
 @RequiredArgsConstructor
 public class StudentDashboardController {
 
@@ -21,19 +22,27 @@ public class StudentDashboardController {
     /*
      * 내강의 조회
      */
-    @GetMapping("/{studentId}/lectures")
+    @GetMapping("/lectures")
     public ResponseEntity<List<MyLectureResponse>> getMyLectures (
-            @PathVariable Long studentId
+            @AuthenticationPrincipal Long studentId
     ) {
         return ResponseEntity.ok(studentDashboardService.getMyLectures(studentId));
+    }
+
+    @GetMapping("/lectures/{lectureId}")
+    public ResponseEntity<MyLectureDetailResponse> getMyLectureDetail(
+            @AuthenticationPrincipal Long studentId,
+            @PathVariable Long lectureId
+    ) {
+        return ResponseEntity.ok(studentDashboardService.getMyLectureDetail(studentId, lectureId));
     }
 
     /*
      * 출석하기 버튼
      */
-    @PostMapping("/{studentId}/attendance/check-in") // 가독성으로 수정!!
+    @PostMapping("/attendance/check-in") // 가독성으로 수정!!
     public ResponseEntity<AttendanceCheckInResponse> checkIn(
-            @PathVariable Long studentId
+            @AuthenticationPrincipal Long studentId
     ) {
         return ResponseEntity.ok(studentDashboardService.checkIn(studentId));
     }
@@ -42,9 +51,9 @@ public class StudentDashboardController {
     /*
      * 과제 리스트
      */
-    @GetMapping("/{studentId}/assignments")
+    @GetMapping("/assignments")
     public ResponseEntity<List<AssignmentSummaryResponse>> getMyAssignments(
-            @PathVariable Long studentId
+            @AuthenticationPrincipal Long studentId
     ) {
         return ResponseEntity.ok(studentDashboardService.getMyAssignments(studentId));
     }
@@ -53,9 +62,9 @@ public class StudentDashboardController {
     /*
      * 시험 리스트
      */
-    @GetMapping("/{studentId}/exams")
+    @GetMapping("/exams")
     public ResponseEntity<List<ExamSummaryResponse>> getMyExams(
-            @PathVariable Long studentId
+            @AuthenticationPrincipal Long studentId
     ) {
         return ResponseEntity.ok(studentDashboardService.getMyExams(studentId));
     }
