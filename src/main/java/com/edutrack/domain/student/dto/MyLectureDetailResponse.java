@@ -1,9 +1,10 @@
 package com.edutrack.domain.student.dto;
 
-import com.edutrack.domain.assignment.dto.AssignmentSubmissionStatus;
-import com.edutrack.domain.exam.entity.Exam;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.edutrack.domain.assignment.dto.AssignmentSubmissionStatus;
+
 import lombok.Builder;
 import lombok.Getter;
 
@@ -38,7 +39,6 @@ public class MyLectureDetailResponse {
     private final LocalDateTime startDate;
     private final LocalDateTime endDate;
     private final String status;
-    private final Integer earnedScore;
   }
 
   // 내부 클래스 : 과제 정보

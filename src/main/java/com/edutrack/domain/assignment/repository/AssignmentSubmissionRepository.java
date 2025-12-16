@@ -40,4 +40,21 @@ public interface AssignmentSubmissionRepository extends JpaRepository<Assignment
   List<AssignmentSubmission> findAllByAssignmentIds(
       @Param("assignmentIds") List<Long> assignmentIds
   );
+
+  /**
+   * 특정 학생의 여러 과제에 대한 제출물 배치 조회
+   * @param assignmentIds 과제 ID 목록
+   * @param studentId 학생 ID
+   * @return 제출물 목록
+   */
+  @Query("""
+    SELECT s 
+    FROM AssignmentSubmission s
+    WHERE s.assignment.id IN :assignmentIds 
+      AND s.student.id = :studentId
+    """)
+  List<AssignmentSubmission> findByAssignmentIdInAndStudentId(
+      @Param("assignmentIds") List<Long> assignmentIds,
+      @Param("studentId") Long studentId
+  );
 }

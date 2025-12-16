@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -16,7 +17,6 @@ import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.exam.entity.Exam;
 import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.exam.entity.ExamStudent;
-import com.edutrack.domain.exam.entity.StudentExamStatus;
 import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.exam.repository.ExamStudentRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
@@ -56,13 +56,12 @@ public class StudentDashboardService {
     private final StudentExamQueryRepository examQueryRepository;
     private final StudentAttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
-
-  private final LectureStudentRepository lectureStudentRepository;
-  private final LectureRepository lectureRepository;
-  private final AssignmentRepository assignmentRepository;
-  private final ExamRepository examRepository;
-  private final ExamStudentRepository examStudentRepository;
-  private final AssignmentSubmissionRepository assignmentSubmissionRepository;
+    private final LectureStudentRepository lectureStudentRepository;
+    private final LectureRepository lectureRepository;
+    private final AssignmentRepository assignmentRepository;
+    private final ExamRepository examRepository;
+    private final ExamStudentRepository examStudentRepository;
+    private final AssignmentSubmissionRepository assignmentSubmissionRepository;
 
   /**
      * 내 강의 목록 조회
@@ -88,8 +87,10 @@ public class StudentDashboardService {
     @Transactional(readOnly = true)
     public List<ExamSummaryResponse> getMyExams(Long studentId) {
         validateStudent(studentId);
-        List<ExamStatus> statues = List.of(ExamStatus.PUBLISHED, ExamStatus.CLOSED);
-        return examQueryRepository.findMyExams(studentId, statues);
+        return examQueryRepository.findMyExams(studentId, List.of(
+            ExamStatus.PUBLISHED,
+            ExamStatus.CLOSED
+        ));
     }
 
     /**
@@ -137,16 +138,19 @@ public class StudentDashboardService {
     // 3. 출석률 계산
     Double attendanceRate = calculateAttendanceRate(studentId, lecture);
 
-    // 4. 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수)
-    Double assignmentSubmissionRate = calculateAssignmentSubmissionRate(studentId, lectureId);
+    // 4. 과제 목록 조회 (한 번만 조회하여 재사용)
+    List<Assignment> allAssignments = assignmentRepository.findByLectureId(lectureId);
 
-    // 5. 시험 목록 조회 (내가 봐야 하는 시험만 - 이미 본 시험 제외)
+    // 5. 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수)
+    Double assignmentSubmissionRate = calculateAssignmentSubmissionRate(studentId, allAssignments);
+
+    // 6. 시험 목록 조회 (내가 봐야 하는 시험만 - 이미 본 시험 제외)
     List<MyLectureDetailResponse.ExamInfo> exams = getExamListForStudent(studentId, lectureId);
 
-    // 6. 과제 목록 조회 (내가 제출해야 하는 과제만 - 이미 제출한 과제 제외)
-    List<MyLectureDetailResponse.AssignmentInfo> assignments = getAssignmentListForStudent(studentId, lectureId);
+    // 7. 과제 목록 조회 (내가 제출해야 하는 과제만 - 이미 제출한 과제 제외)
+    List<MyLectureDetailResponse.AssignmentInfo> assignments = getAssignmentListForStudent(studentId, allAssignments);
 
-    // 7. DTO 생성 및 반환
+    // 8. DTO 생성 및 반환
     return MyLectureDetailResponse.builder()
         .lectureId(lecture.getId())
         .lectureTitle(lecture.getTitle())
@@ -207,22 +211,28 @@ public class StudentDashboardService {
   /**
    * 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수, Double 백분율 값 반환 - 소수점 첫째 자리까지)
    */
-  private Double calculateAssignmentSubmissionRate(Long studentId, Long lectureId) {
-    // 전체 과제 수 (기존 메서드 사용)
-    List<Assignment> allAssignments = assignmentRepository.findByLectureId(lectureId);
+  private Double calculateAssignmentSubmissionRate(Long studentId, List<Assignment> allAssignments) {
     int totalCount = allAssignments.size();
 
     if (totalCount == 0) {
       return 0.0;
     }
 
+    // 과제 ID 목록 추출
+    List<Long> assignmentIds = allAssignments.stream()
+        .map(Assignment::getId)
+        .toList();
+
+    // 제출한 과제를 배치 조회로 한 번에 조회
+    Set<Long> submittedAssignmentIds = assignmentSubmissionRepository
+        .findByAssignmentIdInAndStudentId(assignmentIds, studentId)
+        .stream()
+        .map(submission -> submission.getAssignment().getId())
+        .collect(Collectors.toSet());
+
     // 제출한 과제 수
     int submittedCount = (int) allAssignments.stream()
-        .filter(assignment ->
-            assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(
-                assignment.getId(), studentId
-            )
-        )
+        .filter(assignment -> submittedAssignmentIds.contains(assignment.getId()))
         .count();
 
     // 백분율 계산 (0.0 ~ 100.0) - 소수점 첫째 자리까지 반올림
@@ -253,7 +263,7 @@ public class StudentDashboardService {
         .findAllByExamIdsAndStudentIds(examIds, List.of(studentId));
 
     // 4. 이미 본 시험 ID Set 생성 (ExamStudent가 존재하면 이미 본 시험)
-    java.util.Set<Long> completedExamIds = examStudents.stream()
+    Set<Long> completedExamIds = examStudents.stream()
         .map(es -> es.getExam().getId())
         .collect(Collectors.toSet());
 
@@ -266,6 +276,7 @@ public class StudentDashboardService {
             .examTitle(exam.getTitle())
             .startDate(exam.getStartDate())
             .endDate(exam.getEndDate())
+            .status(exam.getStatus().name())
             .build())
         .toList();
   }
@@ -274,23 +285,35 @@ public class StudentDashboardService {
    * 학생이 제출해야 하는 과제 목록 조회 (이미 제출한 과제는 제외)
    */
   private List<MyLectureDetailResponse.AssignmentInfo> getAssignmentListForStudent(
-      Long studentId, Long lectureId
+      Long studentId, List<Assignment> allAssignments
   ) {
-    // 강의의 모든 과제 조회
-    List<Assignment> allAssignments = assignmentRepository.findByLectureId(lectureId);
+    if (allAssignments.isEmpty()) {
+      return List.of();
+    }
 
-    // 이미 제출한 과제는 제외하고, 아직 제출하지 않은 과제만 필터링
+    // 과제 ID 목록 추출
+    List<Long> assignmentIds = allAssignments.stream()
+        .map(Assignment::getId)
+        .toList();
+
+    // 제출한 과제를 배치 조회로 한 번에 조회
+    Set<Long> submittedAssignmentIds = assignmentSubmissionRepository
+        .findByAssignmentIdInAndStudentId(assignmentIds, studentId)
+        .stream()
+        .map(submission -> submission.getAssignment().getId())
+        .collect(Collectors.toSet());
+
+    // 이미 제출한 과제는 제외하고, 아직 제출하지 않은 과제만 필터링 및 정렬
     return allAssignments.stream()
-        .filter(assignment ->
-            !assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(
-                assignment.getId(), studentId
-            )
-        )
+        .filter(assignment -> !submittedAssignmentIds.contains(assignment.getId()))
+        .sorted(Comparator.comparing(Assignment::getStartDate)) // 시작일 순 정렬
         .map(assignment -> MyLectureDetailResponse.AssignmentInfo.builder()
             .assignmentId(assignment.getId())
             .assignmentTitle(assignment.getTitle())
             .startDate(assignment.getStartDate())
             .endDate(assignment.getEndDate())
+            .status(com.edutrack.domain.assignment.dto.AssignmentSubmissionStatus.NOT_SUBMITTED)
+            .earnedScore(null) // 제출하지 않은 과제이므로 null
             .build())
         .toList();
   }
@@ -299,7 +322,6 @@ public class StudentDashboardService {
    * 학생 존재 여부 검증
    */
   private void validateStudent(Long studentId) {
-
     if (!userRepository.existsById(studentId)) {
       throw new NotFoundException("학생을 찾을 수 없습니다. ID: " + studentId);
     }

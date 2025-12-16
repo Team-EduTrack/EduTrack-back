@@ -31,7 +31,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.edutrack.domain.assignment.dto.AssignmentSubmissionStatus;
 import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
 import com.edutrack.domain.attendance.entity.Attendance;
@@ -393,10 +395,13 @@ class StudentDashboardServiceTest {
         List<Assignment> allAssignments = List.of(assignment1, assignment2, assignment3);
         when(assignmentRepository.findByLectureId(lectureId)).thenReturn(allAssignments);
 
-        // 과제 제출 여부 Mock (assignment1만 제출, assignment2, assignment3는 미제출)
-        when(assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(200L, studentId)).thenReturn(true);
-        when(assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(201L, studentId)).thenReturn(false);
-        when(assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(202L, studentId)).thenReturn(false);
+        // 과제 제출 여부 Mock (assignment1만 제출, assignment2, assignment3는 미제출) - 배치 조회 사용
+        // calculateAssignmentSubmissionRate와 getAssignmentListForStudent 두 메서드에서 각각 호출됨
+        AssignmentSubmission submission1 = mock(AssignmentSubmission.class);
+        when(submission1.getAssignment()).thenReturn(assignment1);
+        when(assignmentSubmissionRepository.findByAssignmentIdInAndStudentId(
+                any(), eq(studentId)
+        )).thenReturn(List.of(submission1));
 
         // 시험 데이터 Mock
         Exam exam1 = mock(Exam.class);
@@ -417,6 +422,7 @@ class StudentDashboardServiceTest {
         when(exam3.getTitle()).thenReturn("단원 테스트");
         when(exam3.getStartDate()).thenReturn(LocalDateTime.of(2025, 2, 10, 10, 0));
         when(exam3.getEndDate()).thenReturn(LocalDateTime.of(2025, 2, 10, 11, 0));
+        when(exam3.getStatus()).thenReturn(ExamStatus.PUBLISHED);
 
         List<Exam> allExams = List.of(exam1, exam2, exam3);
         when(examRepository.findByLectureId(lectureId)).thenReturn(allExams);
@@ -453,12 +459,19 @@ class StudentDashboardServiceTest {
         assertEquals(1, result.getExams().size());
         assertEquals(302L, result.getExams().get(0).getExamId());
         assertEquals("단원 테스트", result.getExams().get(0).getExamTitle());
+        assertEquals("PUBLISHED", result.getExams().get(0).getStatus());
 
         // 과제 목록 검증 (assignment2, assignment3만 포함되어야 함 - assignment1은 이미 제출)
         assertNotNull(result.getAssignments());
         assertEquals(2, result.getAssignments().size());
         assertEquals(201L, result.getAssignments().get(0).getAssignmentId());
+        assertEquals("2단원 연습문제", result.getAssignments().get(0).getAssignmentTitle());
+        assertEquals(AssignmentSubmissionStatus.NOT_SUBMITTED, result.getAssignments().get(0).getStatus());
+        assertNull(result.getAssignments().get(0).getEarnedScore());
         assertEquals(202L, result.getAssignments().get(1).getAssignmentId());
+        assertEquals("3단원 연습문제", result.getAssignments().get(1).getAssignmentTitle());
+        assertEquals(AssignmentSubmissionStatus.NOT_SUBMITTED, result.getAssignments().get(1).getStatus());
+        assertNull(result.getAssignments().get(1).getEarnedScore());
 
         verify(userRepository).existsById(studentId);
         verify(lectureRepository).findById(lectureId);
@@ -466,8 +479,11 @@ class StudentDashboardServiceTest {
         verify(attendanceRepository).findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
                 eq(studentId), any(LocalDate.class), any(LocalDate.class)
         );
+        verify(assignmentRepository).findByLectureId(lectureId); // 한 번만 호출됨 (두 메서드에서 공유)
         verify(examRepository).findByLectureId(lectureId);
         verify(examStudentRepository).findAllByExamIdsAndStudentIds(any(), any());
+        // calculateAssignmentSubmissionRate와 getAssignmentListForStudent 두 메서드에서 각각 호출됨
+        verify(assignmentSubmissionRepository, org.mockito.Mockito.times(2)).findByAssignmentIdInAndStudentId(any(), any());
 
         log.info("=== 내 강의 상세 조회 테스트 결과 ===");
         log.info("강의 ID: {}, 제목: {}, 강사: {}", result.getLectureId(), result.getLectureTitle(), result.getTeacherName());
@@ -636,8 +652,16 @@ class StudentDashboardServiceTest {
 
         List<Assignment> allAssignments = List.of(assignment1, assignment2);
         when(assignmentRepository.findByLectureId(lectureId)).thenReturn(allAssignments);
-        when(assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(200L, studentId)).thenReturn(true);
-        when(assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(201L, studentId)).thenReturn(true);
+        
+        // 모든 과제 제출 - 배치 조회 사용
+        // calculateAssignmentSubmissionRate와 getAssignmentListForStudent 두 메서드에서 각각 호출됨
+        AssignmentSubmission submission1 = mock(AssignmentSubmission.class);
+        when(submission1.getAssignment()).thenReturn(assignment1);
+        AssignmentSubmission submission2 = mock(AssignmentSubmission.class);
+        when(submission2.getAssignment()).thenReturn(assignment2);
+        when(assignmentSubmissionRepository.findByAssignmentIdInAndStudentId(
+                any(), eq(studentId)
+        )).thenReturn(List.of(submission1, submission2));
 
         // 시험 없음
         when(examRepository.findByLectureId(lectureId)).thenReturn(List.of());
