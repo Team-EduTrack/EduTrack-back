@@ -453,6 +453,60 @@ paths:
                 items:
                   $ref: '#/components/schemas/StudentSearchResponse'
 
+  /api/lectures/{lectureId}/statistics:
+    get:
+      tags: [Lectures]
+      summary: 강의 통계 조회
+      description: 강의 단위 전체 통계 조회 (수강생 수, 출석률, 과제 제출률, 시험 응시율, 평균 성적, 상위 10% 평균 성적)
+      operationId: getLectureStatistics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 강의 통계 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LectureStatisticsResponse'
+        '403':
+          description: 해당 강의의 통계를 조회할 권한이 없습니다.
+        '404':
+          description: 강의를 찾을 수 없습니다.
+
+  /api/lectures/{lectureId}/unit-correct-rates:
+    get:
+      tags: [Lectures]
+      summary: 강의 단원별 정답률 조회
+      description: 특정 강의의 전체 수강생 단원별 정답률 조회 (학생 리포트에서 본인 정답률과 전체 평균 비교용)
+      operationId: getLectureUnitCorrectRates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 단원별 정답률 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnitCorrectRateResponse'
+        '404':
+          description: 강의를 찾을 수 없습니다.
+
   ########################
   # AssignmentController (/api/academies/{academyId}/lectures/{lectureId}/assignments)
   ########################
@@ -1524,6 +1578,25 @@ components:
         total10PercentScore:
           type: number
           format: double
+
+    UnitCorrectRateResponse:
+      type: object
+      properties:
+        unitId:
+          type: integer
+          format: int64
+        totalTryCount:
+          type: integer
+          format: int64
+          description: 전체 시도 횟수
+        correctCount:
+          type: integer
+          format: int64
+          description: 정답 횟수
+        correctRate:
+          type: number
+          format: double
+          description: 정답률
 
     StudentSearchResponse:
       type: object
