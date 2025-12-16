@@ -1,10 +1,20 @@
 package com.edutrack.domain.student.service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.edutrack.domain.assignment.entity.Assignment;
-import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
+import com.edutrack.domain.attendance.entity.Attendance;
 import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.exam.entity.ExamStudent;
 import com.edutrack.domain.exam.entity.StudentExamStatus;
 import com.edutrack.domain.exam.repository.ExamRepository;
@@ -12,13 +22,10 @@ import com.edutrack.domain.exam.repository.ExamStudentRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
-import com.edutrack.domain.student.dto.*;
-import com.edutrack.domain.student.repository.*;
-import com.edutrack.domain.attendance.entity.Attendance;
-import com.edutrack.domain.exam.entity.ExamStatus;
 import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
 import com.edutrack.domain.student.dto.AttendanceCheckInResponse;
 import com.edutrack.domain.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.MyLectureDetailResponse;
 import com.edutrack.domain.student.dto.MyLectureResponse;
 import com.edutrack.domain.student.repository.StudentAssignmentQueryRepository;
 import com.edutrack.domain.student.repository.StudentAttendanceRepository;
@@ -27,19 +34,10 @@ import com.edutrack.domain.student.repository.StudentLectureQueryRepository;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import com.edutrack.global.exception.ForbiddenException;
-import com.edutrack.global.exception.LectureNotFoundException;
 import com.edutrack.global.exception.NotFoundException;
-import java.time.DayOfWeek;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
 
 /**
  * 학생 대시보드 서비스
@@ -125,7 +123,7 @@ public class StudentDashboardService {
     // 1. 학생 존재 확인
     validateStudent(studentId);
 
-    // 2. 강의 조회 및 수강 여부 확인 (기존 메서드 재활용)
+    // 2. 강의 조회 및 수강 여부 확인
     Lecture lecture = lectureRepository.findById(lectureId)
         .orElseThrow(() -> new NotFoundException("강의를 찾을 수 없습니다. ID: " + lectureId));
 
@@ -134,7 +132,7 @@ public class StudentDashboardService {
       throw new ForbiddenException("해당 강의를 수강 중인 학생만 조회할 수 있습니다.");
     }
 
-    // 3. 출석률 계산 (학생 개인 출석률)
+    // 3. 출석률 계산
     Double attendanceRate = calculateAttendanceRate(studentId, lecture);
 
     // 4. 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수)
@@ -160,13 +158,13 @@ public class StudentDashboardService {
   }
 
   /**
-   * 출석률 계산 (학생 개인 출석률, Double 백분율 값 반환)
+   * 출석률 계산
    */
   private Double calculateAttendanceRate(Long studentId, Lecture lecture) {
     LocalDate startDate = lecture.getStartDate().toLocalDate();
     LocalDate endDate = lecture.getEndDate().toLocalDate();
 
-    // 강의 기간 동안 출석한 기록 조회 (기존 메서드 사용)
+    // 강의 기간 동안 출석한 기록 조회
     List<Attendance> attendances = attendanceRepository
         .findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
             studentId, startDate, endDate
@@ -181,9 +179,9 @@ public class StudentDashboardService {
       return 0.0;
     }
 
-    // 백분율 계산 (0.0 ~ 100.0)
+    // 백분율 계산 (0.0 ~ 100.0) - 소수점 첫째 자리까지 반올림
     double rate = (double) attendedCount / totalClassDays * 100.0;
-    return rate;
+    return Math.round(rate * 10.0) / 10.0;
   }
 
   /**
@@ -205,7 +203,7 @@ public class StudentDashboardService {
   }
 
   /**
-   * 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수, Double 백분율 값 반환)
+   * 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수, Double 백분율 값 반환 - 소수점 첫째 자리까지)
    */
   private Double calculateAssignmentSubmissionRate(Long studentId, Long lectureId) {
     // 전체 과제 수 (기존 메서드 사용)
@@ -216,7 +214,7 @@ public class StudentDashboardService {
       return 0.0;
     }
 
-    // 제출한 과제 수 (기존 메서드 사용)
+    // 제출한 과제 수
     int submittedCount = (int) allAssignments.stream()
         .filter(assignment ->
             assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(
@@ -225,9 +223,9 @@ public class StudentDashboardService {
         )
         .count();
 
-    // 백분율 계산 (0.0 ~ 100.0)
+    // 백분율 계산 (0.0 ~ 100.0) - 소수점 첫째 자리까지 반올림
     double rate = (double) submittedCount / totalCount * 100.0;
-    return rate;
+    return Math.round(rate * 10.0) / 10.0;
   }
 
   /**
@@ -236,7 +234,7 @@ public class StudentDashboardService {
   private List<MyLectureDetailResponse.ExamInfo> getExamListForStudent(
       Long studentId, Long lectureId
   ) {
-    // 1. 강의의 모든 시험 조회 (기존 메서드 사용)
+    // 1. 강의의 모든 시험 조회
     List<Exam> allExams = examRepository.findByLectureId(lectureId);
 
     if (allExams.isEmpty()) {
@@ -248,20 +246,19 @@ public class StudentDashboardService {
         .map(Exam::getId)
         .toList();
 
-    // 3. 해당 학생의 시험 응시 기록을 한 번에 조회 (기존 메서드 사용 - N+1 방지)
+    // 3. 해당 학생의 시험 응시 기록을 한 번에 조회
     List<ExamStudent> examStudents = examStudentRepository
         .findAllByExamIdsAndStudentIds(examIds, List.of(studentId));
 
-    // 4. 이미 본 시험 ID Set 생성 (IN_PROGRESS, SUBMITTED, GRADED 상태인 것들)
+    // 4. 이미 본 시험 ID Set 생성 (ExamStudent가 존재하면 이미 본 시험)
     java.util.Set<Long> completedExamIds = examStudents.stream()
-        .filter(es -> es.getStatus() != StudentExamStatus.IN_PROGRESS)
         .map(es -> es.getExam().getId())
         .collect(Collectors.toSet());
 
     // 5. 아직 보지 않은 시험만 필터링하여 DTO 생성
     return allExams.stream()
         .filter(exam -> !completedExamIds.contains(exam.getId())) // 이미 본 시험 제외
-        .sorted((e1, e2) -> e1.getStartDate().compareTo(e2.getStartDate())) // 시작일 순 정렬
+        .sorted(Comparator.comparing(Exam::getStartDate)) // 시작일 순 정렬
         .map(exam -> MyLectureDetailResponse.ExamInfo.builder()
             .examId(exam.getId())
             .examTitle(exam.getTitle())
@@ -277,7 +274,7 @@ public class StudentDashboardService {
   private List<MyLectureDetailResponse.AssignmentInfo> getAssignmentListForStudent(
       Long studentId, Long lectureId
   ) {
-    // 강의의 모든 과제 조회 (기존 메서드 사용)
+    // 강의의 모든 과제 조회
     List<Assignment> allAssignments = assignmentRepository.findByLectureId(lectureId);
 
     // 이미 제출한 과제는 제외하고, 아직 제출하지 않은 과제만 필터링

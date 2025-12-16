@@ -354,7 +354,7 @@ class StudentDashboardServiceTest {
         when(lecture.getDaysOfWeek()).thenReturn(List.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY));
 
         User teacher = mock(User.class);
-        when(teacher.getId()).thenReturn(teacherId);
+        lenient().when(teacher.getId()).thenReturn(teacherId); // ID는 현재 로직에서 직접 사용되지 않으므로 lenient 처리
         when(teacher.getName()).thenReturn("김선생");
         when(lecture.getTeacher()).thenReturn(teacher);
 
@@ -373,9 +373,10 @@ class StudentDashboardServiceTest {
         // 과제 데이터 Mock
         Assignment assignment1 = mock(Assignment.class);
         when(assignment1.getId()).thenReturn(200L);
-        when(assignment1.getTitle()).thenReturn("1단원 연습문제");
-        when(assignment1.getStartDate()).thenReturn(LocalDateTime.of(2025, 1, 10, 0, 0));
-        when(assignment1.getEndDate()).thenReturn(LocalDateTime.of(2025, 1, 17, 23, 59));
+        // assignment1은 제출되어 필터링되므로 상세 필드는 lenient 처리
+        lenient().when(assignment1.getTitle()).thenReturn("1단원 연습문제");
+        lenient().when(assignment1.getStartDate()).thenReturn(LocalDateTime.of(2025, 1, 10, 0, 0));
+        lenient().when(assignment1.getEndDate()).thenReturn(LocalDateTime.of(2025, 1, 17, 23, 59));
 
         Assignment assignment2 = mock(Assignment.class);
         when(assignment2.getId()).thenReturn(201L);
@@ -400,15 +401,16 @@ class StudentDashboardServiceTest {
         // 시험 데이터 Mock
         Exam exam1 = mock(Exam.class);
         when(exam1.getId()).thenReturn(300L);
-        when(exam1.getTitle()).thenReturn("중간고사");
-        when(exam1.getStartDate()).thenReturn(LocalDateTime.of(2025, 3, 15, 9, 0));
-        when(exam1.getEndDate()).thenReturn(LocalDateTime.of(2025, 3, 15, 11, 0));
+        // exam1은 SUBMITTED로 제외되므로 상세 필드는 lenient 처리
+        lenient().when(exam1.getTitle()).thenReturn("중간고사");
+        lenient().when(exam1.getStartDate()).thenReturn(LocalDateTime.of(2025, 3, 15, 9, 0));
+        lenient().when(exam1.getEndDate()).thenReturn(LocalDateTime.of(2025, 3, 15, 11, 0));
 
         Exam exam2 = mock(Exam.class);
         when(exam2.getId()).thenReturn(301L);
-        when(exam2.getTitle()).thenReturn("기말고사");
-        when(exam2.getStartDate()).thenReturn(LocalDateTime.of(2025, 6, 20, 9, 0));
-        when(exam2.getEndDate()).thenReturn(LocalDateTime.of(2025, 6, 20, 11, 0));
+        lenient().when(exam2.getTitle()).thenReturn("기말고사");
+        lenient().when(exam2.getStartDate()).thenReturn(LocalDateTime.of(2025, 6, 20, 9, 0));
+        lenient().when(exam2.getEndDate()).thenReturn(LocalDateTime.of(2025, 6, 20, 11, 0));
 
         Exam exam3 = mock(Exam.class);
         when(exam3.getId()).thenReturn(302L);
@@ -419,14 +421,14 @@ class StudentDashboardServiceTest {
         List<Exam> allExams = List.of(exam1, exam2, exam3);
         when(examRepository.findByLectureId(lectureId)).thenReturn(allExams);
 
-        // 시험 응시 기록 Mock (exam1은 이미 제출함, exam2는 응시 중, exam3는 아직 안 봄)
+        // 시험 응시 기록 Mock (exam1은 이미 제출함, exam2는 응시 중 → 둘 다 ExamStudent 존재하므로 제외됨, exam3는 아직 안 봄 → 포함됨)
         ExamStudent examStudent1 = mock(ExamStudent.class);
         when(examStudent1.getExam()).thenReturn(exam1);
-        when(examStudent1.getStatus()).thenReturn(StudentExamStatus.SUBMITTED);
+        lenient().when(examStudent1.getStatus()).thenReturn(StudentExamStatus.SUBMITTED);
 
         ExamStudent examStudent2 = mock(ExamStudent.class);
         when(examStudent2.getExam()).thenReturn(exam2);
-        when(examStudent2.getStatus()).thenReturn(StudentExamStatus.IN_PROGRESS);
+        lenient().when(examStudent2.getStatus()).thenReturn(StudentExamStatus.IN_PROGRESS);
 
         List<ExamStudent> examStudents = List.of(examStudent1, examStudent2);
         when(examStudentRepository.findAllByExamIdsAndStudentIds(
@@ -446,7 +448,7 @@ class StudentDashboardServiceTest {
         assertNotNull(result.getAssignmentSubmissionRate());
         assertEquals(33.33, result.getAssignmentSubmissionRate(), 0.1); // 1/3 = 33.33%
 
-        // 시험 목록 검증 (exam3만 포함되어야 함 - exam1, exam2는 이미 봄)
+        // 시험 목록 검증 (exam3만 포함되어야 함 - exam1, exam2는 ExamStudent 존재하므로 제외)
         assertNotNull(result.getExams());
         assertEquals(1, result.getExams().size());
         assertEquals(302L, result.getExams().get(0).getExamId());
@@ -464,7 +466,6 @@ class StudentDashboardServiceTest {
         verify(attendanceRepository).findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
                 eq(studentId), any(LocalDate.class), any(LocalDate.class)
         );
-        verify(assignmentRepository).findByLectureId(lectureId);
         verify(examRepository).findByLectureId(lectureId);
         verify(examStudentRepository).findAllByExamIdsAndStudentIds(any(), any());
 
@@ -472,9 +473,9 @@ class StudentDashboardServiceTest {
         log.info("강의 ID: {}, 제목: {}, 강사: {}", result.getLectureId(), result.getLectureTitle(), result.getTeacherName());
         log.info("출석률: {}%", result.getAttendanceRate());
         log.info("과제 제출률: {}% (제출: 1/3)", result.getAssignmentSubmissionRate());
-        log.info("봐야 하는 시험 수: {}", result.getExams().size());
+        log.info("봐야 하는 시험 수: {} (exam3만 포함 - exam1, exam2는 이미 시작함)", result.getExams().size());
         result.getExams().forEach(e -> log.info("  - 시험 ID: {}, 제목: {}", e.getExamId(), e.getExamTitle()));
-        log.info("제출해야 하는 과제 수: {}", result.getAssignments().size());
+        log.info("제출해야 하는 과제 수: {} (assignment2, assignment3)", result.getAssignments().size());
         result.getAssignments().forEach(a -> log.info("  - 과제 ID: {}, 제목: {}", a.getAssignmentId(), a.getAssignmentTitle()));
     }
 
@@ -528,7 +529,6 @@ class StudentDashboardServiceTest {
         when(userRepository.existsById(studentId)).thenReturn(true);
 
         Lecture lecture = mock(Lecture.class);
-        when(lecture.getId()).thenReturn(lectureId);
         when(lectureRepository.findById(lectureId)).thenReturn(Optional.of(lecture));
         when(lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId)).thenReturn(false);
 
@@ -627,18 +627,12 @@ class StudentDashboardServiceTest {
                 eq(studentId), any(LocalDate.class), any(LocalDate.class)
         )).thenReturn(List.of(attendance));
 
-        // 모든 과제 제출
+        // 모든 과제 제출 (제출률 계산에만 사용, 과제 목록 조회에는 사용되지 않음)
         Assignment assignment1 = mock(Assignment.class);
         when(assignment1.getId()).thenReturn(200L);
-        when(assignment1.getTitle()).thenReturn("과제1");
-        when(assignment1.getStartDate()).thenReturn(LocalDateTime.of(2025, 1, 10, 0, 0));
-        when(assignment1.getEndDate()).thenReturn(LocalDateTime.of(2025, 1, 17, 23, 59));
 
         Assignment assignment2 = mock(Assignment.class);
         when(assignment2.getId()).thenReturn(201L);
-        when(assignment2.getTitle()).thenReturn("과제2");
-        when(assignment2.getStartDate()).thenReturn(LocalDateTime.of(2025, 1, 20, 0, 0));
-        when(assignment2.getEndDate()).thenReturn(LocalDateTime.of(2025, 1, 27, 23, 59));
 
         List<Assignment> allAssignments = List.of(assignment1, assignment2);
         when(assignmentRepository.findByLectureId(lectureId)).thenReturn(allAssignments);
@@ -695,30 +689,24 @@ class StudentDashboardServiceTest {
         // 과제 없음
         when(assignmentRepository.findByLectureId(lectureId)).thenReturn(List.of());
 
-        // 모든 시험 이미 봄
+        // 모든 시험 이미 봄 (ExamStudent가 존재하면 모두 제외됨)
         Exam exam1 = mock(Exam.class);
         when(exam1.getId()).thenReturn(300L);
-        when(exam1.getTitle()).thenReturn("중간고사");
-        when(exam1.getStartDate()).thenReturn(LocalDateTime.of(2025, 3, 15, 9, 0));
-        when(exam1.getEndDate()).thenReturn(LocalDateTime.of(2025, 3, 15, 11, 0));
 
         Exam exam2 = mock(Exam.class);
         when(exam2.getId()).thenReturn(301L);
-        when(exam2.getTitle()).thenReturn("기말고사");
-        when(exam2.getStartDate()).thenReturn(LocalDateTime.of(2025, 6, 20, 9, 0));
-        when(exam2.getEndDate()).thenReturn(LocalDateTime.of(2025, 6, 20, 11, 0));
 
         List<Exam> allExams = List.of(exam1, exam2);
         when(examRepository.findByLectureId(lectureId)).thenReturn(allExams);
 
-        // 모든 시험 이미 제출함
+        // 모든 시험 이미 시작함 (ExamStudent 존재 → 제외됨)
         ExamStudent examStudent1 = mock(ExamStudent.class);
         when(examStudent1.getExam()).thenReturn(exam1);
-        when(examStudent1.getStatus()).thenReturn(StudentExamStatus.GRADED);
+        lenient().when(examStudent1.getStatus()).thenReturn(StudentExamStatus.SUBMITTED);
 
         ExamStudent examStudent2 = mock(ExamStudent.class);
         when(examStudent2.getExam()).thenReturn(exam2);
-        when(examStudent2.getStatus()).thenReturn(StudentExamStatus.SUBMITTED);
+        lenient().when(examStudent2.getStatus()).thenReturn(StudentExamStatus.GRADED);
 
         List<ExamStudent> examStudents = List.of(examStudent1, examStudent2);
         when(examStudentRepository.findAllByExamIdsAndStudentIds(

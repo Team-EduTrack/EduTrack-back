@@ -10,7 +10,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan(basePackages = {"com.edutrack"})
 @EnableJpaRepositories(basePackages = {
 		"com.edutrack.domain",
-		"com.edutrack.api"
 })
 @EntityScan(basePackages = "com.edutrack.domain")
 public class EdutrackApplication {
