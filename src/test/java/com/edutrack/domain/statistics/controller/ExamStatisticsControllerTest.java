@@ -2,6 +2,7 @@ package com.edutrack.domain.statistics.controller;
 
 import com.edutrack.domain.statistics.dto.ExamDistributionResponse;
 import com.edutrack.domain.statistics.service.ExamStatisticsService;
+import com.edutrack.global.config.AdminInitializer;
 import com.edutrack.global.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class ExamStatisticsControllerTest {
 
     @Autowired
@@ -31,6 +34,9 @@ class ExamStatisticsControllerTest {
 
     @MockitoBean
     private ExamStatisticsService examStatisticsService;
+
+    @MockitoBean
+    private AdminInitializer adminInitializer;
 
     private static final Long EXAM_ID = 1L;
     private static final List<String> DEFAULT_RANGES = Arrays.asList(
