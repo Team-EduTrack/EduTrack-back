@@ -105,10 +105,9 @@ public class AssignmentSubmissionController {
             @PathVariable Long academyId,
             @PathVariable Long assignmentId,
             @AuthenticationPrincipal Long studentId
-        ) {
-            var response = assignmentSubmissionService.getMySubmission(
-                    academyId, studentId, assignmentId);
-
-        return ResponseEntity.ok(response);
+    ) {
+      return ResponseEntity.ok(
+              assignmentSubmissionService.getMySubmission(academyId, studentId, assignmentId)
+      );
     }
 }
