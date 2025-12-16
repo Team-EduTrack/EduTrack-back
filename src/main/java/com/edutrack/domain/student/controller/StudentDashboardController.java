@@ -3,6 +3,7 @@ package com.edutrack.domain.student.controller;
 import com.edutrack.domain.student.dto.AssignmentSummaryResponse;
 import com.edutrack.domain.student.dto.AttendanceCheckInResponse;
 import com.edutrack.domain.student.dto.ExamSummaryResponse;
+import com.edutrack.domain.student.dto.MyLectureDetailResponse;
 import com.edutrack.domain.student.dto.MyLectureResponse;
 import com.edutrack.domain.student.service.StudentDashboardService;
 import lombok.RequiredArgsConstructor;
