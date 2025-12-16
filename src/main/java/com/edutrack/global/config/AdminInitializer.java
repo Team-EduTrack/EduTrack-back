@@ -14,6 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
+import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStatus;
+import com.edutrack.domain.exam.repository.ExamRepository;
 import com.edutrack.domain.lecture.entity.Lecture;
 import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
@@ -39,6 +44,8 @@ public class AdminInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final LectureRepository lectureRepository;
     private final LectureStudentRepository lectureStudentRepository;
+    private final ExamRepository examRepository;
+    private final AssignmentRepository assignmentRepository;
 
     private static final String ADMIN_LOGIN_ID = "admin";
     private static final String ADMIN_PASSWORD = "admin@1234";
@@ -253,5 +260,38 @@ public class AdminInitializer implements CommandLineRunner {
         logger.info("A강의 ID = {}, 학생 수 = 2명 (teststudent, 학생2)", lectureA.getId());
         logger.info("B강의 ID = {}, 학생 수 = 4명 (teststudent, 학생3, 학생4, 학생5)", lectureB.getId());
         logger.info("중복 학생 = teststudent (A강의와 B강의 모두 수강)");
+
+        // -------------------------------------------------------
+        // 6) A강의에 테스트 시험 생성
+        // -------------------------------------------------------
+        Exam examA = new Exam(
+                lectureA,
+                "A강의 중간고사",
+                100,
+                ExamStatus.PUBLISHED,
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(7),
+                60
+        );
+        examA = examRepository.save(examA);
+
+        logger.info("📝 테스트 시험 생성 완료");
+        logger.info("시험 ID = {}, 제목 = {}, 상태 = PUBLISHED", examA.getId(), examA.getTitle());
+
+        // -------------------------------------------------------
+        // 7) A강의에 테스트 과제 생성
+        // -------------------------------------------------------
+        Assignment assignmentA = Assignment.create(
+                lectureA,
+                teacher,
+                "A강의 과제1",
+                "A강의 첫 번째 과제입니다. 열심히 제출해주세요!",
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(14)
+        );
+        assignmentA = assignmentRepository.save(assignmentA);
+
+        logger.info("📋 테스트 과제 생성 완료");
+        logger.info("과제 ID = {}, 제목 = {}", assignmentA.getId(), assignmentA.getTitle());
     }
 }
