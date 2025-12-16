@@ -1,6 +1,7 @@
 package com.edutrack.domain.statistics.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -8,6 +9,9 @@ import com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse;
 import com.edutrack.domain.statistics.dto.UnitCorrectRateResponse;
 import com.edutrack.domain.statistics.repository.UnitStatisticsRepository;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -141,5 +145,57 @@ class UnitStatisticsServiceTest {
         verify(unitStatisticsRepository).findUnitCorrectRate(unitId);
 
         log.info("=== 0 문제 테스트 완료 ===");
+    }
+
+    // ------------------------------------------------------------
+    // 5. 강의별 전체 수강생 단원 정답률 테스트
+    // ------------------------------------------------------------
+    @Test
+    @DisplayName("강의별 전체 수강생 단원 정답률을 올바르게 조회한다")
+    void 강의별_전체_수강생_단원별_정답률_조회() {
+        log.info("=== 강의별 전체 수강생 단원 정답률 테스트 시작 ===");
+
+        Long lectureId = 1L;
+        List<UnitCorrectRateResponse> mockResponses = Arrays.asList(
+                new UnitCorrectRateResponse(10L, 100, 75, 75.0),
+                new UnitCorrectRateResponse(11L, 80, 56, 70.0),
+                new UnitCorrectRateResponse(12L, 90, 81, 90.0)
+        );
+
+        when(unitStatisticsRepository.findAllUnitCorrectRatesByLectureId(lectureId))
+                .thenReturn(mockResponses);
+
+        List<UnitCorrectRateResponse> result = unitStatisticsService.getAllUnitCorrectRatesByLectureId(lectureId);
+
+        assertEquals(3, result.size());
+        assertEquals(10L, result.get(0).getUnitId());
+        assertEquals(75.0, result.get(0).getCorrectRate(), 0.01);
+        assertEquals(11L, result.get(1).getUnitId());
+        assertEquals(70.0, result.get(1).getCorrectRate(), 0.01);
+        assertEquals(12L, result.get(2).getUnitId());
+        assertEquals(90.0, result.get(2).getCorrectRate(), 0.01);
+
+        verify(unitStatisticsRepository).findAllUnitCorrectRatesByLectureId(lectureId);
+
+        log.info("=== 강의별 전체 수강생 단원 정답률 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("강의에 시험 데이터가 없을 때 빈 리스트를 반환한다")
+    void 강의별_시험데이터_없을때_빈_리스트_반환() {
+        log.info("=== 강의별 빈 데이터 테스트 시작 ===");
+
+        Long lectureId = 999L;
+
+        when(unitStatisticsRepository.findAllUnitCorrectRatesByLectureId(lectureId))
+                .thenReturn(Collections.emptyList());
+
+        List<UnitCorrectRateResponse> result = unitStatisticsService.getAllUnitCorrectRatesByLectureId(lectureId);
+
+        assertTrue(result.isEmpty());
+
+        verify(unitStatisticsRepository).findAllUnitCorrectRatesByLectureId(lectureId);
+
+        log.info("=== 강의별 빈 데이터 테스트 완료 ===");
     }
 }
