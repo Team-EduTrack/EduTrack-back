@@ -454,9 +454,9 @@ paths:
                   $ref: '#/components/schemas/StudentSearchResponse'
 
   ########################
-  # AssignmentController (/api/academies/{academyId}/assignments)
+  # AssignmentController (/api/academies/{academyId}/lectures/{lectureId}/assignments)
   ########################
-  /api/academies/{academyId}/assignments:
+  /api/academies/{academyId}/lectures/{lectureId}/assignments:
     post:
       tags: [Assignments]
       summary: 과제 생성
@@ -465,6 +465,12 @@ paths:
         - BearerAuth: []
       parameters:
         - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: lectureId
           in: path
           required: true
           schema:
@@ -483,8 +489,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssignmentCreateResponse'
-
-  /api/academies/{academyId}/assignments/lectures/{lectureId}:
+  /api/academies/{academyId}/lectures/{lectureId}/assignments/list:
     get:
       tags: [Assignments]
       summary: 학생용 - 특정 강의의 과제 리스트 조회
@@ -514,13 +519,17 @@ paths:
                 items:
                   $ref: '#/components/schemas/AssignmentListResponse'
 
-  /api/academies/{academyId}/assignments/{assignmentId}/my-submission:
+
+  ########################
+  # AssignmentSubmissionController (/api/academies/{academyId}/assignments/{assignmentId}/submissions)
+  ########################
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/my-submission:
     get:
-      tags: [Assignments]
+      tags: [ Assignments Submissions]
       summary: 학생용 - 자신의 과제 제출 상세 조회
       operationId: getMySubmission
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: academyId
           in: path
@@ -542,9 +551,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssignmentSubmissionStudentViewResponse'
 
-  ########################
-  # AssignmentSubmissionController (/api/academies/{academyId}/assignments/{assignmentId}/submissions)
-  ########################
   /api/academies/{academyId}/assignments/{assignmentId}/submissions/presigned-url:
     post:
       tags: [Assignment Submissions]
