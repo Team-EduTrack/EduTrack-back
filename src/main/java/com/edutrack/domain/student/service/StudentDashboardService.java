@@ -1,5 +1,17 @@
 package com.edutrack.domain.student.service;
 
+import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
+import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStudent;
+import com.edutrack.domain.exam.entity.StudentExamStatus;
+import com.edutrack.domain.exam.repository.ExamRepository;
+import com.edutrack.domain.exam.repository.ExamStudentRepository;
+import com.edutrack.domain.lecture.entity.Lecture;
+import com.edutrack.domain.lecture.repository.LectureRepository;
+import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.student.dto.*;
 import com.edutrack.domain.student.repository.*;
 import com.edutrack.domain.attendance.entity.Attendance;
@@ -14,9 +26,16 @@ import com.edutrack.domain.student.repository.StudentExamQueryRepository;
 import com.edutrack.domain.student.repository.StudentLectureQueryRepository;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.ForbiddenException;
+import com.edutrack.global.exception.LectureNotFoundException;
 import com.edutrack.global.exception.NotFoundException;
+import java.time.DayOfWeek;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +46,7 @@ import java.time.LocalDate;
  * - 강의, 과제, 시험 목록 조회
  * - 출석 체크
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StudentDashboardService {
@@ -37,7 +57,14 @@ public class StudentDashboardService {
     private final StudentAttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
 
-    /**
+  private final LectureStudentRepository lectureStudentRepository;
+  private final LectureRepository lectureRepository;
+  private final AssignmentRepository assignmentRepository;
+  private final ExamRepository examRepository;
+  private final ExamStudentRepository examStudentRepository;
+  private final AssignmentSubmissionRepository assignmentSubmissionRepository;
+
+  /**
      * 내 강의 목록 조회
      */
     @Transactional(readOnly = true)
@@ -90,13 +117,192 @@ public class StudentDashboardService {
         return new AttendanceCheckInResponse(studentId, today, false);
     }
 
+  /**
+   * 내 강의 상세 조회
+   */
+  @Transactional(readOnly = true)
+  public MyLectureDetailResponse getMyLectureDetail(Long studentId, Long lectureId) {
+    // 1. 학생 존재 확인
+    validateStudent(studentId);
 
-    /**
-     * 학생 존재 여부 검증
-     */
-    private void validateStudent(Long studentId) {
-        if (!userRepository.existsById(studentId)) {
-            throw new NotFoundException("학생을 찾을 수 없습니다. ID: " + studentId);
-        }
+    // 2. 강의 조회 및 수강 여부 확인 (기존 메서드 재활용)
+    Lecture lecture = lectureRepository.findById(lectureId)
+        .orElseThrow(() -> new NotFoundException("강의를 찾을 수 없습니다. ID: " + lectureId));
+
+    boolean isEnrolled = lectureStudentRepository.existsByLecture_IdAndStudent_Id(lectureId, studentId);
+    if (!isEnrolled) {
+      throw new ForbiddenException("해당 강의를 수강 중인 학생만 조회할 수 있습니다.");
     }
+
+    // 3. 출석률 계산 (학생 개인 출석률)
+    Double attendanceRate = calculateAttendanceRate(studentId, lecture);
+
+    // 4. 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수)
+    Double assignmentSubmissionRate = calculateAssignmentSubmissionRate(studentId, lectureId);
+
+    // 5. 시험 목록 조회 (내가 봐야 하는 시험만 - 이미 본 시험 제외)
+    List<MyLectureDetailResponse.ExamInfo> exams = getExamListForStudent(studentId, lectureId);
+
+    // 6. 과제 목록 조회 (내가 제출해야 하는 과제만 - 이미 제출한 과제 제외)
+    List<MyLectureDetailResponse.AssignmentInfo> assignments = getAssignmentListForStudent(studentId, lectureId);
+
+    // 7. DTO 생성 및 반환
+    return MyLectureDetailResponse.builder()
+        .lectureId(lecture.getId())
+        .lectureTitle(lecture.getTitle())
+        .teacherName(lecture.getTeacher().getName())
+        .description(lecture.getDescription())
+        .attendanceRate(attendanceRate)
+        .assignmentSubmissionRate(assignmentSubmissionRate)
+        .exams(exams)
+        .assignments(assignments)
+        .build();
+  }
+
+  /**
+   * 출석률 계산 (학생 개인 출석률, Double 백분율 값 반환)
+   */
+  private Double calculateAttendanceRate(Long studentId, Lecture lecture) {
+    LocalDate startDate = lecture.getStartDate().toLocalDate();
+    LocalDate endDate = lecture.getEndDate().toLocalDate();
+
+    // 강의 기간 동안 출석한 기록 조회 (기존 메서드 사용)
+    List<Attendance> attendances = attendanceRepository
+        .findByStudentIdAndDateBetweenAndStatusTrueOrderByDateAsc(
+            studentId, startDate, endDate
+        );
+
+    int attendedCount = attendances.size();
+
+    // 강의 요일 기반 실제 수업일 수 계산
+    int totalClassDays = calculateTotalClassDays(lecture, startDate, endDate);
+
+    if (totalClassDays == 0) {
+      return 0.0;
+    }
+
+    // 백분율 계산 (0.0 ~ 100.0)
+    double rate = (double) attendedCount / totalClassDays * 100.0;
+    return rate;
+  }
+
+  /**
+   * 강의 요일 기반 실제 수업일 수 계산
+   */
+  private int calculateTotalClassDays(Lecture lecture, LocalDate startDate, LocalDate endDate) {
+    List<DayOfWeek> daysOfWeek = lecture.getDaysOfWeek();
+    int count = 0;
+
+    LocalDate current = startDate;
+    while (!current.isAfter(endDate)) {
+      if (daysOfWeek.contains(current.getDayOfWeek())) {
+        count++;
+      }
+      current = current.plusDays(1);
+    }
+
+    return count;
+  }
+
+  /**
+   * 과제 제출률 계산 (학생이 제출한 과제수 / 강의의 과제수, Double 백분율 값 반환)
+   */
+  private Double calculateAssignmentSubmissionRate(Long studentId, Long lectureId) {
+    // 전체 과제 수 (기존 메서드 사용)
+    List<Assignment> allAssignments = assignmentRepository.findByLectureId(lectureId);
+    int totalCount = allAssignments.size();
+
+    if (totalCount == 0) {
+      return 0.0;
+    }
+
+    // 제출한 과제 수 (기존 메서드 사용)
+    int submittedCount = (int) allAssignments.stream()
+        .filter(assignment ->
+            assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(
+                assignment.getId(), studentId
+            )
+        )
+        .count();
+
+    // 백분율 계산 (0.0 ~ 100.0)
+    double rate = (double) submittedCount / totalCount * 100.0;
+    return rate;
+  }
+
+  /**
+   * 학생이 봐야 하는 시험 목록 조회 (이미 본 시험은 제외)
+   */
+  private List<MyLectureDetailResponse.ExamInfo> getExamListForStudent(
+      Long studentId, Long lectureId
+  ) {
+    // 1. 강의의 모든 시험 조회 (기존 메서드 사용)
+    List<Exam> allExams = examRepository.findByLectureId(lectureId);
+
+    if (allExams.isEmpty()) {
+      return List.of();
+    }
+
+    // 2. 시험 ID 목록 추출
+    List<Long> examIds = allExams.stream()
+        .map(Exam::getId)
+        .toList();
+
+    // 3. 해당 학생의 시험 응시 기록을 한 번에 조회 (기존 메서드 사용 - N+1 방지)
+    List<ExamStudent> examStudents = examStudentRepository
+        .findAllByExamIdsAndStudentIds(examIds, List.of(studentId));
+
+    // 4. 이미 본 시험 ID Set 생성 (IN_PROGRESS, SUBMITTED, GRADED 상태인 것들)
+    java.util.Set<Long> completedExamIds = examStudents.stream()
+        .filter(es -> es.getStatus() != StudentExamStatus.IN_PROGRESS)
+        .map(es -> es.getExam().getId())
+        .collect(Collectors.toSet());
+
+    // 5. 아직 보지 않은 시험만 필터링하여 DTO 생성
+    return allExams.stream()
+        .filter(exam -> !completedExamIds.contains(exam.getId())) // 이미 본 시험 제외
+        .sorted((e1, e2) -> e1.getStartDate().compareTo(e2.getStartDate())) // 시작일 순 정렬
+        .map(exam -> MyLectureDetailResponse.ExamInfo.builder()
+            .examId(exam.getId())
+            .examTitle(exam.getTitle())
+            .startDate(exam.getStartDate())
+            .endDate(exam.getEndDate())
+            .build())
+        .toList();
+  }
+
+  /**
+   * 학생이 제출해야 하는 과제 목록 조회 (이미 제출한 과제는 제외)
+   */
+  private List<MyLectureDetailResponse.AssignmentInfo> getAssignmentListForStudent(
+      Long studentId, Long lectureId
+  ) {
+    // 강의의 모든 과제 조회 (기존 메서드 사용)
+    List<Assignment> allAssignments = assignmentRepository.findByLectureId(lectureId);
+
+    // 이미 제출한 과제는 제외하고, 아직 제출하지 않은 과제만 필터링
+    return allAssignments.stream()
+        .filter(assignment ->
+            !assignmentSubmissionRepository.existsByAssignment_IdAndStudent_Id(
+                assignment.getId(), studentId
+            )
+        )
+        .map(assignment -> MyLectureDetailResponse.AssignmentInfo.builder()
+            .assignmentId(assignment.getId())
+            .assignmentTitle(assignment.getTitle())
+            .startDate(assignment.getStartDate())
+            .endDate(assignment.getEndDate())
+            .build())
+        .toList();
+  }
+
+  /**
+   * 학생 존재 여부 검증
+   */
+  private void validateStudent(Long studentId) {
+
+    if (!userRepository.existsById(studentId)) {
+      throw new NotFoundException("학생을 찾을 수 없습니다. ID: " + studentId);
+    }
+  }
 }
