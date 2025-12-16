@@ -1643,9 +1643,12 @@ components:
     AssignmentSubmissionStudentViewResponse:
       type: object
       properties:
+        submitted:
+          type: boolean
         submissionId:
           type: integer
           format: int64
+          nullable: true
         assignmentId:
           type: integer
           format: int64
@@ -1653,16 +1656,16 @@ components:
           type: string
         teacherName:
           type: string
-        studentLoginId:
-          type: string
-        studentName:
-          type: string
         assignmentTitle:
           type: string
         assignmentDescription:
           type: string
+        endDate:
+          type: string
+          format: date-time
         filePath:
           type: string
+          nullable: true
         score:
           type: integer
           format: int32
