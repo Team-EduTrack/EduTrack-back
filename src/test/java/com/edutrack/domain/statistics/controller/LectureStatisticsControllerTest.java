@@ -3,6 +3,7 @@ package com.edutrack.domain.statistics.controller;
 import com.edutrack.domain.statistics.dto.UnitCorrectRateResponse;
 import com.edutrack.domain.statistics.service.LectureStatisticsService;
 import com.edutrack.domain.statistics.service.UnitStatisticsService;
+import com.edutrack.global.config.AdminInitializer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class LectureStatisticsControllerTest {
 
     @Autowired
@@ -35,6 +38,9 @@ class LectureStatisticsControllerTest {
 
     @MockitoBean
     private LectureStatisticsService lectureStatisticsService;
+
+    @MockitoBean
+    private AdminInitializer adminInitializer;
 
     private static final Long LECTURE_ID = 1L;
 
@@ -164,4 +170,3 @@ class LectureStatisticsControllerTest {
         }
     }
 }
-
