@@ -1,5 +1,9 @@
 package com.edutrack.domain.user.service;
 
+import java.security.SecureRandom;
+
+import org.springframework.stereotype.Service;
+
 import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
 import com.edutrack.domain.user.entity.TempUser;
 import com.edutrack.domain.user.repository.TempUserRedisRepository;
@@ -10,9 +14,8 @@ import com.edutrack.global.exception.user.VerificationCodeAlreadySentException;
 import com.edutrack.global.exception.user.VerificationCodeExpiredException;
 import com.edutrack.global.exception.user.VerificationCodeMismatchException;
 import com.edutrack.global.mail.MailSendService;
-import java.security.SecureRandom;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,9 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
   @Override
   public void sendVerificationCode(SendEmailVerificationRequest request) {
+    if (request.getSignupToken() == null || request.getSignupToken().trim().isEmpty()) {
+      throw new TempUserNotFoundException();
+    }
 
     TempUser tempUser = tempUserRedisRepository.findBySignupToken(request.getSignupToken());
     if (tempUser == null) {
@@ -51,7 +57,14 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     String subject = "[EduTrack] 이메일 인증 코드 안내";
     String text = "인증 코드:" + code + "\n5분 이내에 입력해 주세요.";
 
-    mailSendService.sendMail(tempUser.getEmail(), subject, text);
+    try {
+      mailSendService.sendMail(tempUser.getEmail(), subject, text);
+    } catch (Exception e) {
+      System.err.println(">>> 메일 발송 실패: " + e.getMessage());
+      e.printStackTrace();
+      // 메일 발송 실패해도 Redis에 코드는 저장되었으므로 재시도 가능
+      throw new RuntimeException("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.", e);
+    }
   }
 
   @Override

@@ -27,6 +27,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        System.out.println(">>> JwtFilter 요청: " + request.getMethod() + " " + request.getRequestURI());
+
         // OPTIONS 요청은 CORS preflight이므로 필터를 건너뜀
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
