@@ -2,16 +2,17 @@ package com.edutrack.domain.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
-import com.edutrack.domain.user.dto.VerifyEmailRequest;
-import com.edutrack.domain.user.entity.TempUser;
-import com.edutrack.domain.user.repository.TempUserRedisRepository;
-import com.edutrack.domain.user.service.EmailVerificationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
+import com.edutrack.domain.user.dto.VerifyEmailRequest;
+import com.edutrack.domain.user.entity.TempUser;
+import com.edutrack.domain.user.repository.TempUserRedisRepository;
+import com.edutrack.domain.user.service.EmailVerificationService;
 
 @SpringBootTest
 @ActiveProfiles("test")

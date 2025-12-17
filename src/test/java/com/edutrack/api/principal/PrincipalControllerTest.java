@@ -1,11 +1,12 @@
 package com.edutrack.api.principal;
 
-import com.edutrack.domain.principal.service.PrincipalService;
-import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
-import com.edutrack.domain.user.entity.Role;
-import com.edutrack.domain.user.entity.RoleType;
-import com.edutrack.domain.user.repository.RoleRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,19 +16,21 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.edutrack.domain.principal.dto.PrincipalRegistrationRequest;
+import com.edutrack.domain.principal.service.PrincipalService;
+import com.edutrack.domain.user.entity.Role;
+import com.edutrack.domain.user.entity.RoleType;
+import com.edutrack.domain.user.repository.RoleRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@ActiveProfiles("test")
 class PrincipalControllerTest {
 
     @Autowired
