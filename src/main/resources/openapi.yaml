@@ -76,7 +76,7 @@ paths:
     post:
       tags: [Auth]
       summary: 회원가입
-      operationId: signup
+      operationId: signupRequest
       requestBody:
         required: true
         content:
@@ -124,6 +124,25 @@ paths:
       responses:
         '200':
           description: 이메일 인증이 완료되었습니다. 진행중이던 회원가입을 완료하세요.
+          content:
+            application/json:
+              schema:
+                type: string
+
+  /api/auth/academy-verify:
+    post:
+      tags: [ Auth ]
+      summary: 학원 코드 인증
+      operationId: verifyAcademy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcademyVerifyRequest'
+      responses:
+        '200':
+          description: 학원 코드 인증이 완료되었습니다.
           content:
             application/json:
               schema:
