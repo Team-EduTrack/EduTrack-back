@@ -1465,18 +1465,31 @@ components:
       properties:
         title:
           type: string
+          description: 강의 제목 (필수)
         description:
           type: string
-        date:
-          type: string
-          enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+          nullable: true
+          description: 강의 설명 (선택)
+        teacherId:
+          type: integer
+          format: int64
+          description: 강사 ID (필수)
+        daysOfWeek:
+          type: array
+          items:
+            type: string
+            enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+          description: 강의 요일 목록 (필수, 최소 1개 이상)
+          minItems: 1
         startDate:
           type: string
           format: date-time
+          description: 강의 시작일 (필수)
         endDate:
           type: string
           format: date-time
-      required: [title, date, startDate, endDate]
+          description: 강의 종료일 (필수, 미래 날짜)
+      required: [title, teacherId, daysOfWeek, startDate, endDate]
 
     LectureCreationResponse:
       type: object
