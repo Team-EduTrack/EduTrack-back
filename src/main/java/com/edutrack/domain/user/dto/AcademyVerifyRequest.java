@@ -7,7 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class AcademyVerifyRequest {
 
-  private String email;
+  private String signupToken;
   private String academyCode;
 
 }
