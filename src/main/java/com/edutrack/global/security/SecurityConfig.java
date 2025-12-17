@@ -33,11 +33,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/academy/signup").hasRole("ADMIN")
                         .requestMatchers("/api/users/signin").permitAll()   // 로그인
                         .requestMatchers("/h2-console/**").permitAll()      // H2 콘솔
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()  // Swagger UI
                         // /api/users/me는 authenticated이지만 OPTIONS는 이미 위에서 허용됨
                         .requestMatchers("/api/users/me").authenticated()   // 내 정보 조회
                         .requestMatchers(HttpMethod.GET,
                                 "/api/academies/{academyId}/users/search")
-                        .hasAnyRole("ADMIN", "PRINCIPAL")
+                        .hasAnyRole("ADMIN", "PRINCIPAL", "TEACHER")
                         .requestMatchers(HttpMethod.PATCH,
                                 "/api/academies/{academyId}/users/{userId}/role/{roleName}")
                         .hasAnyRole("ADMIN", "PRINCIPAL")
