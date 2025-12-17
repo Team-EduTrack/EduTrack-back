@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class CompleteSignupRequest {
+public class SignupInitResponse {
 
   private String signupToken;
 

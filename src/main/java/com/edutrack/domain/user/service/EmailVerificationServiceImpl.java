@@ -1,9 +1,7 @@
 package com.edutrack.domain.user.service;
 
 import com.edutrack.domain.user.dto.SendEmailVerificationRequest;
-import com.edutrack.domain.user.dto.VerifyEmailRequest;
 import com.edutrack.domain.user.entity.TempUser;
-import com.edutrack.domain.user.repository.SignupLockRepository;
 import com.edutrack.domain.user.repository.TempUserRedisRepository;
 import com.edutrack.domain.user.repository.UserEmailVerificationRedisRepository;
 import com.edutrack.global.exception.user.EmailAlreadyVerifiedException;
@@ -23,14 +21,13 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
   private final UserEmailVerificationRedisRepository userEmailVerificationRedisRepository;
   private final MailSendService mailSendService;
   private final TempUserRedisRepository tempUserRedisRepository;
-  private final SignupLockRepository signupLockRepository;
 
   private static final long CODE_TTL = 5 * 60; // 5분
 
   @Override
   public void sendVerificationCode(SendEmailVerificationRequest request) {
 
-    TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
+    TempUser tempUser = tempUserRedisRepository.findBySignupToken(request.getSignupToken());
     if (tempUser == null) {
       throw new TempUserNotFoundException();
     }
@@ -41,7 +38,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     }
 
     // 재발급 제한 (이미 코드가 존재하면 차단)
-    String alreadySentCode = userEmailVerificationRedisRepository.getCode(request.getEmail());
+    String alreadySentCode = userEmailVerificationRedisRepository.getCode(tempUser.getEmail());
     if (alreadySentCode != null) {
       throw new VerificationCodeAlreadySentException();
     }
@@ -49,7 +46,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     String code = generateCode();
 
     // Redis 에 인증코드 저장 (TTL = 5분)
-    userEmailVerificationRedisRepository.saveCode(request.getEmail(), code, CODE_TTL);
+    userEmailVerificationRedisRepository.saveCode(tempUser.getEmail(), code, CODE_TTL);
 
     String subject = "[EduTrack] 이메일 인증 코드 안내";
     String text = "인증 코드:" + code + "\n5분 이내에 입력해 주세요.";
@@ -58,9 +55,9 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
   }
 
   @Override
-  public void verifyEmail(VerifyEmailRequest request) {
+  public void verifyEmail(String signupToken, String inputCode) {
 
-    TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
+    TempUser tempUser = tempUserRedisRepository.findBySignupToken(signupToken);
     if (tempUser == null) {
       throw new TempUserNotFoundException();
     }
@@ -70,13 +67,13 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     }
 
     // Redis에 저장된 코드 가져오기
-    String savedCode = userEmailVerificationRedisRepository.getCode(request.getEmail());
+    String savedCode = userEmailVerificationRedisRepository.getCode(tempUser.getEmail());
     if (savedCode == null) {
       throw new VerificationCodeExpiredException();
     }
 
     // 코드 비교
-    if (!savedCode.equals(request.getToken())) {
+    if (!savedCode.equals(inputCode)) {
       throw new VerificationCodeMismatchException();
     }
 
@@ -87,7 +84,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     tempUserRedisRepository.save(tempUser, 15 * 60);
 
     // 인증 코드 삭제
-    userEmailVerificationRedisRepository.deleteCode(request.getEmail());
+    userEmailVerificationRedisRepository.deleteCode(tempUser.getEmail());
   }
 
   private String generateCode() {
