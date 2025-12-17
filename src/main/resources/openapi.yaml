@@ -72,7 +72,7 @@ paths:
   ########################
   # AuthController (/api/auth)
   ########################
-  /api/auth/signup:
+  /api/auth/signup/request:
     post:
       tags: [Auth]
       summary: 회원가입
