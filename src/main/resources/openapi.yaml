@@ -453,10 +453,64 @@ paths:
                 items:
                   $ref: '#/components/schemas/StudentSearchResponse'
 
+  /api/lectures/{lectureId}/statistics:
+    get:
+      tags: [Lectures]
+      summary: 강의 통계 조회
+      description: 강의 단위 전체 통계 조회 (수강생 수, 출석률, 과제 제출률, 시험 응시율, 평균 성적, 상위 10% 평균 성적)
+      operationId: getLectureStatistics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 강의 통계 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LectureStatisticsResponse'
+        '403':
+          description: 해당 강의의 통계를 조회할 권한이 없습니다.
+        '404':
+          description: 강의를 찾을 수 없습니다.
+
+  /api/lectures/{lectureId}/unit-correct-rates:
+    get:
+      tags: [Lectures]
+      summary: 강의 단원별 정답률 조회
+      description: 특정 강의의 전체 수강생 단원별 정답률 조회 (학생 리포트에서 본인 정답률과 전체 평균 비교용)
+      operationId: getLectureUnitCorrectRates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 단원별 정답률 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnitCorrectRateResponse'
+        '404':
+          description: 강의를 찾을 수 없습니다.
+
   ########################
-  # AssignmentController (/api/academies/{academyId}/assignments)
+  # AssignmentController (/api/academies/{academyId}/lectures/{lectureId}/assignments)
   ########################
-  /api/academies/{academyId}/assignments:
+  /api/academies/{academyId}/lectures/{lectureId}/assignments:
     post:
       tags: [Assignments]
       summary: 과제 생성
@@ -465,6 +519,12 @@ paths:
         - BearerAuth: []
       parameters:
         - name: academyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: lectureId
           in: path
           required: true
           schema:
@@ -483,8 +543,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AssignmentCreateResponse'
-
-  /api/academies/{academyId}/assignments/lectures/{lectureId}:
+  /api/academies/{academyId}/lectures/{lectureId}/assignments/list:
     get:
       tags: [Assignments]
       summary: 학생용 - 특정 강의의 과제 리스트 조회
@@ -514,13 +573,17 @@ paths:
                 items:
                   $ref: '#/components/schemas/AssignmentListResponse'
 
-  /api/academies/{academyId}/assignments/{assignmentId}/my-submission:
+
+  ########################
+  # AssignmentSubmissionController (/api/academies/{academyId}/assignments/{assignmentId}/submissions)
+  ########################
+  /api/academies/{academyId}/assignments/{assignmentId}/submissions/my-submission:
     get:
-      tags: [Assignments]
+      tags: [ Assignments Submissions]
       summary: 학생용 - 자신의 과제 제출 상세 조회
       operationId: getMySubmission
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: academyId
           in: path
@@ -542,9 +605,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/AssignmentSubmissionStudentViewResponse'
 
-  ########################
-  # AssignmentSubmissionController (/api/academies/{academyId}/assignments/{assignmentId}/submissions)
-  ########################
   /api/academies/{academyId}/assignments/{assignmentId}/submissions/presigned-url:
     post:
       tags: [Assignment Submissions]
@@ -1000,20 +1060,15 @@ paths:
                   $ref: '#/components/schemas/ExamRecordResponse'
 
   ########################
-  # StudentDashboardController (/api/students)
+  # StudentDashboardController (/api/student)
   ########################
-  /api/students/{studentId}/lectures:
+  /api/student/lectures:
     get:
       tags: [Student Dashboard]
       summary: 내 강의 목록 조회
       operationId: getMyLectures
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 내 강의 목록
@@ -1024,18 +1079,39 @@ paths:
                 items:
                   $ref: '#/components/schemas/MyLectureResponse'
 
-  /api/students/{studentId}/attendance/check-in:
-    post:
+  /api/student/lectures/{lectureId}:
+    get:
       tags: [Student Dashboard]
-      summary: 출석 체크
-      operationId: checkIn
+      summary: 내 강의 상세 조회
+      operationId: getMyLectureDetail
+      security:
+        - BearerAuth: []
       parameters:
-        - name: studentId
+        - name: lectureId
           in: path
           required: true
           schema:
             type: integer
             format: int64
+      responses:
+        '200':
+          description: 내 강의 상세 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyLectureDetailResponse'
+        '403':
+          description: 해당 강의를 수강 중인 학생만 조회할 수 있습니다.
+        '404':
+          description: 강의를 찾을 수 없습니다.
+
+  /api/student/attendance/check-in:
+    post:
+      tags: [Student Dashboard]
+      summary: 출석 체크
+      operationId: checkIn
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 출석 체크 결과
@@ -1044,18 +1120,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/AttendanceCheckInResponse'
 
-  /api/students/{studentId}/assignments:
+  /api/student/assignments:
     get:
       tags: [Student Dashboard]
       summary: 내 과제 목록
       operationId: getMyAssignments
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 내 과제 목록
@@ -1066,18 +1137,13 @@ paths:
                 items:
                   $ref: '#/components/schemas/AssignmentSummaryResponse'
 
-  /api/students/{studentId}/exams:
+  /api/student/exams:
     get:
       tags: [Student Dashboard]
       summary: 내 시험 목록
       operationId: getMyExams
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 내 시험 목록
@@ -1334,6 +1400,8 @@ components:
           type: string
         phone:
           type: string
+        email:
+          type: string
         role:
           type: string
 
@@ -1409,6 +1477,15 @@ components:
         studentCount:
           type: integer
           format: int32
+        teacherName:
+          type: string
+          nullable: true
+          description: 강사명 (원장 조회 시 포함, 선생님 본인 조회 시 null)
+        averageGrade:
+          type: number
+          format: double
+          nullable: true
+          description: 평균 점수
 
     LectureDetailForTeacherResponse:
       type: object
@@ -1512,6 +1589,25 @@ components:
         total10PercentScore:
           type: number
           format: double
+
+    UnitCorrectRateResponse:
+      type: object
+      properties:
+        unitId:
+          type: integer
+          format: int64
+        totalTryCount:
+          type: integer
+          format: int64
+          description: 전체 시도 횟수
+        correctCount:
+          type: integer
+          format: int64
+          description: 정답 횟수
+        correctRate:
+          type: number
+          format: double
+          description: 정답률
 
     StudentSearchResponse:
       type: object
@@ -1637,9 +1733,12 @@ components:
     AssignmentSubmissionStudentViewResponse:
       type: object
       properties:
+        submitted:
+          type: boolean
         submissionId:
           type: integer
           format: int64
+          nullable: true
         assignmentId:
           type: integer
           format: int64
@@ -1647,16 +1746,16 @@ components:
           type: string
         teacherName:
           type: string
-        studentLoginId:
-          type: string
-        studentName:
-          type: string
         assignmentTitle:
           type: string
         assignmentDescription:
           type: string
+        endDate:
+          type: string
+          format: date-time
         filePath:
           type: string
+          nullable: true
         score:
           type: integer
           format: int32
@@ -2125,12 +2224,90 @@ components:
           type: string
         teacherName:
           type: string
+        description:
+          type: string
         startDate:
           type: string
           format: date-time
         endDate:
           type: string
           format: date-time
+
+    MyLectureDetailResponse:
+      type: object
+      properties:
+        lectureId:
+          type: integer
+          format: int64
+        lectureTitle:
+          type: string
+        teacherName:
+          type: string
+        description:
+          type: string
+        attendanceRate:
+          type: number
+          format: double
+          description: 출석률 (백분율, 소수점 첫째 자리까지)
+          example: 85.5
+        assignmentSubmissionRate:
+          type: number
+          format: double
+          description: 과제 제출률 (백분율, 소수점 첫째 자리까지)
+          example: 75.0
+        exams:
+          type: array
+          description: 미응시 시험 목록 (이미 시작한 시험은 제외)
+          items:
+            $ref: '#/components/schemas/ExamInfo'
+        assignments:
+          type: array
+          description: 미제출 과제 목록 (이미 제출한 과제는 제외)
+          items:
+            $ref: '#/components/schemas/AssignmentInfo'
+
+    ExamInfo:
+      type: object
+      properties:
+        examId:
+          type: integer
+          format: int64
+        examTitle:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [DRAFT, PUBLISHED, CLOSED]
+          description: 시험 상태
+
+    AssignmentInfo:
+      type: object
+      properties:
+        assignmentId:
+          type: integer
+          format: int64
+        assignmentTitle:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [NOT_SUBMITTED, SUBMITTED]
+          description: 과제 제출 상태
+        earnedScore:
+          type: integer
+          format: int32
+          nullable: true
+          description: 획득 점수 (제출하지 않은 과제는 null)
 
     AttendanceCheckInResponse:
       type: object

@@ -24,6 +24,8 @@ import com.edutrack.global.exception.NotFoundException;
 import com.edutrack.global.exception.UserNotFoundException;
 import com.edutrack.global.s3.S3PresignedService;
 import java.util.List;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,29 +97,47 @@ public class AssignmentSubmissionService {
             Long studentId,
             Long assignmentId
     ) {
+        //과제 존재 확인
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new NotFoundException("지정된 과제를 찾을 수 없습니다. ID: " + assignmentId));
 
+        // 학원 소속 검증 (Assignment -> Lecture -> Academy)
         Long assignmentAcademyId = assignment.getLecture().getAcademy().getId();
         if (!assignmentAcademyId.equals(academyId)) {
             throw new ForbiddenException("해당 학원의 과제가 아닙니다.");
         }
 
-        AssignmentSubmission submission = assignmentSubmissionRepository
-                .findByAssignment_IdAndStudent_Id(assignmentId, studentId)
-                .orElseThrow(() -> new NotFoundException("과제 제출 내역을 찾을 수 없습니다."));
+        // 제출 내역 조회 (Optional)
+        Optional<AssignmentSubmission> optionalSubmission =
+                assignmentSubmissionRepository.findByAssignment_IdAndStudent_Id(assignmentId, studentId);
 
-        User student = submission.getStudent();
+        // 과제 메타는 항상 포함
+        AssignmentSubmissionStudentViewResponse.AssignmentSubmissionStudentViewResponseBuilder builder =
+                AssignmentSubmissionStudentViewResponse.builder()
+                        .assignmentId(assignment.getId())
+                        .lectureName(assignment.getLecture().getTitle())
+                        .teacherName(assignment.getTeacher().getName())   // ✅ Assignment에 teacher 있음
+                        .assignmentTitle(assignment.getTitle())
+                        .assignmentDescription(assignment.getDescription())
+                        .endDate(assignment.getEndDate());
 
-        return AssignmentSubmissionStudentViewResponse.builder()
+        // 미제출이면 200 + submitted:false
+        if (optionalSubmission.isEmpty()) {
+            return builder
+                    .submitted(false)
+                    .submissionId(null)
+                    .filePath(null)
+                    .score(null)
+                    .feedback(null)
+                    .build();
+        }
+
+        // 제출이면 200 + submitted:true + 제출 정보 포함
+        AssignmentSubmission submission = optionalSubmission.get();
+
+        return builder
+                .submitted(true)
                 .submissionId(submission.getId())
-                .assignmentId(assignment.getId())
-                .lectureName(assignment.getLecture().getTitle())   // 강의명
-                .teacherName(assignment.getTeacher().getName())    // 강사 이름
-                .studentLoginId(student.getLoginId())              // 학생 정보(본인)
-                .studentName(student.getName())
-                .assignmentTitle(assignment.getTitle())
-                .assignmentDescription(assignment.getDescription())
                 .filePath(submission.getFilePath())
                 .score(submission.getScore())
                 .feedback(submission.getFeedback())

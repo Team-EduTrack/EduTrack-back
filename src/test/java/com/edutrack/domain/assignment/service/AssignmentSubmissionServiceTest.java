@@ -42,8 +42,8 @@ class AssignmentSubmissionServiceTest {
     AssignmentSubmissionService assignmentSubmissionService;
 
     @Test
-    @DisplayName("학생은 자신의 과제 제출 상세 조회 시 강의/강사/학생/과제/점수/피드백 정보를 모두 조회할 수 있다")
-    void getMySubmission_success() {
+    @DisplayName("학생은 자신의 과제 제출 상세 조회 시 제출 완료 상태를 정상 조회한다")
+    void getMySubmission_submitted_success() {
         // given
         Long academyId = 1L;
         Long assignmentId = 10L;
@@ -55,13 +55,11 @@ class AssignmentSubmissionServiceTest {
 
         // 강의
         Lecture lecture = createInstance(Lecture.class);
-        ReflectionTestUtils.setField(lecture, "id", 100L);
         ReflectionTestUtils.setField(lecture, "title", "영어 회화 1");
         ReflectionTestUtils.setField(lecture, "academy", academy);
 
         // 강사
         User teacher = createInstance(User.class);
-        ReflectionTestUtils.setField(teacher, "id", 20L);
         ReflectionTestUtils.setField(teacher, "name", "김선생");
 
         // 과제
@@ -75,20 +73,15 @@ class AssignmentSubmissionServiceTest {
         given(assignmentRepository.findById(assignmentId))
                 .willReturn(Optional.of(assignment));
 
-        // 학생(본인)
-        User student = createInstance(User.class);
-        ReflectionTestUtils.setField(student, "id", studentId);
-        ReflectionTestUtils.setField(student, "loginId", "student01");
-        ReflectionTestUtils.setField(student, "name", "홍길동");
-
         // 제출물
         AssignmentSubmission submission =
-                new AssignmentSubmission(assignment, student, "/files/report1.pdf");
+                new AssignmentSubmission(assignment, createInstance(User.class), "/files/report1.pdf");
         ReflectionTestUtils.setField(submission, "id", 999L);
         ReflectionTestUtils.setField(submission, "score", 85);
         ReflectionTestUtils.setField(submission, "feedback", "전체적으로 잘 작성했습니다.");
 
-        given(assignmentSubmissionRepository.findByAssignment_IdAndStudent_Id(assignmentId, studentId))
+        given(assignmentSubmissionRepository
+                .findByAssignment_IdAndStudent_Id(assignmentId, studentId))
                 .willReturn(Optional.of(submission));
 
         // when
@@ -96,63 +89,69 @@ class AssignmentSubmissionServiceTest {
                 assignmentSubmissionService.getMySubmission(academyId, studentId, assignmentId);
 
         // then
+        assertThat(result.isSubmitted()).isTrue();
         assertThat(result.getSubmissionId()).isEqualTo(999L);
-        assertThat(result.getAssignmentId()).isEqualTo(assignmentId);
-
-        // 강의/강사
         assertThat(result.getLectureName()).isEqualTo("영어 회화 1");
         assertThat(result.getTeacherName()).isEqualTo("김선생");
-
-        // 학생 정보(본인)
-        assertThat(result.getStudentLoginId()).isEqualTo("student01");
-        assertThat(result.getStudentName()).isEqualTo("홍길동");
-
-        // 과제 정보
         assertThat(result.getAssignmentTitle()).isEqualTo("문장 완성 과제");
-        assertThat(result.getAssignmentDescription()).isEqualTo("현재완료 문장 5개 작성하기");
-
-        // 제출/채점 정보
         assertThat(result.getFilePath()).isEqualTo("/files/report1.pdf");
         assertThat(result.getScore()).isEqualTo(85);
         assertThat(result.getFeedback()).isEqualTo("전체적으로 잘 작성했습니다.");
     }
 
     @Test
-    @DisplayName("존재하지 않는 과제 ID로 학생 제출 상세 조회 시 NotFoundException 이 발생한다")
-    void getMySubmission_assignmentNotFound() {
+    @DisplayName("학생이 과제를 제출하지 않았으면 submitted=false 로 정상 반환한다")
+    void getMySubmission_notSubmitted_returnsSubmittedFalse() {
         // given
         Long academyId = 1L;
-        Long assignmentId = 999L;
+        Long assignmentId = 10L;
         Long studentId = 3L;
 
+        Academy academy = new Academy("테스트 학원", "ACAD001", null);
+        ReflectionTestUtils.setField(academy, "id", academyId);
+        User teacher = createInstance(User.class);
+        Lecture lecture = createInstance(Lecture.class);
+        ReflectionTestUtils.setField(lecture, "academy", academy);
+        ReflectionTestUtils.setField(lecture, "title", "영어 회화 1");
+        ReflectionTestUtils.setField(teacher, "name", "김선생");
+        Assignment assignment = createInstance(Assignment.class);
+        ReflectionTestUtils.setField(assignment, "id", assignmentId);
+        ReflectionTestUtils.setField(assignment, "lecture", lecture);
+        ReflectionTestUtils.setField(assignment, "teacher", teacher);
         given(assignmentRepository.findById(assignmentId))
+                .willReturn(Optional.of(assignment));
+
+        given(assignmentSubmissionRepository
+                .findByAssignment_IdAndStudent_Id(assignmentId, studentId))
                 .willReturn(Optional.empty());
 
-        // when & then
-        assertThatThrownBy(() ->
-                assignmentSubmissionService.getMySubmission(academyId, studentId, assignmentId)
-        ).isInstanceOf(NotFoundException.class);
+        // when
+        AssignmentSubmissionStudentViewResponse result =
+                assignmentSubmissionService.getMySubmission(academyId, studentId, assignmentId);
+
+        // then
+        assertThat(result.isSubmitted()).isFalse();
+        assertThat(result.getSubmissionId()).isNull();
+        assertThat(result.getFilePath()).isNull();
+        assertThat(result.getScore()).isNull();
+        assertThat(result.getFeedback()).isNull();
     }
 
     @Test
     @DisplayName("요청한 academyId와 과제가 속한 학원이 다르면 ForbiddenException 이 발생한다")
     void getMySubmission_wrongAcademy() {
         // given
-        Long requestAcademyId = 1L; // URL에 들어온 academyId
+        Long requestAcademyId = 1L;
         Long assignmentId = 10L;
         Long studentId = 3L;
 
-        // 다른 학원
         Academy otherAcademy = new Academy("다른 학원", "ACAD999", null);
         ReflectionTestUtils.setField(otherAcademy, "id", 2L);
 
         Lecture lecture = createInstance(Lecture.class);
-        ReflectionTestUtils.setField(lecture, "id", 100L);
-        ReflectionTestUtils.setField(lecture, "title", "영어 회화 1");
         ReflectionTestUtils.setField(lecture, "academy", otherAcademy);
 
         Assignment assignment = createInstance(Assignment.class);
-        ReflectionTestUtils.setField(assignment, "id", assignmentId);
         ReflectionTestUtils.setField(assignment, "lecture", lecture);
 
         given(assignmentRepository.findById(assignmentId))
@@ -165,50 +164,26 @@ class AssignmentSubmissionServiceTest {
     }
 
     @Test
-    @DisplayName("학생이 해당 과제를 제출하지 않았다면 NotFoundException 이 발생한다")
-    void getMySubmission_submissionNotFound() {
+    @DisplayName("존재하지 않는 과제 ID로 조회하면 NotFoundException 이 발생한다")
+    void getMySubmission_assignmentNotFound() {
         // given
-        Long academyId = 1L;
-        Long assignmentId = 10L;
-        Long studentId = 3L;
-
-        // 학원 + 강의 + 과제는 정상
-        Academy academy = new Academy("테스트 학원", "ACAD001", null);
-        ReflectionTestUtils.setField(academy, "id", academyId);
-
-        Lecture lecture = createInstance(Lecture.class);
-        ReflectionTestUtils.setField(lecture, "id", 100L);
-        ReflectionTestUtils.setField(lecture, "title", "영어 회화 1");
-        ReflectionTestUtils.setField(lecture, "academy", academy);
-
-        Assignment assignment = createInstance(Assignment.class);
-        ReflectionTestUtils.setField(assignment, "id", assignmentId);
-        ReflectionTestUtils.setField(assignment, "lecture", lecture);
-
-        given(assignmentRepository.findById(assignmentId))
-                .willReturn(Optional.of(assignment));
-
-        // 학생 제출이 없음
-        given(assignmentSubmissionRepository.findByAssignment_IdAndStudent_Id(assignmentId, studentId))
+        given(assignmentRepository.findById(999L))
                 .willReturn(Optional.empty());
 
         // when & then
         assertThatThrownBy(() ->
-                assignmentSubmissionService.getMySubmission(academyId, studentId, assignmentId)
+                assignmentSubmissionService.getMySubmission(1L, 3L, 999L)
         ).isInstanceOf(NotFoundException.class);
     }
 
-    /**
-     * 기본 생성자가 protected 인 엔티티(Lecture, Assignment, User)를
-     * 리플렉션으로 생성하기 위한 유틸 메서드
-     */
+    // ===== util =====
     private <T> T createInstance(Class<T> clazz) {
         try {
             Constructor<T> constructor = clazz.getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance();
         } catch (Exception e) {
-            throw new RuntimeException("엔티티 인스턴스 생성 실패: " + clazz.getName(), e);
+            throw new RuntimeException(e);
         }
     }
 }

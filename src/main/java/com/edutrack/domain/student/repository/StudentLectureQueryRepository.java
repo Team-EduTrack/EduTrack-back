@@ -1,14 +1,15 @@
 package com.edutrack.domain.student.repository;
 
-import com.edutrack.domain.student.dto.MyLectureResponse;
-import com.edutrack.domain.lecture.entity.LectureStudent;
-import com.edutrack.domain.lecture.entity.LectureStudentId;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import com.edutrack.domain.lecture.entity.LectureStudent;
+import com.edutrack.domain.lecture.entity.LectureStudentId;
+import com.edutrack.domain.student.dto.MyLectureResponse;
 
 /**
  * 학생 강의 조회 Repository
@@ -26,6 +27,7 @@ public interface StudentLectureQueryRepository extends JpaRepository<LectureStud
                 l.id,
                 l.title,
                 t.name,
+                l.description,
                 l.startDate,
                 l.endDate
             )

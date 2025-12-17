@@ -70,4 +70,21 @@ public interface UnitStatisticsRepository extends JpaRepository<ExamStudentAnswe
             ORDER BY (SUM(CASE WHEN a.correct = true THEN 1 ELSE 0 END) * 100.0 / COUNT(a)) ASC
             """)
     List<StudentUnitCorrectRateResponse> findAllUnitCorrectRatesByStudentId(@Param("studentId") Long studentId);
+
+    // 4) 특정 강의의 전체 수강생 단원별 정답률
+    @Query("""
+            SELECT new com.edutrack.domain.statistics.dto.UnitCorrectRateResponse(
+                a.unitId,
+                COUNT(a),
+                SUM(CASE WHEN a.correct = true THEN 1 ELSE 0 END),
+                CASE 
+                    WHEN COUNT(a) = 0 THEN 0.0
+                    ELSE (SUM(CASE WHEN a.correct = true THEN 1 ELSE 0 END) * 100.0 / COUNT(a))
+                END
+            )
+            FROM ExamStudentAnswer a
+            WHERE a.examStudent.exam.lecture.id = :lectureId
+            GROUP BY a.unitId
+            """)
+    List<UnitCorrectRateResponse> findAllUnitCorrectRatesByLectureId(@Param("lectureId") Long lectureId);
 }
