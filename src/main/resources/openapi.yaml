@@ -1415,18 +1415,18 @@ components:
     SendEmailVerificationRequest:
       type: object
       properties:
-        email:
+        signupToken:
           type: string
-      required: [email]
+      required: [signupToken]
 
     VerifyEmailRequest:
       type: object
       properties:
-        email:
+        signupToken:
           type: string
-        token:
+        inputCode:
           type: string
-      required: [email, token]
+      required: [signupToken, inputCode]
 
     UserSearchResultResponse:
       type: object
