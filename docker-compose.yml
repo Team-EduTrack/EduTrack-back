@@ -98,7 +98,7 @@ services:
   # 프론트엔드 서비스
   frontend:
     build:
-      context: ../EduTrack-Front
+      context: ./EduTrack-Front
       dockerfile: Dockerfile
       args:
         VITE_API_URL: http://localhost:8080

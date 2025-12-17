@@ -6,6 +6,7 @@ import com.edutrack.domain.assignment.dto.AssignmentListResponse;
 import com.edutrack.domain.assignment.dto.AssignmentSubmissionStudentViewResponse;
 import com.edutrack.domain.assignment.service.AssignmentService;
 import com.edutrack.domain.assignment.service.AssignmentSubmissionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +49,7 @@ public class AssignmentController {
     public ResponseEntity<List<AssignmentListResponse>> getAssignmentsForLecture(
             @PathVariable Long academyId,
             @PathVariable Long lectureId,
-            @AuthenticationPrincipal Long studentId
+            @Valid @AuthenticationPrincipal Long studentId
     ) {
         List<AssignmentListResponse> responses =
                 assignmentService.getAssignmentsForLecture(academyId, studentId, lectureId);
