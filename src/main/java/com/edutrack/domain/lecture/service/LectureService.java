@@ -29,8 +29,10 @@ import com.edutrack.domain.lecture.entity.LectureStudent;
 import com.edutrack.domain.lecture.repository.LectureRepository;
 import com.edutrack.domain.lecture.repository.LectureStudentRepository;
 import com.edutrack.domain.statistics.service.LectureStatisticsService;
+import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.UserNotFoundException;
 
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
@@ -50,12 +52,25 @@ public class LectureService {
 
   private final LectureHelper lectureHelper;
 
-  //강사의 ID로 강의 목록과 각 강의의 수강생 수 조회
+  //강사 또는 원장의 ID로 강의 목록과 각 강의의 수강생 수 조회
   @Transactional(readOnly = true)
-  public List<LectureForTeacherResponse> getLecturesByTeacherId(Long teacherId) {
+  public List<LectureForTeacherResponse> getLecturesByTeacherId(Long userId) {
+    // 사용자 조회
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다. ID=" + userId));
 
-    //강사의 강의 목록 조회
-    List<Lecture> lectures = lectureRepository.findAllByTeacherId(teacherId);
+    // 역할에 따라 강의 목록 조회
+    List<Lecture> lectures;
+    if (user.hasRole(RoleType.TEACHER)) {
+      // 강사인 경우: 자신이 담당하는 강의만 조회
+      lectures = lectureRepository.findAllByTeacherId(userId);
+    } else if (user.hasRole(RoleType.PRINCIPAL)) {
+      // 원장인 경우: 자신의 학원에 속한 모든 강의 조회
+      lectures = lectureRepository.findAllByAcademyId(user.getAcademy().getId());
+    } else {
+      // 다른 역할은 빈 리스트 반환
+      return List.of();
+    }
 
     if (lectures.isEmpty()) {
       return List.of();
