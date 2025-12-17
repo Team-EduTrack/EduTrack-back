@@ -1,9 +1,14 @@
 package com.edutrack.domain.statistics.controller;
 
-import com.edutrack.domain.statistics.dto.ExamDistributionResponse;
-import com.edutrack.domain.statistics.service.ExamStatisticsService;
-import com.edutrack.global.config.AdminInitializer;
-import com.edutrack.global.exception.NotFoundException;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,14 +20,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.edutrack.domain.statistics.dto.ExamDistributionResponse;
+import com.edutrack.domain.statistics.service.ExamStatisticsService;
+import com.edutrack.global.exception.NotFoundException;
 
 @SpringBootTest
 @AutoConfigureMockMvc
