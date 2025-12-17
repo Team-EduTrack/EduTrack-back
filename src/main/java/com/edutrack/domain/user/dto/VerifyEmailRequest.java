@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class VerifyEmailRequest {
 
-  private String email;
-  private String token;
+  private String signupToken;
+  private String inputCode;
 
 }
