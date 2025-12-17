@@ -29,17 +29,19 @@ public class LectureHelper {
    * 강의를 조회하고 권한을 검증한 후 반환
    * 조회 → 조회 → 검증 패턴을 한 번에 처리하여 코드 중복을 제거하고 검증 누락을 방지
    * 
+   * 권한: 강의를 담당하는 강사(TEACHER) 또는 해당 학원의 원장(PRINCIPAL)만 접근 가능
+   * 
    * @param lectureId 강의 ID
-   * @param teacherId 강사 ID
+   * @param userId 사용자 ID (강사 또는 원장)
    * @return 권한이 검증된 Lecture
    * @throws LectureNotFoundException 강의를 찾을 수 없는 경우
-   * @throws UserNotFoundException 강사를 찾을 수 없는 경우
+   * @throws UserNotFoundException 사용자를 찾을 수 없는 경우
    * @throws LectureAccessDeniedException 권한이 없는 경우
    */
-  public Lecture getLectureWithValidation(Long lectureId, Long teacherId) {
+  public Lecture getLectureWithValidation(Long lectureId, Long userId) {
     Lecture lecture = getLectureOrThrow(lectureId);
-    User teacher = getTeacherOrThrow(teacherId);
-    validateLectureAcess(lectureId, teacher, lecture);
+    User user = getUserOrThrow(userId);
+    validateLectureAcess(lectureId, user, lecture);
     return lecture;
   }
 
@@ -49,10 +51,10 @@ public class LectureHelper {
     return lecture;
   }
 
-  public User getTeacherOrThrow(Long teacherId) {
-    User teacher = userRepository.findById(teacherId)
-        .orElseThrow(() -> new UserNotFoundException("선생님을 찾을 수 없습니다. ID=" + teacherId));
-    return teacher;
+  public User getUserOrThrow(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new UserNotFoundException("사용자를 찾을 수 없습니다. ID=" + userId));
+    return user;
   }
 
   public Set<User> getValidStudents(List<Long> studentIds, Lecture lecture) {
@@ -68,15 +70,27 @@ public class LectureHelper {
         .anyMatch(ur -> ur.getRole().getName().equals(RoleType.STUDENT));
   }
 
-  public void validateLectureAcess(Long lectureId, User teacher, Lecture lecture) {
-    boolean isTeacherAndOwner = teacher.hasRole(RoleType.TEACHER)
-        && lecture.getTeacher().getId().equals(teacher.getId());
+  /**
+   * 강의 접근 권한 검증
+   * - 강사(TEACHER): 해당 강의를 담당하는 강사만 접근 가능
+   * - 원장(PRINCIPAL): 해당 강의가 속한 학원의 원장만 접근 가능
+   * 
+   * @param lectureId 강의 ID
+   * @param user 접근을 시도하는 사용자
+   * @param lecture 강의 엔티티
+   * @throws LectureAccessDeniedException 권한이 없는 경우
+   */
+  public void validateLectureAcess(Long lectureId, User user, Lecture lecture) {
+    // 강사인 경우: 해당 강의를 담당하는 강사인지 확인
+    boolean isTeacherAndOwner = user.hasRole(RoleType.TEACHER)
+        && lecture.getTeacher().getId().equals(user.getId());
 
-    boolean isPrincipalOfAcademy = teacher.hasRole(RoleType.PRINCIPAL)
-        && lecture.getAcademy().getId().equals(teacher.getAcademy().getId());
+    // 원장인 경우: 해당 강의가 속한 학원의 원장인지 확인
+    boolean isPrincipalOfAcademy = user.hasRole(RoleType.PRINCIPAL)
+        && lecture.getAcademy().getId().equals(user.getAcademy().getId());
 
     if(!isTeacherAndOwner && !isPrincipalOfAcademy) {
-      throw new LectureAccessDeniedException(lectureId, teacher.getId());
+      throw new LectureAccessDeniedException(lectureId, user.getId());
     }
   }
 }
