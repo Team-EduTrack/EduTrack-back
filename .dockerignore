@@ -1,0 +1,15 @@
+.gradle
+build/
+target/
+.idea
+.vscode
+*.iml
+.git
+.gitignore
+README.md
+db/
+.env
+.cursor
+*.log
+.DS_Store
+src/test/

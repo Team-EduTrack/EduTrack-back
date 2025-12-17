@@ -1,0 +1,121 @@
+services:
+  # MySQL 데이터베이스
+  mysql:
+    image: mysql:8.0.36
+    platform: linux/amd64
+    container_name: edutrack-mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-edutrack}
+      MYSQL_USER: ${MYSQL_USER:-edutrack}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-edutrack_pw}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edutrack-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    platform: linux/amd64
+    container_name: edutrack-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edutrack-network
+
+  # 백엔드 서비스
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    platform: linux/amd64  # Mac과 Windows 모두에서 호환성 보장
+    container_name: edutrack-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # 데이터베이스 연결
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-edutrack}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-edutrack}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-edutrack_pw}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      
+      # JPA 설정
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      
+      # SQL 초기화 스크립트 비활성화 (schema.sql은 H2용이므로 MySQL에서는 JPA ddl-auto 사용)
+      SPRING_SQL_INIT_MODE: never
+      
+      # Redis 연결
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_REPOSITORIES_ENABLED: "true"
+      
+      # AWS 설정 (환경 변수로 주입)
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY:-}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY:-}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      AWS_BUCKET: ${AWS_BUCKET:-edutrack-bucket}
+      
+      # JWT 설정
+      JWT_SECRET: ${JWT_SECRET:-edutrack-super-secret-key-should-be-long-1234567890}
+      JWT_ACCESS_EXPIRE_MS: ${JWT_ACCESS_EXPIRE_MS:-3600000}
+      JWT_REFRESH_EXPIRE_MS: ${JWT_REFRESH_EXPIRE_MS:-1209600000}
+      
+      # 메일 설정
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.naver.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-465}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_SSL_ENABLE: "true"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - edutrack-network
+
+  # 프론트엔드 서비스
+  frontend:
+    build:
+      context: ../EduTrack-Front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8080
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    platform: linux/amd64
+    container_name: edutrack-frontend
+    ports:
+      - "5173:80"  # nginx 기본 포트
+    depends_on:
+      - backend
+    networks:
+      - edutrack-network
+
+volumes:
+  mysql_data:
+
+networks:
+  edutrack-network:
+    driver: bridge
