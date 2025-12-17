@@ -110,7 +110,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/SignupInitResponse'
 
   /api/auth/send-email-verification:
     post:
@@ -1399,6 +1399,13 @@ components:
           type: string
       required: [loginId, password, name, phone, email, academyCode]
 
+    SignupInitResponse:
+      type: object
+      properties:
+        signupToken:
+          type: string
+      required: [signupToken]
+
     SignupResponse:
       type: object
       properties:
@@ -1427,6 +1434,22 @@ components:
         inputCode:
           type: string
       required: [signupToken, inputCode]
+
+    AcademyVerifyRequest:
+      type: object
+      properties:
+        signupToken:
+          type: string
+        academyCode:
+          type: string
+      required: [signupToken, academyCode]
+
+    CompleteSignupRequest:
+      type: object
+      properties:
+        signupToken:
+          type: string
+      required: [signupToken]
 
     UserSearchResultResponse:
       type: object
