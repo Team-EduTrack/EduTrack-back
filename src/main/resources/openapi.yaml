@@ -1475,6 +1475,15 @@ components:
         studentCount:
           type: integer
           format: int32
+        teacherName:
+          type: string
+          nullable: true
+          description: 강사명 (원장 조회 시 포함, 선생님 본인 조회 시 null)
+        averageGrade:
+          type: number
+          format: double
+          nullable: true
+          description: 평균 점수
 
     LectureDetailForTeacherResponse:
       type: object
