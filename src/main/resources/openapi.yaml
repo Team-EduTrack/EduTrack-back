@@ -1897,17 +1897,27 @@ components:
     ExamCreationRequest:
       type: object
       properties:
+        lectureId:
+          type: integer
+          format: int64
+          description: 강의 ID (필수, 경로 변수로 전달되지만 DTO에도 포함)
         title:
           type: string
-        description:
-          type: string
-        startTime:
-          type: string
-          format: date-time
-        endTime:
+          description: 시험 제목 (필수)
+        startDate:
           type: string
           format: date-time
-      required: [title, startTime, endTime]
+          description: 시험 시작일 (필수)
+        endDate:
+          type: string
+          format: date-time
+          description: 시험 종료일 (필수, 미래 날짜)
+        durationMinute:
+          type: integer
+          format: int32
+          description: 응시 시간(분) (필수, 최소 5분)
+          minimum: 5
+      required: [lectureId, title, startDate, endDate, durationMinute]
 
     ExamCreationResponse:
       type: object
