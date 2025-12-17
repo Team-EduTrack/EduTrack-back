@@ -41,7 +41,7 @@ public class AuthController {
   // 이메일 인증 확인
   @PostMapping("/verify-email")
   public ResponseEntity<String> verifyEmail(@RequestBody VerifyEmailRequest request) {
-    emailVerificationService.verifyEmail(request);
+    emailVerificationService.verifyEmail(request.getSignupToken(),request.getInputCode());
     return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
   }
 
@@ -55,7 +55,7 @@ public class AuthController {
   // 최종 회원가입 완료
   @PostMapping("/signup/complete")
   public ResponseEntity<SignupResponse> completeSignup(@RequestBody CompleteSignupRequest request){
-    SignupResponse response = userService.completeSignup(request.getEmail());
+    SignupResponse response = userService.completeSignup(request.getSignupToken());
     return ResponseEntity.ok(response);
 
   }

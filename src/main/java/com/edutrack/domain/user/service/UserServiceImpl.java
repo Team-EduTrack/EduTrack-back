@@ -3,6 +3,7 @@ package com.edutrack.domain.user.service;
 import com.edutrack.domain.academy.Academy;
 import com.edutrack.domain.academy.AcademyRepository;
 import com.edutrack.domain.user.dto.AcademyVerifyRequest;
+import com.edutrack.domain.user.dto.SignupInitResponse;
 import com.edutrack.domain.user.dto.SignupRequest;
 import com.edutrack.domain.user.dto.SignupResponse;
 import com.edutrack.domain.user.entity.Role;
@@ -22,6 +23,7 @@ import com.edutrack.global.exception.user.PhoneAlreadyExistsException;
 import com.edutrack.global.exception.user.RoleNotPreparedException;
 import com.edutrack.global.exception.user.SignupRequestAlreadyExistsException;
 import com.edutrack.global.exception.user.TempUserNotFoundException;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,7 +41,7 @@ public class UserServiceImpl implements UserService {
   private final SignupLockRepository signupLockRepository;
 
   @Override
-  public void signupRequest(SignupRequest request) {
+  public SignupInitResponse signupRequest(SignupRequest request) {
 
     // 이미 정식 회원인지 체크
     if (userRepository.existsByLoginId(request.getLoginId())) {
@@ -65,8 +67,11 @@ public class UserServiceImpl implements UserService {
       throw new SignupRequestAlreadyExistsException("전화번호");
     }
 
+    String signupToken = UUID.randomUUID().toString();
+
     // 임시 등록 TempUser 생성 (비밀번호 암호화)
     TempUser tempUser = TempUser.builder()
+        .signupToken(signupToken)
         .loginId(request.getLoginId())
         .password(passwordEncoder.encode(request.getPassword()))
         .name(request.getName())
@@ -82,13 +87,15 @@ public class UserServiceImpl implements UserService {
         tempUser.getEmail(),
         tempUser.getPhone()
     );
+
+    return new SignupInitResponse(signupToken);
   }
 
   // 학원 코드 검증
   @Override
   public void verifyAcademyCode(AcademyVerifyRequest request){
 
-    TempUser tempUser = tempUserRedisRepository.findByEmail(request.getEmail());
+    TempUser tempUser = tempUserRedisRepository.findBySignupToken(request.getSignupToken());
 
     if(tempUser == null){
       throw new TempUserNotFoundException();
@@ -104,9 +111,9 @@ public class UserServiceImpl implements UserService {
 
   // 최종 회원가입
   @Transactional
-  public SignupResponse completeSignup(String email) {
+  public SignupResponse completeSignup(String signupToken) {
 
-    TempUser tempUser = tempUserRedisRepository.findByEmail(email);
+    TempUser tempUser = tempUserRedisRepository.findBySignupToken(signupToken);
 
     if (tempUser == null) {
       throw new TempUserNotFoundException();
@@ -149,7 +156,7 @@ public class UserServiceImpl implements UserService {
     userRepository.save(user);
 
     // TempUser 정리
-    tempUserRedisRepository.deleteByEmail(email);
+    tempUserRedisRepository.deleteBySignupToken(signupToken);
 
     // 락 해제
     signupLockRepository.unLockAll(

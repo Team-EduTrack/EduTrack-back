@@ -19,19 +19,19 @@ public class TempUserRedisRepository {
   @Qualifier("tempUserRedisTemplate")
   private final RedisTemplate<String, TempUser> tempUserRedisTemplate;
 
-  private static final String PREFIX = "tempUser:";
+  private static final String PREFIX = "signup:";
 
   public void save(TempUser tempUser, long ttlSeconds) {
-    tempUserRedisTemplate.opsForValue().set(PREFIX + tempUser.getEmail(), tempUser, ttlSeconds,
+    tempUserRedisTemplate.opsForValue().set(PREFIX + tempUser.getSignupToken(), tempUser, ttlSeconds,
         TimeUnit.SECONDS);
   }
 
-  public TempUser findByEmail(String email) {
-    return tempUserRedisTemplate.opsForValue().get(PREFIX + email);
+  public TempUser findBySignupToken(String signupToken) {
+    return tempUserRedisTemplate.opsForValue().get(PREFIX + signupToken);
   }
 
-  public void deleteByEmail(String email) {
-    tempUserRedisTemplate.delete(PREFIX + email);
+  public void deleteBySignupToken(String signupToken) {
+    tempUserRedisTemplate.delete(PREFIX + signupToken);
   }
 
 }
