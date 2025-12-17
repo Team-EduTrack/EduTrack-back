@@ -7,6 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class CompleteSignupRequest {
 
-  private String email;
+  private String signupToken;
 
 }
