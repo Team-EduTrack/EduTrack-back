@@ -87,10 +87,42 @@ public class StudentDashboardService {
     @Transactional(readOnly = true)
     public List<ExamSummaryResponse> getMyExams(Long studentId) {
         validateStudent(studentId);
-        return examQueryRepository.findMyExams(studentId, List.of(
+        List<ExamSummaryResponse> exams = examQueryRepository.findMyExams(studentId, List.of(
             ExamStatus.PUBLISHED,
             ExamStatus.CLOSED
         ));
+        
+        // status 변환하여 반환
+        return exams.stream()
+            .map(exam -> ExamSummaryResponse.builder()
+                .examId(exam.getExamId())
+                .lectureTitle(exam.getLectureTitle())
+                .title(exam.getTitle())
+                .startDate(exam.getStartDate())
+                .endDate(exam.getEndDate())
+                .earnedScore(exam.getEarnedScore())
+                .status(convertExamStatus(exam.getStatus(), exam.getEndDate()))
+                .build())
+            .toList();
+    }
+
+    /**
+     * 시험 상태 변환
+     * - SUBMITTED, GRADED → COMPLETED (응시 완료)
+     * - 기간 만료 → EXPIRED
+     * - 그 외 (null, IN_PROGRESS) → NOT_STARTED (응시 가능)
+     */
+    private String convertExamStatus(String status, java.time.LocalDateTime endDate) {
+        // 제출 또는 채점 완료
+        if ("SUBMITTED".equals(status) || "GRADED".equals(status)) {
+            return "COMPLETED";
+        }
+        // 기간 만료 (endDate 지남 + 미제출)
+        if (endDate != null && endDate.isBefore(java.time.LocalDateTime.now())) {
+            return "EXPIRED";
+        }
+        // null, IN_PROGRESS 등 → 응시 가능
+        return "NOT_STARTED";
     }
 
     /**
