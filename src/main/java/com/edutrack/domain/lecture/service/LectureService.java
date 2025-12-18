@@ -231,7 +231,10 @@ public class LectureService {
 
   //학생 목록 조회
   @Transactional(readOnly = true)
-  public List<StudentSearchResponse> getStudentsByLecture(Long lectureId) {
+  public List<StudentSearchResponse> getStudentsByLecture(Long lectureId, Long userId) {
+    // 강의 조회 및 권한 검증 (TEACHER: 담당 강사, PRINCIPAL: 해당 학원 원장)
+    Lecture lecture = lectureHelper.getLectureWithValidation(lectureId, userId);
+
     // LectureStudent 테이블에서 lectureId에 배정된 학생 조회
     List<LectureStudent> lectureStudents = lectureStudentRepository.findAllByLectureId(lectureId);
 
@@ -243,9 +246,9 @@ public class LectureService {
 
   //배정 가능한 학생 조회
   @Transactional(readOnly = true)
-  public List<StudentSearchResponse> getAvailableStudents(Long lectureId, String name) {
-
-    Lecture lecture = lectureHelper.getLectureOrThrow(lectureId);
+  public List<StudentSearchResponse> getAvailableStudents(Long lectureId, String name, Long userId) {
+    // 강의 조회 및 권한 검증 (TEACHER: 담당 강사, PRINCIPAL: 해당 학원 원장)
+    Lecture lecture = lectureHelper.getLectureWithValidation(lectureId, userId);
 
     Long academyId = lecture.getAcademy().getId();
 
@@ -266,8 +269,9 @@ public class LectureService {
 
   //학생 배정 API
   @Transactional
-  public LectureStudentAssignResponse assignStudents(Long lectureId, @NotEmpty List<Long> studentIds) {
-    Lecture lecture = lectureHelper.getLectureOrThrow(lectureId);
+  public LectureStudentAssignResponse assignStudents(Long lectureId, @NotEmpty List<Long> studentIds, Long userId) {
+    // 강의 조회 및 권한 검증 (TEACHER: 담당 강사, PRINCIPAL: 해당 학원 원장)
+    Lecture lecture = lectureHelper.getLectureWithValidation(lectureId, userId);
 
     //학원 소속의 전체 학생 조회
     Set<User> students = lectureHelper.getValidStudents(studentIds, lecture);
