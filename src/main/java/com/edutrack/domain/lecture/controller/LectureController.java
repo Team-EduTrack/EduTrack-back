@@ -1,6 +1,5 @@
 package com.edutrack.domain.lecture.controller;
 
-import com.edutrack.domain.statistics.service.LectureStatisticsService;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -26,6 +25,7 @@ import com.edutrack.domain.lecture.dto.LectureStudentAssignResponse;
 import com.edutrack.domain.lecture.dto.StudentSearchResponse;
 import com.edutrack.domain.lecture.service.LectureCreationService;
 import com.edutrack.domain.lecture.service.LectureService;
+import com.edutrack.domain.statistics.service.LectureStatisticsService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class LectureController {
 
   @PostMapping
 
-  @PreAuthorize("hasAnyRole('ADMIN', 'PRINCIPAL')")
+  @PreAuthorize("hasRole('PRINCIPAL')")
   public ResponseEntity<LectureCreationResponse> createLecture(
           @Valid @RequestBody LectureCreationRequest request,
           @AuthenticationPrincipal Long teacherId) {
@@ -86,9 +86,10 @@ public class LectureController {
   @PreAuthorize("hasAnyRole('TEACHER', 'PRINCIPAL')")
   @GetMapping("/{lectureId}/students")
   public ResponseEntity<List<StudentSearchResponse>> getStudentsByLecture(
-      @PathVariable Long lectureId) {
+      @PathVariable Long lectureId,
+      @AuthenticationPrincipal Long userId) {
 
-    List<StudentSearchResponse> students = lectureService.getStudentsByLecture(lectureId);
+    List<StudentSearchResponse> students = lectureService.getStudentsByLecture(lectureId, userId);
     return ResponseEntity.ok(students);
   }
 
@@ -97,8 +98,9 @@ public class LectureController {
   @GetMapping("/{lectureId}/available-students")
   public ResponseEntity<List<StudentSearchResponse>> getAvailableStudents(
       @PathVariable Long lectureId,
-      @RequestParam String name) {
-  List<StudentSearchResponse> availableStudents = lectureService.getAvailableStudents(lectureId, name);
+      @RequestParam String name,
+      @AuthenticationPrincipal Long userId) {
+    List<StudentSearchResponse> availableStudents = lectureService.getAvailableStudents(lectureId, name, userId);
     return ResponseEntity.ok(availableStudents);
   }
 
@@ -108,10 +110,11 @@ public class LectureController {
   @PostMapping("/{lectureId}/students")
   public ResponseEntity<LectureStudentAssignResponse> assignStudents(
       @PathVariable Long lectureId,
-      @RequestBody @Valid LectureStudentAssignRequest request) {
+      @RequestBody @Valid LectureStudentAssignRequest request,
+      @AuthenticationPrincipal Long userId) {
 
     LectureStudentAssignResponse response = lectureService.assignStudents(
-        lectureId, request.getStudentIds()
+        lectureId, request.getStudentIds(), userId
     );
     return ResponseEntity.ok(response);
   }
