@@ -68,7 +68,7 @@ public class ExamService {
                 lecture,
                 request.getTitle(),
                 null,
-                ExamStatus.DRAFT,
+                ExamStatus.PUBLISHED,
                 request.getStartDate(),
                 request.getEndDate(),
                 request.getDurationMinute()
