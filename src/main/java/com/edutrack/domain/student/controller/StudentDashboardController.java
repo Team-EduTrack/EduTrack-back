@@ -30,6 +30,9 @@ public class StudentDashboardController {
         return ResponseEntity.ok(studentDashboardService.getMyLectures(studentId));
     }
 
+    /*
+    * 내 강의 상세 조회
+     */
     @GetMapping("/lectures/{lectureId}")
     public ResponseEntity<MyLectureDetailResponse> getMyLectureDetail(
             @AuthenticationPrincipal Long studentId,

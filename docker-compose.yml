@@ -14,6 +14,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      # SQL 초기화는 Spring Boot의 data.sql로 처리 (JPA 실행 후 실행됨)
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_password}"]
@@ -47,6 +48,7 @@ services:
     container_name: edutrack-backend
     ports:
       - "8080:8080"
+    # SQL 초기화는 Spring Boot의 data.sql로 처리 (JPA 실행 후 실행됨)
     environment:
       # 데이터베이스 연결
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-edutrack}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
@@ -60,8 +62,11 @@ services:
       SPRING_JPA_SHOW_SQL: "true"
       SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
       
-      # SQL 초기화 스크립트 비활성화 (schema.sql은 H2용이므로 MySQL에서는 JPA ddl-auto 사용)
-      SPRING_SQL_INIT_MODE: never
+      # SQL 초기화 스크립트 활성화 (JPA 실행 후 data.sql 자동 실행)
+      # schema.sql은 H2용이므로 비활성화 (JPA가 테이블 생성)
+      SPRING_SQL_INIT_MODE: always
+      SPRING_SQL_INIT_SCHEMA_LOCATIONS: ""
+      SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION: "true"
       
       # Redis 연결
       SPRING_DATA_REDIS_HOST: redis
