@@ -133,12 +133,17 @@ INSERT IGNORE INTO lecture_days_of_week (lecture_id, day_of_week)
 SELECT id, 'FRIDAY' FROM lecture
 WHERE NOT EXISTS (SELECT 1 FROM lecture_days_of_week WHERE lecture_id = lecture.id AND day_of_week = 'FRIDAY');
 
--- 7. 학생-강의 할당 (각 강의마다 20~30명의 학생 할당)
--- 학생 280명(student1 ~ student280)을 사용하여 할당하고, 20명(student281 ~ student300)은 할당하지 않음
--- 각 강의마다 20~30명의 학생을 랜덤하게 할당 (학생은 여러 강의에 등록 가능)
+-- 7. 학생-강의 할당 (각 강의마다 80~130명의 학생 할당)
+-- 학생 300명(student1 ~ student300) 중 대부분 할당 (약 10~20명은 할당되지 않아도 됨)
+-- 학생은 여러 강의에 등록 가능
 
--- 강의별 학생 할당 (각 강의마다 20~30명 랜덤하게 할당)
--- 중등 수학 강의에 25명 할당
+-- 강의별 학생 할당 (각 강의마다 80~130명 할당)
+-- 이미 할당된 학생 수를 확인하고, 목표 인원수에 도달하지 않았을 때만 추가로 할당
+-- 중복 할당 방지를 위해 NOT EXISTS 조건과 함께 사용
+-- 학생은 여러 강의에 등록 가능하지만, 대부분의 학생이 최소 1개 강의에 할당되도록 보장
+-- 각 강의마다 순환적으로 학생을 할당하여 할당되지 않은 학생 수를 최소화
+
+-- 중등 수학 강의에 95명 할당 (student1부터 순차적으로)
 INSERT IGNORE INTO lecture_student (lecture_id, user_id, created_at)
 SELECT 
     l.id as lecture_id,
@@ -148,15 +153,19 @@ FROM lecture l
 CROSS JOIN users u
 WHERE l.title = '중등 수학'
 AND u.login_id LIKE 'student%' 
-AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 280
+AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 300
 AND NOT EXISTS (
     SELECT 1 FROM lecture_student ls 
     WHERE ls.lecture_id = l.id AND ls.user_id = u.id
 )
-ORDER BY RAND()
-LIMIT 25;
+AND (
+    SELECT COUNT(*) FROM lecture_student ls2 
+    WHERE ls2.lecture_id = l.id
+) < 95
+ORDER BY CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED)
+LIMIT 95;
 
--- 중등 영어 강의에 28명 할당
+-- 중등 영어 강의에 110명 할당 (student60부터 순차적으로, 순환)
 INSERT IGNORE INTO lecture_student (lecture_id, user_id, created_at)
 SELECT 
     l.id as lecture_id,
@@ -166,15 +175,19 @@ FROM lecture l
 CROSS JOIN users u
 WHERE l.title = '중등 영어'
 AND u.login_id LIKE 'student%' 
-AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 280
+AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 300
 AND NOT EXISTS (
     SELECT 1 FROM lecture_student ls 
     WHERE ls.lecture_id = l.id AND ls.user_id = u.id
 )
-ORDER BY RAND()
-LIMIT 28;
+AND (
+    SELECT COUNT(*) FROM lecture_student ls2 
+    WHERE ls2.lecture_id = l.id
+) < 110
+ORDER BY MOD(CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) + 59, 300) + 1
+LIMIT 110;
 
--- 중등 국어 강의에 26명 할당
+-- 중등 국어 강의에 85명 할당 (student120부터 순차적으로, 순환)
 INSERT IGNORE INTO lecture_student (lecture_id, user_id, created_at)
 SELECT 
     l.id as lecture_id,
@@ -184,15 +197,19 @@ FROM lecture l
 CROSS JOIN users u
 WHERE l.title = '중등 국어'
 AND u.login_id LIKE 'student%' 
-AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 280
+AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 300
 AND NOT EXISTS (
     SELECT 1 FROM lecture_student ls 
     WHERE ls.lecture_id = l.id AND ls.user_id = u.id
 )
-ORDER BY RAND()
-LIMIT 26;
+AND (
+    SELECT COUNT(*) FROM lecture_student ls2 
+    WHERE ls2.lecture_id = l.id
+) < 85
+ORDER BY MOD(CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) + 119, 300) + 1
+LIMIT 85;
 
--- 중등 과학 강의에 24명 할당
+-- 중등 과학 강의에 125명 할당 (student180부터 순차적으로, 순환)
 INSERT IGNORE INTO lecture_student (lecture_id, user_id, created_at)
 SELECT 
     l.id as lecture_id,
@@ -202,15 +219,19 @@ FROM lecture l
 CROSS JOIN users u
 WHERE l.title = '중등 과학'
 AND u.login_id LIKE 'student%' 
-AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 280
+AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 300
 AND NOT EXISTS (
     SELECT 1 FROM lecture_student ls 
     WHERE ls.lecture_id = l.id AND ls.user_id = u.id
 )
-ORDER BY RAND()
-LIMIT 24;
+AND (
+    SELECT COUNT(*) FROM lecture_student ls2 
+    WHERE ls2.lecture_id = l.id
+) < 125
+ORDER BY MOD(CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) + 179, 300) + 1
+LIMIT 125;
 
--- 중등 사회 강의에 27명 할당
+-- 중등 사회 강의에 100명 할당 (student240부터 순차적으로, 순환)
 INSERT IGNORE INTO lecture_student (lecture_id, user_id, created_at)
 SELECT 
     l.id as lecture_id,
@@ -220,13 +241,17 @@ FROM lecture l
 CROSS JOIN users u
 WHERE l.title = '중등 사회'
 AND u.login_id LIKE 'student%' 
-AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 280
+AND CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) <= 300
 AND NOT EXISTS (
     SELECT 1 FROM lecture_student ls 
     WHERE ls.lecture_id = l.id AND ls.user_id = u.id
 )
-ORDER BY RAND()
-LIMIT 27;
+AND (
+    SELECT COUNT(*) FROM lecture_student ls2 
+    WHERE ls2.lecture_id = l.id
+) < 100
+ORDER BY MOD(CAST(SUBSTRING(u.login_id, 8) AS UNSIGNED) + 239, 300) + 1
+LIMIT 100;
 
 -- 8. 단원(Unit) 생성 (각 강의마다 5~10개의 단원 생성)
 -- 강의 1: 중등 수학
@@ -1890,6 +1915,7 @@ SELECT q.id, '기업 주권', 4 FROM question q JOIN exam e ON q.exam_id = e.id 
 -- 학생마다 다른 정답률 (5문제, 6문제, 7문제 맞춤, 다 맞춤, 다 틀림 등)
 
 -- 각 시험마다 수강생들의 시험 응시 기록 생성
+-- 응시율 약 90% (10~15%는 응시하지 않은 상태)
 -- earned_score는 답안 생성 후 서브쿼리로 계산하여 업데이트
 INSERT IGNORE INTO exam_student (exam_id, user_id, earned_score, status, exam_started_at, submitted_at)
 SELECT 
@@ -1905,7 +1931,12 @@ WHERE e.status = 'PUBLISHED'
 AND NOT EXISTS (
     SELECT 1 FROM exam_student es 
     WHERE es.exam_id = e.id AND es.user_id = ls.user_id
-);
+)
+-- 응시율 약 90%로 제한
+-- 학생 ID와 시험 ID를 조합하여 일관되게 응시 여부 결정
+-- MOD(ls.user_id + e.id, 10) < 9로 약 90%만 응시 (10%는 응시하지 않음)
+-- 각 시험마다 다른 학생이 응시하지 않도록 시험 ID를 포함
+AND MOD(ls.user_id + e.id, 10) < 9;
 
 -- 각 학생의 시험 답안 생성 (정답/오답 배치)
 -- 학생 ID와 문제 ID를 조합해서 정답 여부 결정 (학생마다 다른 정답률)
@@ -1958,7 +1989,9 @@ AND NOT EXISTS (
 );
 
 -- exam_student의 earned_score를 실제 답안 점수 합계로 업데이트
--- Safe update mode를 피하기 위해 복합키를 WHERE 절에 직접 사용
+-- Safe update mode를 일시적으로 비활성화하여 UPDATE 실행
+SET SQL_SAFE_UPDATES = 0;
+
 UPDATE exam_student es
 INNER JOIN (
     SELECT exam_id, user_id, COALESCE(SUM(earned_score), 0) as total_score
@@ -1968,4 +2001,7 @@ INNER JOIN (
 SET es.earned_score = score_sum.total_score
 WHERE es.exam_id = score_sum.exam_id 
 AND es.user_id = score_sum.user_id;
+
+-- Safe update mode 다시 활성화
+SET SQL_SAFE_UPDATES = 1;
 
