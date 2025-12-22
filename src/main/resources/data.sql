@@ -91,32 +91,32 @@ AND NOT EXISTS (SELECT 1 FROM user_to_role WHERE user_id = u.id AND role_id = r.
 
 -- 6. Lecture 생성 (Teacher마다 1개씩, 총 5개)
 -- teacher1 선생님 강의 1개
-INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, start_date, end_date, created_at)
-SELECT a.id, u.id, '중등 수학', 'teacher1 선생님의 중등 수학 강의입니다.', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
+INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, image_url, start_date, end_date, created_at)
+SELECT a.id, u.id, '중등 수학', 'teacher1 선생님의 중등 수학 강의입니다.', '/images/lecture2.jpg', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
 FROM users u, academy a WHERE u.login_id = 'teacher1' AND a.code = 'EDU-0001'
 AND NOT EXISTS (SELECT 1 FROM lecture WHERE teacher_id = u.id AND title = '중등 수학');
 
 -- teacher2 선생님 강의 1개
-INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, start_date, end_date, created_at)
-SELECT a.id, u.id, '중등 영어', 'teacher2 선생님의 중등 영어 강의입니다.', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
+INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, image_url, start_date, end_date, created_at)
+SELECT a.id, u.id, '중등 영어', 'teacher2 선생님의 중등 영어 강의입니다.', '/images/lecture3.jpg', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
 FROM users u, academy a WHERE u.login_id = 'teacher2' AND a.code = 'EDU-0001'
 AND NOT EXISTS (SELECT 1 FROM lecture WHERE teacher_id = u.id AND title = '중등 영어');
 
 -- teacher3 선생님 강의 1개
-INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, start_date, end_date, created_at)
-SELECT a.id, u.id, '중등 국어', 'teacher3 선생님의 중등 국어 강의입니다.', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
+INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, image_url, start_date, end_date, created_at)
+SELECT a.id, u.id, '중등 국어', 'teacher3 선생님의 중등 국어 강의입니다.', '/images/lecture1.jpg', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
 FROM users u, academy a WHERE u.login_id = 'teacher3' AND a.code = 'EDU-0001'
 AND NOT EXISTS (SELECT 1 FROM lecture WHERE teacher_id = u.id AND title = '중등 국어');
 
 -- teacher4 선생님 강의 1개
-INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, start_date, end_date, created_at)
-SELECT a.id, u.id, '중등 과학', 'teacher4 선생님의 중등 과학 강의입니다.', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
+INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, image_url, start_date, end_date, created_at)
+SELECT a.id, u.id, '중등 과학', 'teacher4 선생님의 중등 과학 강의입니다.', '/images/lecture4.jpg', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
 FROM users u, academy a WHERE u.login_id = 'teacher4' AND a.code = 'EDU-0001'
 AND NOT EXISTS (SELECT 1 FROM lecture WHERE teacher_id = u.id AND title = '중등 과학');
 
 -- teacher5 선생님 강의 1개
-INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, start_date, end_date, created_at)
-SELECT a.id, u.id, '중등 사회', 'teacher5 선생님의 중등 사회 강의입니다.', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
+INSERT IGNORE INTO lecture (academy_id, teacher_id, title, description, image_url, start_date, end_date, created_at)
+SELECT a.id, u.id, '중등 사회', 'teacher5 선생님의 중등 사회 강의입니다.', '/images/lecture5.jpg', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 90 DAY), NOW()
 FROM users u, academy a WHERE u.login_id = 'teacher5' AND a.code = 'EDU-0001'
 AND NOT EXISTS (SELECT 1 FROM lecture WHERE teacher_id = u.id AND title = '중등 사회');
 

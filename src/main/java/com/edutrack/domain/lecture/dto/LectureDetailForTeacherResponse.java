@@ -27,8 +27,8 @@ public class LectureDetailForTeacherResponse extends LectureForTeacherResponse{
   /**
    * LectureStudent 리스트 기반으로 학생 정보 매핑
    */
-  public LectureDetailForTeacherResponse(Long lectureId, String title, String description, List<LectureStudent> lectureStudents, String teacherName, Double averageGrade, List<AssignmentWithSubmissions> assignmentsWithSubmissions, List<ExamParticipationInfo> examsWithParticipation) {
-    super(lectureId, title, lectureStudents.size(), teacherName, averageGrade);
+  public LectureDetailForTeacherResponse(Long lectureId, String title, String description, List<LectureStudent> lectureStudents, String teacherName, Double averageGrade, String imageUrl, List<AssignmentWithSubmissions> assignmentsWithSubmissions, List<ExamParticipationInfo> examsWithParticipation) {
+    super(lectureId, title, lectureStudents.size(), teacherName, averageGrade, imageUrl);
     this.description = description;
 
     // LectureStudent에서 학생(User) 추출 후 DTO로 변환
