@@ -4,6 +4,8 @@ import static com.edutrack.domain.user.util.RoleUtils.extractPrimaryRoleName;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +27,10 @@ public class AdminService {
    * 모든 학원의 모든 사용자를 조회합니다.
    */
   @Transactional(readOnly = true)
-  public SearchAllUserResponse getAllUsers() {
-    List<User> users = userRepository.findAll();
+  public SearchAllUserResponse getAllUsers(Pageable pageable) {
+    Page<User> users = userRepository.findAll(pageable);
 
-    List<UserSearchResultResponse> userList = users.stream()
+    List<UserSearchResultResponse> userList = users.getContent().stream()
             .map(user -> new UserSearchResultResponse(
                     user.getId(),
                     user.getName(),
@@ -39,11 +41,16 @@ public class AdminService {
             ))
             .toList();
 
-    Long totalCount = (long) userList.size();
+    Long totalCount = users.getTotalElements();
 
     return SearchAllUserResponse.builder()
-            .users(userList)
-            .totalCount(totalCount)
-            .build();
+        .users(userList)
+        .totalCount(totalCount)
+        .totalPages(users.getTotalPages())
+        .currentPage(users.getNumber() + 1)
+        .pageSize(users.getSize())
+        .hasNextPage(users.hasNext())
+        .hasPreviousPage(users.hasPrevious())
+        .build();
   }
 }

@@ -35,8 +35,8 @@ class ExamStatisticsControllerTest {
     @MockitoBean
     private ExamStatisticsService examStatisticsService;
 
-    @MockitoBean
-    private AdminInitializer adminInitializer;
+//    @MockitoBean
+//    private AdminInitializer adminInitializer;
 
     private static final Long EXAM_ID = 1L;
     private static final List<String> DEFAULT_RANGES = Arrays.asList(
