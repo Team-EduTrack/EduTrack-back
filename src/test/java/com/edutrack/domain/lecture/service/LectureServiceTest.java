@@ -427,7 +427,7 @@ class LectureServiceTest {
     when(lectureStudentRepository.findAllByLectureId(lecture.getId())).thenReturn(List.of(ls1, ls2));
 
     //when
-    var result = lectureService.getStudentsByLecture(lecture.getId());
+    var result = lectureService.getStudentsByLecture(lecture.getId(), teacher.getId());
 
     //then
     assertNotNull(result);
@@ -492,7 +492,7 @@ class LectureServiceTest {
         .thenReturn(List.of(availableStudent1, availableStudent2));
 
     // when
-    var result = lectureService.getAvailableStudents(lecture.getId(), null);
+    var result = lectureService.getAvailableStudents(lecture.getId(), null, teacher.getId());
 
     // then
     assertNotNull(result);
@@ -535,7 +535,7 @@ class LectureServiceTest {
     });
     
     // when
-    var result = lectureService.assignStudents(lectureId, studentIds);
+    var result = lectureService.assignStudents(lectureId, studentIds, teacher.getId());
     
     // then
     assertNotNull(result);

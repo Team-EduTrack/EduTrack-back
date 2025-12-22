@@ -3,7 +3,7 @@ package com.edutrack.domain.statistics.controller;
 import com.edutrack.domain.statistics.dto.UnitCorrectRateResponse;
 import com.edutrack.domain.statistics.service.LectureStatisticsService;
 import com.edutrack.domain.statistics.service.UnitStatisticsService;
-import com.edutrack.global.config.AdminInitializer;
+//import com.edutrack.global.config.AdminInitializer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,8 +39,8 @@ class LectureStatisticsControllerTest {
     @MockitoBean
     private LectureStatisticsService lectureStatisticsService;
 
-    @MockitoBean
-    private AdminInitializer adminInitializer;
+//    @MockitoBean
+//    private AdminInitializer adminInitializer;
 
     private static final Long LECTURE_ID = 1L;
 
