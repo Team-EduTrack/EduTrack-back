@@ -57,6 +57,9 @@ public class Lecture {
   @Column(columnDefinition = "TEXT", nullable = false)
   private String description;
 
+  @Column(name = "image_url", length = 255, nullable = true)
+  private String imageUrl;
+
   @ElementCollection(fetch = FetchType.LAZY)
   @Enumerated(EnumType.STRING)
   @Column(name = "day_of_week", nullable = false)
@@ -73,12 +76,13 @@ public class Lecture {
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  public Lecture(Academy academy, User teacher, String title, String description, List<DayOfWeek> daysOfWeek,
+  public Lecture(Academy academy, User teacher, String title, String description, String imageUrl, List<DayOfWeek> daysOfWeek,
       LocalDateTime startDate, LocalDateTime endDate) {
     this.academy = academy;
     this.teacher = teacher;
     this.title = title;
     this.description = description;
+    this.imageUrl = imageUrl;
     this.daysOfWeek = daysOfWeek != null ? new ArrayList<>(daysOfWeek) : new ArrayList<>();
     this.startDate = startDate;
     this.endDate = endDate;

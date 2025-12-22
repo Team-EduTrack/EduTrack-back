@@ -16,6 +16,7 @@ public class MyLectureDetailResponse {
   private final String lectureTitle;
   private final String teacherName;
   private final String description;
+  private final String imageUrl;
 
   // 출석률
   private final Double attendanceRate;

@@ -17,6 +17,7 @@ public class LectureForTeacherResponse {
   private final int studentCount;
   private final String teacherName;
   private final Double averageGrade;
+  private final String imageUrl;
 
   public static LectureForTeacherResponse of(Lecture lecture, int studentCount, Double averageScore) {
     return LectureForTeacherResponse.builder()
@@ -25,6 +26,7 @@ public class LectureForTeacherResponse {
         .studentCount(studentCount)
         .teacherName(null)  // 선생님은 자기 강의만 보니까 불필요
         .averageGrade(averageScore)
+        .imageUrl(lecture.getImageUrl())
         .build();
   }
 
@@ -36,6 +38,7 @@ public class LectureForTeacherResponse {
         .studentCount(studentCount)
         .teacherName(teacherName)
         .averageGrade(averageScore)
+        .imageUrl(lecture.getImageUrl())
         .build();
   }
 

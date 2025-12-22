@@ -29,7 +29,8 @@ public interface StudentLectureQueryRepository extends JpaRepository<LectureStud
                 t.name,
                 l.description,
                 l.startDate,
-                l.endDate
+                l.endDate,
+                l.imageUrl
             )
             FROM LectureStudent ls
             JOIN ls.lecture l

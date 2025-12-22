@@ -136,6 +136,7 @@ public class LectureService {
         lectureStudents,
         null,  // teacherName은 목록 조회에서만 필요
         null,  // averageGrade는 목록 조회에서만 필요
+        lecture.getImageUrl(),
         assignmentsWithSubmissions,
         examsWithParticipation
     );
