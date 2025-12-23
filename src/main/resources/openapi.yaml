@@ -1326,6 +1326,38 @@ paths:
         '404':
           description: 학생 또는 강의를 찾을 수 없습니다.
 
+  /api/students/{studentId}/lectures/{lectureId}/average-scores:
+    get:
+      tags: [Student Reports]
+      summary: 학생의 특정 강의에 대한 모든 시험 및 과제 결과 평균 점수 조회
+      operationId: getLectureAverageScores
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생의 강의별 시험 및 과제 평균 점수
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentLectureAverageResponse'
+        '403':
+          description: 본인의 시험 및 과제 결과 평균 점수만 조회할 수 있습니다.
+        '404':
+          description: 학생 또는 강의를 찾을 수 없습니다.
+
 components:
   securitySchemes:
     BearerAuth:
@@ -2560,3 +2592,15 @@ components:
         otherStudentsAvgAttendanceRate:
           type: number
           format: double
+
+    StudentLectureAverageResponse:
+      type: object
+      properties:
+        examAverageGrade:
+          type: number
+          format: double
+          description: 시험 평균 점수
+        assignmentAverageScore:
+          type: number
+          format: double
+          description: 과제 평균 점수
