@@ -1575,6 +1575,10 @@ components:
           format: double
           nullable: true
           description: 평균 점수
+        imageUrl:
+          type: string
+          nullable: true
+          description: 강의 이미지 URL
 
     LectureDetailForTeacherResponse:
       type: object
@@ -2331,6 +2335,10 @@ components:
         endDate:
           type: string
           format: date-time
+        imageUrl:
+          type: string
+          nullable: true
+          description: 강의 이미지 URL
 
     MyLectureDetailResponse:
       type: object
@@ -2344,6 +2352,10 @@ components:
           type: string
         description:
           type: string
+        imageUrl:
+          type: string
+          nullable: true
+          description: 강의 이미지 URL
         attendanceRate:
           type: number
           format: double
