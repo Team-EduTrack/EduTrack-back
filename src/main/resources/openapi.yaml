@@ -264,6 +264,81 @@ paths:
                   $ref: '#/components/schemas/QuestionCorrectRateResponse'
 
   ########################
+  # DifficultyStatisticsController
+  ########################
+  /api/student/statistics/exams/{examId}/difficulty:
+    get:
+      tags: [Student Exams]
+      summary: 학생용: 특정 시험의 난이도별 정답률 통계 조회 (본인)
+      operationId: getStudentExamDifficultyStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생 개인 난이도별 정답률 통계
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DifficultyStatisticsResponse'
+
+  /api/statistics/exams/{examId}/difficulty:
+    get:
+      tags: [Exams]
+      summary: 강사용: 특정 시험의 난이도별 정답률 통계 조회 (전체 학생)
+      operationId: getExamDifficultyStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 난이도별 정답률 통계
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DifficultyStatisticsResponse'
+
+  /api/statistics/lectures/{lectureId}/difficulty:
+    get:
+      tags: [Lectures]
+      summary: 강사용: 강의의 모든 시험 난이도별 정답률 통계 조회
+      operationId: getLectureDifficultyStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: lectureId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 강의 난이도별 정답률 통계
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DifficultyStatisticsResponse'
+
+  ########################
   # UserSearchController (/api/academies/{academyId}/users)
   ########################
   /api/academies/{academyId}/users/search:
@@ -546,6 +621,59 @@ paths:
                   $ref: '#/components/schemas/UnitCorrectRateResponse'
         '404':
           description: 강의를 찾을 수 없습니다.
+
+  ########################
+  # UnitStatisticsController (/api/statistics/units)
+  ########################
+  /api/statistics/units/{unitId}/correct-rate:
+    get:
+      tags: [Lectures]
+      summary: 전체 학생 기준 단원 정답률 조회
+      operationId: getUnitCorrectRate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 단원 정답률 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnitCorrectRateResponse'
+
+  /api/statistics/units/{unitId}/students/{studentId}/correct-rate:
+    get:
+      tags: [Lectures]
+      summary: 특정 학생 단원 정답률 조회
+      operationId: getStudentUnitCorrectRate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 학생 단원 정답률 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentUnitCorrectRateResponse'
 
   ########################
   # AssignmentController (/api/academies/{academyId}/lectures/{lectureId}/assignments)
@@ -984,6 +1112,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExamDetailResponse'
+
+  ########################
+  # ExamStatisticsController (/api/exams)
+  ########################
+  /api/exams/{examId}/distribution:
+    get:
+      tags: [Exams]
+      summary: 시험 점수 분포 조회
+      operationId: getScoreDistribution
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: examId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 시험 점수 분포 정보
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamDistributionResponse'
 
   ########################
   # StudentExamController (/api/student/exams)
@@ -2345,6 +2498,41 @@ components:
         correctRate:
           type: number
           format: double
+
+    DifficultyStatisticsResponse:
+      type: object
+      properties:
+        difficulty:
+          type: string
+          enum: [EASY, MEDIUM, HARD]
+          description: 문제 난이도
+        totalQuestions:
+          type: integer
+          format: int64
+          description: 전체 문제 수
+        correctQuestions:
+          type: integer
+          format: int64
+          description: 정답 문제 수
+
+    ExamDistributionResponse:
+      type: object
+      properties:
+        ranges:
+          type: array
+          items:
+            type: string
+          description: 점수 구간 목록
+        counts:
+          type: array
+          items:
+            type: integer
+            format: int32
+          description: 각 구간별 학생 수
+        totalSubmissions:
+          type: integer
+          format: int32
+          description: 전체 제출 수
 
     ########################
     # Student Dashboard
