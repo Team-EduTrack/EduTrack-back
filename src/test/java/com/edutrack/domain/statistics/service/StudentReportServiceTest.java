@@ -1,16 +1,14 @@
 package com.edutrack.domain.statistics.service;
 
-import com.edutrack.domain.exam.entity.Exam;
-import com.edutrack.domain.exam.entity.ExamStudent;
-import com.edutrack.domain.exam.entity.StudentExamStatus;
-import com.edutrack.domain.exam.repository.ExamStudentRepository;
-import com.edutrack.domain.lecture.entity.Lecture;
-import com.edutrack.domain.statistics.dto.StudentAnalysisResponse;
-import com.edutrack.domain.statistics.dto.StudentExamSummaryResponse;
-import com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse;
-import com.edutrack.domain.statistics.repository.UnitStatisticsRepository;
-import com.edutrack.domain.user.repository.UserRepository;
-import com.edutrack.global.exception.NotFoundException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,14 +19,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
+import com.edutrack.domain.assignment.entity.Assignment;
+import com.edutrack.domain.assignment.entity.AssignmentSubmission;
+import com.edutrack.domain.assignment.repository.AssignmentRepository;
+import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
+import com.edutrack.domain.exam.entity.Exam;
+import com.edutrack.domain.exam.entity.ExamStudent;
+import com.edutrack.domain.exam.entity.StudentExamStatus;
+import com.edutrack.domain.exam.repository.ExamStudentRepository;
+import com.edutrack.domain.lecture.entity.Lecture;
+import com.edutrack.domain.statistics.dto.StudentAnalysisResponse;
+import com.edutrack.domain.statistics.dto.StudentExamSummaryResponse;
+import com.edutrack.domain.statistics.dto.StudentLectureAverageResponse;
+import com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse;
+import com.edutrack.domain.statistics.repository.UnitStatisticsRepository;
+import com.edutrack.domain.user.repository.UserRepository;
+import com.edutrack.global.exception.NotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 class StudentReportServiceTest {
@@ -45,11 +51,19 @@ class StudentReportServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private AssignmentRepository assignmentRepository;
+
+    @Mock
+    private AssignmentSubmissionRepository assignmentSubmissionRepository;
+
     private Long studentId;
+    private Long lectureId;
 
     @BeforeEach
     void setUp() {
         studentId = 1L;
+        lectureId = 10L;
     }
 
     @Nested
@@ -239,6 +253,189 @@ class StudentReportServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getLectureAverageScores 메서드")
+    class GetLectureAverageScores {
+
+        @Test
+        @DisplayName("성공: 시험과 과제 평균 점수를 올바르게 계산한다")
+        void success_returnsLectureAverageScores() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(true);
+
+            // 시험 데이터
+            List<ExamStudent> examStudents = Arrays.asList(
+                    createExamStudent(80, LocalDateTime.of(2025, 1, 1, 10, 0)),
+                    createExamStudent(85, LocalDateTime.of(2025, 1, 15, 10, 0)),
+                    createExamStudent(90, LocalDateTime.of(2025, 2, 1, 10, 0))
+            );
+            given(examStudentRepository.findByStudentIdAndLectureId(studentId, lectureId))
+                    .willReturn(examStudents);
+
+            // 과제 데이터
+            Assignment assignment1 = createAssignment(1L, lectureId);
+            Assignment assignment2 = createAssignment(2L, lectureId);
+            List<Assignment> assignments = Arrays.asList(assignment1, assignment2);
+            given(assignmentRepository.findByLectureId(lectureId)).willReturn(assignments);
+
+            List<AssignmentSubmission> submissions = Arrays.asList(
+                    createAssignmentSubmission(assignment1, 75),
+                    createAssignmentSubmission(assignment2, 85)
+            );
+            given(assignmentSubmissionRepository.findByAssignmentIdInAndStudentId(
+                    Arrays.asList(1L, 2L), studentId))
+                    .willReturn(submissions);
+
+            // when
+            StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
+
+            // then
+            assertThat(response.getExamAverageGrade()).isEqualTo(85.0); // (80+85+90)/3 = 85.0
+            assertThat(response.getAssignmentAverageScore()).isEqualTo(80.0); // (75+85)/2 = 80.0
+        }
+
+        @Test
+        @DisplayName("성공: 시험 데이터가 없으면 시험 평균 0.0을 반환한다")
+        void success_returnsZeroWhenNoExams() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(true);
+            given(examStudentRepository.findByStudentIdAndLectureId(studentId, lectureId))
+                    .willReturn(Collections.emptyList());
+
+            // 과제 데이터
+            Assignment assignment1 = createAssignment(1L, lectureId);
+            List<Assignment> assignments = Arrays.asList(assignment1);
+            given(assignmentRepository.findByLectureId(lectureId)).willReturn(assignments);
+
+            List<AssignmentSubmission> submissions = Arrays.asList(
+                    createAssignmentSubmission(assignment1, 80)
+            );
+            given(assignmentSubmissionRepository.findByAssignmentIdInAndStudentId(
+                    Arrays.asList(1L), studentId))
+                    .willReturn(submissions);
+
+            // when
+            StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
+
+            // then
+            assertThat(response.getExamAverageGrade()).isEqualTo(0.0);
+            assertThat(response.getAssignmentAverageScore()).isEqualTo(80.0);
+        }
+
+        @Test
+        @DisplayName("성공: 과제 데이터가 없으면 과제 평균 0.0을 반환한다")
+        void success_returnsZeroWhenNoAssignments() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(true);
+
+            // 시험 데이터
+            List<ExamStudent> examStudents = Arrays.asList(
+                    createExamStudent(85, LocalDateTime.of(2025, 1, 1, 10, 0))
+            );
+            given(examStudentRepository.findByStudentIdAndLectureId(studentId, lectureId))
+                    .willReturn(examStudents);
+
+            // 과제 없음
+            given(assignmentRepository.findByLectureId(lectureId)).willReturn(Collections.emptyList());
+
+            // when
+            StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
+
+            // then
+            assertThat(response.getExamAverageGrade()).isEqualTo(85.0);
+            assertThat(response.getAssignmentAverageScore()).isEqualTo(0.0);
+        }
+
+        @Test
+        @DisplayName("성공: 채점 완료된 시험만 필터링한다")
+        void success_filtersOnlyGradedExams() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(true);
+
+            ExamStudent gradedExam = createExamStudent(85, LocalDateTime.of(2025, 1, 1, 10, 0));
+            ExamStudent inProgressExam = createExamStudentWithStatus(StudentExamStatus.IN_PROGRESS);
+            ReflectionTestUtils.setField(inProgressExam, "earnedScore", null);
+
+            given(examStudentRepository.findByStudentIdAndLectureId(studentId, lectureId))
+                    .willReturn(Arrays.asList(gradedExam, inProgressExam));
+
+            given(assignmentRepository.findByLectureId(lectureId)).willReturn(Collections.emptyList());
+
+            // when
+            StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
+
+            // then
+            assertThat(response.getExamAverageGrade()).isEqualTo(85.0);
+        }
+
+        @Test
+        @DisplayName("성공: 채점된 과제만 필터링한다")
+        void success_filtersOnlyGradedAssignments() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(true);
+
+            given(examStudentRepository.findByStudentIdAndLectureId(studentId, lectureId))
+                    .willReturn(Collections.emptyList());
+
+            Assignment assignment1 = createAssignment(1L, lectureId);
+            Assignment assignment2 = createAssignment(2L, lectureId);
+            List<Assignment> assignments = Arrays.asList(assignment1, assignment2);
+            given(assignmentRepository.findByLectureId(lectureId)).willReturn(assignments);
+
+            // 채점된 과제와 미채점 과제
+            AssignmentSubmission gradedSubmission = createAssignmentSubmission(assignment1, 80);
+            AssignmentSubmission ungradedSubmission = new AssignmentSubmission();
+            ReflectionTestUtils.setField(ungradedSubmission, "assignment", assignment2);
+            ReflectionTestUtils.setField(ungradedSubmission, "score", null);
+
+            given(assignmentSubmissionRepository.findByAssignmentIdInAndStudentId(
+                    Arrays.asList(1L, 2L), studentId))
+                    .willReturn(Arrays.asList(gradedSubmission, ungradedSubmission));
+
+            // when
+            StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
+
+            // then
+            assertThat(response.getAssignmentAverageScore()).isEqualTo(80.0);
+        }
+
+        @Test
+        @DisplayName("성공: 평균 점수가 반올림되어 반환된다")
+        void success_roundsAverageScore() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(true);
+
+            // 평균이 85.6인 경우 (80, 85, 92)
+            List<ExamStudent> examStudents = Arrays.asList(
+                    createExamStudent(80, LocalDateTime.of(2025, 1, 1, 10, 0)),
+                    createExamStudent(85, LocalDateTime.of(2025, 1, 15, 10, 0)),
+                    createExamStudent(92, LocalDateTime.of(2025, 2, 1, 10, 0))
+            );
+            given(examStudentRepository.findByStudentIdAndLectureId(studentId, lectureId))
+                    .willReturn(examStudents);
+
+            given(assignmentRepository.findByLectureId(lectureId)).willReturn(Collections.emptyList());
+
+            // when
+            StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
+
+            // then
+            assertThat(response.getExamAverageGrade()).isEqualTo(86.0); // (80+85+92)/3 = 85.67 -> 86
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 학생 ID로 조회 시 NotFoundException 발생")
+        void fail_throwsNotFoundExceptionWhenStudentNotExists() {
+            // given
+            given(userRepository.existsById(studentId)).willReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> studentReportService.getLectureAverageScores(studentId, lectureId))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining("학생을 찾을 수 없습니다");
+        }
+    }
+
     // === Helper Methods ===
 
     private ExamStudent createExamStudent(int earnedScore, LocalDateTime submittedAt) {
@@ -271,5 +468,22 @@ class StudentReportServiceTest {
         ExamStudent examStudent = new ExamStudent();
         ReflectionTestUtils.setField(examStudent, "status", status);
         return examStudent;
+    }
+
+    private Assignment createAssignment(Long assignmentId, Long lectureId) {
+        Lecture lecture = Lecture.builder().build();
+        ReflectionTestUtils.setField(lecture, "id", lectureId);
+
+        Assignment assignment = new Assignment();
+        ReflectionTestUtils.setField(assignment, "id", assignmentId);
+        ReflectionTestUtils.setField(assignment, "lecture", lecture);
+        return assignment;
+    }
+
+    private AssignmentSubmission createAssignmentSubmission(Assignment assignment, Integer score) {
+        AssignmentSubmission submission = new AssignmentSubmission();
+        ReflectionTestUtils.setField(submission, "assignment", assignment);
+        ReflectionTestUtils.setField(submission, "score", score);
+        return submission;
     }
 }

@@ -1,6 +1,5 @@
 package com.edutrack.domain.statistics.service;
 
-import com.edutrack.domain.assignment.entity.Assignment;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.edutrack.domain.assignment.entity.Assignment;
 import com.edutrack.domain.assignment.entity.AssignmentSubmission;
 import com.edutrack.domain.assignment.repository.AssignmentRepository;
 import com.edutrack.domain.assignment.repository.AssignmentSubmissionRepository;
@@ -163,7 +163,6 @@ public class StudentReportService {
                 .orElse(0.0));
 
         return StudentLectureAverageResponse.builder()
-                .lectureId(lectureId)
                 .examAverageGrade(examAverageScore)
                 .assignmentAverageScore(assignmentAverageScore)
                 .build();
