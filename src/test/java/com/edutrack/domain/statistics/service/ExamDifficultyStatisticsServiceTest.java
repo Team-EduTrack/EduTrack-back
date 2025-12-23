@@ -1,6 +1,7 @@
 package com.edutrack.domain.statistics.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -334,6 +335,341 @@ class ExamDifficultyStatisticsServiceTest {
         
         verify(examStatisticsRepository).findDifficultyStatisticsByLectureId(lectureId);
         log.info("=== 강의 전체 통계 테스트 완료 ===");
+    }
+
+    // ------------------------------------------------------------
+    // List<DifficultyStatisticsResponse> 반환 메서드 테스트
+    // ------------------------------------------------------------
+
+    @Test
+    @DisplayName("특정 시험의 난이도별 통계 조회 - 모든 난이도 포함")
+    void 특정_시험의_난이도별_통계_조회_모든_난이도_포함() {
+        // given
+        log.info("=== 특정 시험 난이도별 통계 조회 테스트 시작 ===");
+        log.info("시험 ID: {}", examId);
+        
+        List<DifficultyStatisticsResponse> repositoryResults = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 10L, 8L),
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 10L, 6L),
+            new DifficultyStatisticsResponse(Difficulty.HARD, 5L, 2L)
+        );
+        log.info("Mock 데이터: EASY(10/8), MEDIUM(10/6), HARD(5/2)");
+
+        when(examStatisticsRepository.findDifficultyStatisticsByExamId(examId))
+            .thenReturn(repositoryResults);
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForExam");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForExam(examId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도(EASY, MEDIUM, HARD)가 포함되어야 함");
+        
+        // EASY 검증
+        DifficultyStatisticsResponse easyStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.EASY)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(easyStat);
+        assertEquals(10L, easyStat.getTotalQuestions());
+        assertEquals(8L, easyStat.getCorrectQuestions());
+        log.info("EASY 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            easyStat.getTotalQuestions(), easyStat.getCorrectQuestions());
+        
+        // MEDIUM 검증
+        DifficultyStatisticsResponse mediumStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.MEDIUM)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(mediumStat);
+        assertEquals(10L, mediumStat.getTotalQuestions());
+        assertEquals(6L, mediumStat.getCorrectQuestions());
+        log.info("MEDIUM 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            mediumStat.getTotalQuestions(), mediumStat.getCorrectQuestions());
+        
+        // HARD 검증
+        DifficultyStatisticsResponse hardStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.HARD)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(hardStat);
+        assertEquals(5L, hardStat.getTotalQuestions());
+        assertEquals(2L, hardStat.getCorrectQuestions());
+        log.info("HARD 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            hardStat.getTotalQuestions(), hardStat.getCorrectQuestions());
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByExamId(examId);
+        log.info("=== 특정 시험 난이도별 통계 조회 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("특정 시험의 난이도별 통계 조회 - 일부 난이도만 있는 경우 기본값 포함")
+    void 특정_시험의_난이도별_통계_조회_일부_난이도만_있는_경우() {
+        // given
+        log.info("=== 일부 난이도만 있는 경우 테스트 시작 ===");
+        log.info("시험 ID: {}", examId);
+        
+        // EASY만 있는 경우
+        List<DifficultyStatisticsResponse> repositoryResults = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 10L, 8L)
+        );
+        log.info("Mock 데이터: EASY만 존재 (10/8)");
+
+        when(examStatisticsRepository.findDifficultyStatisticsByExamId(examId))
+            .thenReturn(repositoryResults);
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForExam");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForExam(examId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도가 포함되어야 함");
+        
+        // EASY는 실제 데이터
+        DifficultyStatisticsResponse easyStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.EASY)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(easyStat);
+        assertEquals(10L, easyStat.getTotalQuestions());
+        assertEquals(8L, easyStat.getCorrectQuestions());
+        log.info("EASY 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            easyStat.getTotalQuestions(), easyStat.getCorrectQuestions());
+        
+        // MEDIUM과 HARD는 기본값(0, 0)
+        DifficultyStatisticsResponse mediumStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.MEDIUM)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(mediumStat);
+        assertEquals(0L, mediumStat.getTotalQuestions());
+        assertEquals(0L, mediumStat.getCorrectQuestions());
+        log.info("MEDIUM 난이도 통계: 기본값 (0/0)");
+        
+        DifficultyStatisticsResponse hardStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.HARD)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(hardStat);
+        assertEquals(0L, hardStat.getTotalQuestions());
+        assertEquals(0L, hardStat.getCorrectQuestions());
+        log.info("HARD 난이도 통계: 기본값 (0/0)");
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByExamId(examId);
+        log.info("=== 일부 난이도만 있는 경우 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("특정 시험의 난이도별 통계 조회 - 빈 결과일 때 모든 난이도 기본값 반환")
+    void 특정_시험의_난이도별_통계_조회_빈_결과일_때() {
+        // given
+        log.info("=== 빈 결과 테스트 시작 ===");
+        log.info("시험 ID: {}", examId);
+        
+        when(examStatisticsRepository.findDifficultyStatisticsByExamId(examId))
+            .thenReturn(List.of());
+        log.info("Mock 데이터: 빈 리스트 반환");
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForExam");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForExam(examId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도가 포함되어야 함");
+        
+        // 모든 난이도가 기본값(0, 0)인지 확인
+        for (DifficultyStatisticsResponse stat : result) {
+            assertEquals(0L, stat.getTotalQuestions());
+            assertEquals(0L, stat.getCorrectQuestions());
+            log.info("{} 난이도 통계: 기본값 (0/0)", stat.getDifficulty());
+        }
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByExamId(examId);
+        log.info("=== 빈 결과 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("특정 학생의 특정 시험 난이도별 통계 조회 성공")
+    void 특정_학생의_특정_시험_난이도별_통계_조회_성공() {
+        // given
+        log.info("=== 특정 학생의 시험 난이도별 통계 조회 테스트 시작 ===");
+        log.info("시험 ID: {}, 학생 ID: {}", examId, studentId);
+        
+        List<DifficultyStatisticsResponse> repositoryResults = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 5L, 4L),
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 8L, 6L),
+            new DifficultyStatisticsResponse(Difficulty.HARD, 2L, 1L)
+        );
+        log.info("Mock 데이터: EASY(5/4), MEDIUM(8/6), HARD(2/1)");
+
+        when(examStatisticsRepository.findDifficultyStatisticsByExamIdAndStudentId(examId, studentId))
+            .thenReturn(repositoryResults);
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForStudentExam");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForStudentExam(examId, studentId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도가 포함되어야 함");
+        
+        DifficultyStatisticsResponse easyStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.EASY)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(easyStat);
+        assertEquals(5L, easyStat.getTotalQuestions());
+        assertEquals(4L, easyStat.getCorrectQuestions());
+        log.info("EASY 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            easyStat.getTotalQuestions(), easyStat.getCorrectQuestions());
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByExamIdAndStudentId(examId, studentId);
+        log.info("=== 특정 학생의 시험 난이도별 통계 조회 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("특정 학생의 특정 시험 난이도별 통계 조회 - 일부 난이도만 있는 경우")
+    void 특정_학생의_특정_시험_난이도별_통계_조회_일부_난이도만_있는_경우() {
+        // given
+        log.info("=== 특정 학생의 시험 - 일부 난이도만 있는 경우 테스트 시작 ===");
+        log.info("시험 ID: {}, 학생 ID: {}", examId, studentId);
+        
+        // EASY와 MEDIUM만 있는 경우
+        List<DifficultyStatisticsResponse> repositoryResults = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 5L, 4L),
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 8L, 6L)
+        );
+        log.info("Mock 데이터: EASY(5/4), MEDIUM(8/6)");
+
+        when(examStatisticsRepository.findDifficultyStatisticsByExamIdAndStudentId(examId, studentId))
+            .thenReturn(repositoryResults);
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForStudentExam");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForStudentExam(examId, studentId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도가 포함되어야 함");
+        
+        // HARD는 기본값이어야 함
+        DifficultyStatisticsResponse hardStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.HARD)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(hardStat);
+        assertEquals(0L, hardStat.getTotalQuestions());
+        assertEquals(0L, hardStat.getCorrectQuestions());
+        log.info("HARD 난이도 통계: 기본값 (0/0)");
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByExamIdAndStudentId(examId, studentId);
+        log.info("=== 특정 학생의 시험 - 일부 난이도만 있는 경우 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("강의의 모든 시험 난이도별 통계 조회 성공")
+    void 강의의_모든_시험_난이도별_통계_조회_성공() {
+        // given
+        log.info("=== 강의의 모든 시험 난이도별 통계 조회 테스트 시작 ===");
+        log.info("강의 ID: {}", lectureId);
+        
+        List<DifficultyStatisticsResponse> repositoryResults = List.of(
+            new DifficultyStatisticsResponse(Difficulty.EASY, 50L, 40L),
+            new DifficultyStatisticsResponse(Difficulty.MEDIUM, 30L, 20L),
+            new DifficultyStatisticsResponse(Difficulty.HARD, 20L, 8L)
+        );
+        log.info("Mock 데이터: EASY(50/40), MEDIUM(30/20), HARD(20/8)");
+
+        when(examStatisticsRepository.findDifficultyStatisticsByLectureId(lectureId))
+            .thenReturn(repositoryResults);
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForLecture");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForLecture(lectureId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도가 포함되어야 함");
+        
+        DifficultyStatisticsResponse easyStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.EASY)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(easyStat);
+        assertEquals(50L, easyStat.getTotalQuestions());
+        assertEquals(40L, easyStat.getCorrectQuestions());
+        log.info("EASY 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            easyStat.getTotalQuestions(), easyStat.getCorrectQuestions());
+        
+        DifficultyStatisticsResponse mediumStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.MEDIUM)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(mediumStat);
+        assertEquals(30L, mediumStat.getTotalQuestions());
+        assertEquals(20L, mediumStat.getCorrectQuestions());
+        log.info("MEDIUM 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            mediumStat.getTotalQuestions(), mediumStat.getCorrectQuestions());
+        
+        DifficultyStatisticsResponse hardStat = result.stream()
+            .filter(r -> r.getDifficulty() == Difficulty.HARD)
+            .findFirst()
+            .orElse(null);
+        assertNotNull(hardStat);
+        assertEquals(20L, hardStat.getTotalQuestions());
+        assertEquals(8L, hardStat.getCorrectQuestions());
+        log.info("HARD 난이도 통계: 전체 {}문제 중 {}문제 정답", 
+            hardStat.getTotalQuestions(), hardStat.getCorrectQuestions());
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByLectureId(lectureId);
+        log.info("=== 강의의 모든 시험 난이도별 통계 조회 테스트 완료 ===");
+    }
+
+    @Test
+    @DisplayName("강의의 모든 시험 난이도별 통계 조회 - 빈 결과일 때")
+    void 강의의_모든_시험_난이도별_통계_조회_빈_결과일_때() {
+        // given
+        log.info("=== 강의의 모든 시험 - 빈 결과 테스트 시작 ===");
+        log.info("강의 ID: {}", lectureId);
+        
+        when(examStatisticsRepository.findDifficultyStatisticsByLectureId(lectureId))
+            .thenReturn(List.of());
+        log.info("Mock 데이터: 빈 리스트 반환");
+
+        // when
+        log.info("서비스 메서드 호출 - getDifficultyStatisticsForLecture");
+        List<DifficultyStatisticsResponse> result = 
+            examStatisticsService.getDifficultyStatisticsForLecture(lectureId);
+
+        // then
+        log.info("=== 결과 검증 ===");
+        assertNotNull(result);
+        assertEquals(3, result.size(), "모든 난이도가 포함되어야 함");
+        
+        // 모든 난이도가 기본값(0, 0)인지 확인
+        for (DifficultyStatisticsResponse stat : result) {
+            assertEquals(0L, stat.getTotalQuestions());
+            assertEquals(0L, stat.getCorrectQuestions());
+            log.info("{} 난이도 통계: 기본값 (0/0)", stat.getDifficulty());
+        }
+        
+        verify(examStatisticsRepository).findDifficultyStatisticsByLectureId(lectureId);
+        log.info("=== 강의의 모든 시험 - 빈 결과 테스트 완료 ===");
     }
 
 }

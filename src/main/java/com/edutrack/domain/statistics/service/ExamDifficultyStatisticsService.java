@@ -1,8 +1,10 @@
 package com.edutrack.domain.statistics.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +56,53 @@ public class ExamDifficultyStatisticsService {
     public Map<Difficulty, Double> getDifficultyCorrectRateMapForLecture(Long lectureId) {
         List<DifficultyStatisticsResponse> results = examStatisticsRepository.findDifficultyStatisticsByLectureId(lectureId);
         return convertToDifficultyRateMap(results);
+    }
+
+    /**
+     * 특정 시험의 난이도별 통계 조회 (DTO 리스트 반환)
+     */
+    public List<DifficultyStatisticsResponse> getDifficultyStatisticsForExam(Long examId) {
+        List<DifficultyStatisticsResponse> results = examStatisticsRepository.findDifficultyStatisticsByExamId(examId);
+        return ensureAllDifficultiesIncluded(results);
+    }
+
+    /**
+     * 특정 학생의 특정 시험에 대한 난이도별 통계 조회 (DTO 리스트 반환)
+     */
+    public List<DifficultyStatisticsResponse> getDifficultyStatisticsForStudentExam(Long examId, Long studentId) {
+        List<DifficultyStatisticsResponse> results = examStatisticsRepository
+                .findDifficultyStatisticsByExamIdAndStudentId(examId, studentId);
+        return ensureAllDifficultiesIncluded(results);
+    }
+
+    /**
+     * 강의의 모든 시험에 대한 난이도별 통계 조회 (DTO 리스트 반환)
+     */
+    public List<DifficultyStatisticsResponse> getDifficultyStatisticsForLecture(Long lectureId) {
+        List<DifficultyStatisticsResponse> results = examStatisticsRepository.findDifficultyStatisticsByLectureId(lectureId);
+        return ensureAllDifficultiesIncluded(results);
+    }
+
+    /**
+     * 모든 난이도가 포함되도록 기본값 설정
+     */
+    private List<DifficultyStatisticsResponse> ensureAllDifficultiesIncluded(List<DifficultyStatisticsResponse> results) {
+        Map<Difficulty, DifficultyStatisticsResponse> resultMap = results.stream()
+                .collect(Collectors.toMap(
+                        DifficultyStatisticsResponse::getDifficulty,
+                        r -> r
+                ));
+
+        List<DifficultyStatisticsResponse> completeResults = new ArrayList<>();
+        for (Difficulty difficulty : Difficulty.values()) {
+            if (resultMap.containsKey(difficulty)) {
+                completeResults.add(resultMap.get(difficulty));
+            } else {
+                // 해당 난이도에 대한 문제가 없으면 기본값 추가
+                completeResults.add(new DifficultyStatisticsResponse(difficulty, 0L, 0L));
+            }
+        }
+        return completeResults;
     }
 
     /**
