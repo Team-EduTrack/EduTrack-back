@@ -1,14 +1,15 @@
 package com.edutrack.domain.exam.repository;
 
-import com.edutrack.domain.exam.entity.ExamStudent;
-import com.edutrack.domain.exam.entity.ExamStudentId;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.edutrack.domain.exam.entity.ExamStudent;
+import com.edutrack.domain.exam.entity.ExamStudentId;
 
 /**
  * 시험 응시 기록 Repository
@@ -31,6 +32,23 @@ public interface ExamStudentRepository extends JpaRepository<ExamStudent, ExamSt
            "WHERE es.student.id = :studentId " +
            "ORDER BY es.startedAt DESC")
     List<ExamStudent> findAllByStudentIdWithExam(@Param("studentId") Long studentId);
+
+    /**
+     * 학생의 특정 강의에 대한 모든 시험 응시 기록 조회
+     * @param studentId 학생 ID
+     * @param lectureId 강의 ID
+     * @return 시험 응시 기록 목록 (제출일 기준 오름차순 정렬)
+     */
+    @Query("SELECT es FROM ExamStudent es " +
+           "JOIN FETCH es.exam e " +
+           "JOIN FETCH e.lecture l " +
+           "WHERE es.student.id = :studentId " +
+           "AND e.lecture.id = :lectureId " +
+           "ORDER BY es.submittedAt ASC")
+    List<ExamStudent> findByStudentIdAndLectureId(
+            @Param("studentId") Long studentId,
+            @Param("lectureId") Long lectureId
+    );
 
     /**
      * 시험 ID와 학생 ID로 응시 기록 존재 여부 확인

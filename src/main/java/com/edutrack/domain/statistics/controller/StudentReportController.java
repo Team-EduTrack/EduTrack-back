@@ -1,19 +1,25 @@
 package com.edutrack.domain.statistics.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.edutrack.domain.statistics.dto.StudentAnalysisResponse;
 import com.edutrack.domain.statistics.dto.StudentExamSummaryResponse;
 import com.edutrack.domain.statistics.dto.StudentLectureAttendanceResponse;
+import com.edutrack.domain.statistics.dto.StudentLectureAverageResponse;
 import com.edutrack.domain.statistics.dto.StudentUnitCorrectRateResponse;
 import com.edutrack.domain.statistics.service.StudentAttendanceService;
 import com.edutrack.domain.statistics.service.StudentReportService;
 import com.edutrack.global.exception.ForbiddenException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 학생 리포트 컨트롤러
@@ -102,6 +108,23 @@ public class StudentReportController {
         }
         StudentLectureAttendanceResponse response = studentAttendanceService
                 .getMonthlyAttendance(studentId, lectureId, year, month);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 학생의 특정 강의에 대한 모든 시험 및 과제 결과 평균 점수 조회
+     */
+    @GetMapping("/api/students/{studentId}/lectures/{lectureId}/average-scores")
+    @PreAuthorize("hasAnyRole('STUDENT')")
+    public ResponseEntity<StudentLectureAverageResponse> getLectureAverageScores(
+            @PathVariable Long studentId,
+            @PathVariable Long lectureId,
+            @AuthenticationPrincipal Long userId
+    ) {
+        if (!studentId.equals(userId)) {
+            throw new ForbiddenException("본인의 시험 및 과제 결과 평균 점수만 조회할 수 있습니다.");
+        }
+        StudentLectureAverageResponse response = studentReportService.getLectureAverageScores(studentId, lectureId);
         return ResponseEntity.ok(response);
     }
 }
