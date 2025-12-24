@@ -14,4 +14,7 @@ public interface LectureStudentRepository extends JpaRepository<LectureStudent, 
   List<LectureStudent> findAllByLectureId(Long lectureId);
 
   boolean existsByLecture_IdAndStudent_Id(Long lectureId, Long studentId);
+
+  // 강의별 학생 수 조회
+  int countByLectureId(Long lectureId);
 }
