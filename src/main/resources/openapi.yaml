@@ -291,6 +291,20 @@ paths:
           required: false
           schema:
             type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
       responses:
         '200':
           description: 사용자 검색 결과
@@ -299,7 +313,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserSearchResultResponse'
+                  $ref: '#/components/schemas/PageUserSearchResultResponse'
 
   /api/academies/{academyId}/users/{userId}/role/teacher:
     patch:
@@ -1513,6 +1527,38 @@ components:
           type: string
         academyCode:
           type: string
+
+    PageUserSearchResultResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSearchResultResponse'
+        pageable:
+          type: object
+          nullable: true
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        number:
+          type: integer
+          format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
 
     ########################
     # Lectures

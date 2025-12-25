@@ -2,6 +2,8 @@ package com.edutrack.domain.user.repository;
 
 import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,26 +20,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
   Optional<User> findByLoginId(String loginId);
 
   @Query("""
-      select distinct u 
-      from User u
-      join u.userToRoles ur
-      join ur.role r
-      where u.academy.id = :academyId
-        and (:roleType is null or r.name = :roleType)
-        and (
-              :keyword is null
-           or u.name like %:keyword%
-           or u.loginId like %:keyword%
-           or u.phone like %:keyword%
-           or u.email like %:keyword%
-        )
-      """)
-  List<User> searchByAcademyAndRoleAndKeyword(
-      @Param("academyId") Long academyId,
-      @Param("roleType") RoleType roleType,
-      @Param("keyword") String keyword
+    SELECT DISTINCT u
+    FROM User u
+    JOIN u.userToRoles ur
+    JOIN ur.role r
+    WHERE u.academy.id = :academyId
+      AND (:roleType IS NULL OR r.name = :roleType)
+      AND (
+           :keyword IS NULL OR
+           u.loginId LIKE %:keyword% OR
+           u.phone LIKE %:keyword%
+      )
+""")
+  Page<User> searchByAcademyAndRoleAndKeyword(
+          @Param("academyId") Long academyId,
+          @Param("roleType") RoleType roleType,
+          @Param("keyword") String keyword,
+          Pageable pageable
   );
-
   //강의 배정을 위한 해당 학원 소속의 강의에 배정되지 않은 학생 검색
   @Query("""
   SELECT DISTINCT u
