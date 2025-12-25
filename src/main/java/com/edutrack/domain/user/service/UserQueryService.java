@@ -7,6 +7,8 @@ import com.edutrack.domain.user.entity.RoleType;
 import com.edutrack.domain.user.entity.User;
 import com.edutrack.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,22 +52,21 @@ public class UserQueryService {
      * - keyword   : loginId 또는 phone 에 포함되는 문자열 (null 이면 전체)
      */
     @Transactional(readOnly = true)
-    public List<UserSearchResultResponse> searchUsers(Long academyId, RoleType roleType, String keyword) {
-        List<User> users = userRepository.searchByAcademyAndRoleAndKeyword(
+    public Page<UserSearchResultResponse> searchUsers(Long academyId, RoleType roleType, String keyword, Pageable pageable) {
+        Page<User> users = userRepository.searchByAcademyAndRoleAndKeyword(
                 academyId,
                 roleType,
-                keyword
+                keyword,
+                pageable
         );
 
-        return users.stream()
-                .map(user -> new UserSearchResultResponse(
+        return users.map(user -> new UserSearchResultResponse(
                         user.getId(),
                         user.getName(),
                         user.getLoginId(),
                         user.getPhone(),
                         user.getEmail(),
                         extractPrimaryRoleName(user)  // 대표 Role 1개
-                ))
-                .toList();
+                ));
     }
 }
