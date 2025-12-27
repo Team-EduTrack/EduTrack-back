@@ -120,13 +120,6 @@ SELECT a.id, u.id, '중등 사회', 'teacher5 선생님의 중등 사회 강의�
 FROM users u, academy a WHERE u.login_id = 'teacher5' AND a.code = 'EDU-0001'
 AND NOT EXISTS (SELECT 1 FROM lecture WHERE teacher_id = u.id AND title = '중등 사회');
 
--- 기존 강의들의 image_url 업데이트 (INSERT IGNORE로 인해 기존 강의는 업데이트되지 않으므로 별도로 처리)
-UPDATE lecture SET image_url = '/images/lecture1.jpeg' WHERE title = '중등 국어' AND (image_url IS NULL OR image_url = '');
-UPDATE lecture SET image_url = '/images/lecture2.jpeg' WHERE title = '중등 수학' AND (image_url IS NULL OR image_url = '');
-UPDATE lecture SET image_url = '/images/lecture3.jpeg' WHERE title = '중등 영어' AND (image_url IS NULL OR image_url = '');
-UPDATE lecture SET image_url = '/images/lecture4.jpeg' WHERE title = '중등 과학' AND (image_url IS NULL OR image_url = '');
-UPDATE lecture SET image_url = '/images/lecture5.jpeg' WHERE title = '중등 사회' AND (image_url IS NULL OR image_url = '');
-
 -- 강의 요일 설정 (각 강의마다 월요일, 수요일, 금요일)
 INSERT IGNORE INTO lecture_days_of_week (lecture_id, day_of_week)
 SELECT id, 'MONDAY' FROM lecture
