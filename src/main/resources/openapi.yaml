@@ -1679,6 +1679,24 @@ components:
           type: integer
           format: int64
           description: 전체 사용자 수
+        totalPages:
+          type: integer
+          format: int32
+          description: 전체 페이지 수
+        currentPage:
+          type: integer
+          format: int32
+          description: 현재 페이지
+        pageSize:
+          type: integer
+          format: int32
+          description: 페이지 크기
+        hasNextPage:
+          type: boolean
+          description: 다음 페이지 존재 여부
+        hasPreviousPage:
+          type: boolean
+          description: 이전 페이지 존재 여부
 
     ########################
     # Principal
